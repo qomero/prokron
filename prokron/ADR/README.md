@@ -25,3 +25,4 @@ editing history.
 - [ADR-018](ADR-018.md) — Scope a context packet to its own task (ACCEPTED)
 - [ADR-019](ADR-019.md) — Migrate v0.1 chronicles explicitly, and never in place (ACCEPTED)
 - [ADR-020](ADR-020.md) — Close Phase 2 and carry the continuity pilot as audited debt (ACCEPTED)
+- [ADR-021](ADR-021.md) — Address the GitHub owner by its current name, never by redirect (ACCEPTED)

@@ -402,3 +402,27 @@
   accepting ADR, the phase record and gates, the tasks, the contracts, then
   validate and compile. The first P3 task is a planning task that inspects the
   existing architecture, as §25 requires.
+
+## 2026-09-22 — the redirect that was holding the installer up
+- Task: T-RENAME-01
+- Owner: claude/primary
+- Did: The owner account was renamed from `qomerovn` to `qomero`, and every old
+  URL still worked, which is why nobody noticed. Verified each one: the raw
+  file, the tarball and the `gh api` path all return 200 or resolve through
+  GitHub's rename redirect. Replaced the previous owner name in `install.sh`
+  and `README.md` under ADR-021, left it intact in this journal because the
+  journal records what was true then, and promoted the anonymous `curl` install
+  to the documented default now that the repository is public. Removed the
+  README's claim that the repository is private and its note that anonymous
+  delivery was unverified; it is verified now.
+- Validation: SYNTHETIC. `sh -n install.sh` passes, 104 unit tests and the
+  installer suite pass, and an anonymous install from the current raw URL
+  completed against a disposable git repository.
+- Learned: The dangerous kind of breakage is the kind that keeps working. A
+  rename redirect looks like a fix and behaves like a deadline: GitHub frees
+  the old username, anyone may claim it, and the README's headline command
+  pipes that URL straight into `sh`. Nothing was broken today and the exposure
+  was still real, which is the argument for addressing the owner by name rather
+  than by redirect.
+- Left mid-air: Nothing.
+- Next: Open P3 from `docs/Phase 3.md`, authority before implementation.

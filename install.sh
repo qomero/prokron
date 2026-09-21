@@ -49,10 +49,10 @@ if [ -z "$source_dir" ]; then
   temp_dir=$(mktemp -d "${TMPDIR:-/tmp}/prokron.XXXXXX")
   command -v tar >/dev/null 2>&1 || { echo "tar is required" >&2; exit 1; }
   if command -v gh >/dev/null 2>&1 && gh auth status >/dev/null 2>&1; then
-    gh api repos/qomerovn/prokron/tarball/main > "$temp_dir/prokron.tar.gz"
+    gh api repos/qomero/prokron/tarball/main > "$temp_dir/prokron.tar.gz"
   else
     command -v curl >/dev/null 2>&1 || { echo "curl is required" >&2; exit 1; }
-    curl -fsSL "https://github.com/qomerovn/prokron/archive/refs/heads/main.tar.gz" \
+    curl -fsSL "https://github.com/qomero/prokron/archive/refs/heads/main.tar.gz" \
       -o "$temp_dir/prokron.tar.gz"
   fi
   mkdir "$temp_dir/source"

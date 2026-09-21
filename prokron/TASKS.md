@@ -275,6 +275,17 @@
 - Evidence: git config --global --get user.name returned qomero.
 - Governed by: ADR-008
 
+## T-RENAME-01: Point installation at the renamed GitHub owner
+- Status: DONE
+- Phase: P-NONE
+- Validation: SYNTHETIC
+- Dependencies: none
+- Owner: claude/primary
+- Claimed: 2026-09-22
+- AC: AC-T-RENAME-01
+- Evidence: No reference to the previous owner remains in `install.sh` or `README.md`. Anonymous install from `https://raw.githubusercontent.com/qomero/prokron/main/install.sh` completed against a disposable repository. 104 unit tests and the installer suite pass.
+- Governed by: ADR-021
+
 ## T-P2-PLAN-01: Plan Phase 2 into the chronicle
 - Status: DONE
 - Phase: P2

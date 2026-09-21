@@ -106,12 +106,12 @@ current decision. Everyone has the context to move the discussion forward.
 From the root of an **existing project**, run:
 
 ```sh
-gh api -H 'Accept: application/vnd.github.raw+json' 'repos/qomerovn/prokron/contents/install.sh?ref=main' | sh -s -- existing
+curl -fsSL https://raw.githubusercontent.com/qomero/prokron/main/install.sh | sh -s -- existing
 ```
 
 For a **new project**, replace `existing` with `new` and bring your product spec.
-The repository is currently private, so this command requires an authenticated
-[GitHub CLI](https://cli.github.com/) with repository access.
+Read the script before you pipe it to a shell, as you should with any installer
+delivered this way.
 
 The installer adds `prokron/`, shared instructions, portable workflows, and
 command files for Codex, Claude Code, and OpenCode. It preserves existing
@@ -119,7 +119,7 @@ records and custom instructions, restores missing files, and prints what to run
 in your agent chat.
 
 <details>
-<summary>Install from a local checkout or after public release</summary>
+<summary>Install from a local checkout, or through the GitHub CLI</summary>
 
 From a downloaded or cloned Prokron checkout, installation works offline:
 
@@ -127,14 +127,13 @@ From a downloaded or cloned Prokron checkout, installation works offline:
 sh ./install.sh existing /path/to/your/project
 ```
 
-Once this repository is public, anonymous installation will be available with:
+With an authenticated [GitHub CLI](https://cli.github.com/):
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/qomerovn/prokron/main/install.sh | sh -s -- existing
+gh api -H 'Accept: application/vnd.github.raw+json' 'repos/qomero/prokron/contents/install.sh?ref=main' | sh -s -- existing
 ```
 
-Use `new` for a new project. Anonymous delivery remains unverified while the
-repository is private.
+Use `new` for a new project.
 
 </details>
 

@@ -4,6 +4,28 @@ Prokron records its own history in `prokron/JOURNAL.md` and its decisions in
 `prokron/ADR/`. This file is the short version, for people arriving from a
 release page.
 
+## 0.2.4 — 2026-09-22
+
+Stops installation depending on a GitHub rename redirect.
+
+### Fixed
+
+- **Installation addresses the owner by its current name.** The account was
+  renamed from `qomerovn` to `qomero`, and every old URL kept working through
+  GitHub's redirect, which is why it went unnoticed. A freed GitHub username is
+  claimable by anyone, and the README's headline command pipes that URL into
+  `sh`, so a stale owner name in an installer hands code execution to whoever
+  claims the abandoned name. `install.sh` and `README.md` now use the current
+  name. ADR-021 records the rule: redirects are a migration convenience with an
+  expiry nobody controls, never an address.
+
+### Changed
+
+- The anonymous `curl` install is now the documented default, since the
+  repository is public. The GitHub CLI command remains as an alternative. The
+  README no longer says the repository is private or that anonymous delivery is
+  unverified; it was verified against a disposable repository.
+
 ## 0.2.3 — 2026-09-22
 
 Closes Phase 2 and writes down what it left unfinished. No code changed; this

@@ -872,6 +872,27 @@ interoperability, and regeneration each check PASS.
 - `AC-T-REMOTE-01-01` — Origin resolves to https://github.com/qomero/ten-repo.git. `INSPECTION` · `PASS`
   - Evidence: git remote -v confirms the requested URL for both fetch and push.
 
+## AC-T-RENAME-01 — Point installation at the renamed GitHub owner
+
+The owner account was renamed from `qomerovn` to `qomero`. GitHub redirects the
+old paths, so nothing broke; the criteria below are about not depending on that
+redirect.
+
+- `AC-T-RENAME-01-01` — No reference to the previous owner name remains in
+  `install.sh` or `README.md`. History in `JOURNAL.md` keeps its original
+  wording, because it records what was true then. `INSPECTION` · `PASS`
+  - Evidence: a repository-wide search for the previous name returns only the
+    journal entry that records the earlier remote change.
+- `AC-T-RENAME-01-02` — Anonymous installation from the current raw URL
+  completes in a disposable repository. `RUNTIME` · `PASS`
+  - Evidence: `curl -fsSL https://raw.githubusercontent.com/qomero/prokron/main/install.sh | sh -s -- existing`
+    installed into an empty git repository and printed the start instructions.
+- `AC-T-RENAME-01-03` — The README no longer states that the repository is
+  private, and the anonymous command is the documented default.
+  `INSPECTION` · `PASS`
+  - Evidence: the repository is public; `gh api repos/qomero/prokron` reports
+    `"visibility": "public"`. The GitHub CLI path is kept as an alternative.
+
 ## AC-T-GIT-NAME-01
 
 - `AC-T-GIT-NAME-01-01` — Global user.name is qomero. `INSPECTION` · `PASS`

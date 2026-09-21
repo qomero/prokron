@@ -757,6 +757,29 @@
       }
     },
     {
+      "id": "T-RENAME-01",
+      "title": "Point installation at the renamed GitHub owner",
+      "phase": "P-NONE",
+      "status": "DONE",
+      "validation": "SYNTHETIC",
+      "deps": [],
+      "blocks": [],
+      "ac": "AC-T-RENAME-01",
+      "owner": "claude/primary",
+      "claimed": "2026-09-22",
+      "evidence": "No reference to the previous owner remains in `install.sh` or `README.md`. Anonymous install from `https://raw.githubusercontent.com/qomero/prokron/main/install.sh` completed against a disposable repository. 104 unit tests and the installer suite pass.",
+      "decisions": [
+        "ADR-021"
+      ],
+      "schedule": null,
+      "ready": false,
+      "blocked": false,
+      "source": {
+        "file": "TASKS.md",
+        "anchor": "T-RENAME-01"
+      }
+    },
+    {
       "id": "T-P2-PLAN-01",
       "title": "Plan Phase 2 into the chronicle",
       "phase": "P2",
@@ -2863,6 +2886,50 @@
         "anchor": "AC-T-REMOTE-01"
       }
     },
+    "AC-T-RENAME-01": {
+      "title": "Point installation at the renamed GitHub owner",
+      "inherits": [],
+      "evidence": null,
+      "criteria": [
+        {
+          "id": "AC-T-RENAME-01-01",
+          "text": "No reference to the previous owner name remains in `install.sh` or `README.md`. History in `JOURNAL.md` keeps its original wording, because it records what was true then.",
+          "evidenceClass": "INSPECTION",
+          "state": "PASS",
+          "evidence": "a repository-wide search for the previous name returns only the",
+          "source": {
+            "file": "ACCEPTANCE.md",
+            "anchor": "AC-T-RENAME-01-01"
+          }
+        },
+        {
+          "id": "AC-T-RENAME-01-02",
+          "text": "Anonymous installation from the current raw URL completes in a disposable repository.",
+          "evidenceClass": "RUNTIME",
+          "state": "PASS",
+          "evidence": "`curl -fsSL https://raw.githubusercontent.com/qomero/prokron/main/install.sh | sh -s -- existing`",
+          "source": {
+            "file": "ACCEPTANCE.md",
+            "anchor": "AC-T-RENAME-01-02"
+          }
+        },
+        {
+          "id": "AC-T-RENAME-01-03",
+          "text": "The README no longer states that the repository is private, and the anonymous command is the documented default.",
+          "evidenceClass": "INSPECTION",
+          "state": "PASS",
+          "evidence": "the repository is public; `gh api repos/qomero/prokron` reports",
+          "source": {
+            "file": "ACCEPTANCE.md",
+            "anchor": "AC-T-RENAME-01-03"
+          }
+        }
+      ],
+      "source": {
+        "file": "ACCEPTANCE.md",
+        "anchor": "AC-T-RENAME-01"
+      }
+    },
     "AC-T-GIT-NAME-01": {
       "title": "AC-T-GIT-NAME-01",
       "inherits": [],
@@ -3437,6 +3504,19 @@
         "file": "ADR/ADR-020.md",
         "anchor": "ADR-020"
       }
+    },
+    {
+      "id": "ADR-021",
+      "title": "Address the GitHub owner by its current name, never by redirect",
+      "status": "ACCEPTED",
+      "supersedes": [],
+      "affects": [
+        "T-RENAME-01"
+      ],
+      "source": {
+        "file": "ADR/ADR-021.md",
+        "anchor": "ADR-021"
+      }
     }
   ],
   "obstacles": [
@@ -3468,9 +3548,9 @@
   },
   "metrics": {
     "taskCompletion": {
-      "done": 42,
-      "total": 43,
-      "fraction": 0.9767
+      "done": 43,
+      "total": 44,
+      "fraction": 0.9773
     },
     "phaseCompletion": {
       "P0": {
@@ -3496,27 +3576,27 @@
     },
     "validationCoverage": {
       "done": 19,
-      "total": 43,
-      "fraction": 0.4419
+      "total": 44,
+      "fraction": 0.4318
     },
-    "phaseIndependent": 2,
+    "phaseIndependent": 3,
     "gateReadiness": {
       "done": 5,
       "total": 6,
       "fraction": 0.8333
     },
     "acceptanceCompletion": {
-      "done": 98,
-      "total": 103,
-      "fraction": 0.9515
+      "done": 101,
+      "total": 106,
+      "fraction": 0.9528
     },
     "validationBreakdown": {
-      "SYNTHETIC": 23,
+      "SYNTHETIC": 24,
       "AI_REVIEWED": 19,
       "UNTESTED": 1
     },
     "statusBreakdown": {
-      "DONE": 42,
+      "DONE": 43,
       "TODO": 1
     }
   },
@@ -3527,7 +3607,7 @@
   "wip": [],
   "handoff": {
     "intent": "# Intent\n\nNo task in progress.\n\nPhase 2 closed on 2026-09-22 under ADR-020. The continuity pilot, T-PILOT-01, is\nparked at step 3 of 7 and is not in flight; it resumes at the Phase 3 exit audit.\n\nNext: open P3 from `docs/Phase 3.md` \u2014 an ADR accepting it as governing\nauthority, its phase record and gates in `PHASES.md`, its tasks in `TASKS.md`,\nand their contracts in `ACCEPTANCE.md`, before any implementation starts.",
-    "handoff": "# Handoff\n\nCurrent implementation continuity. Overwritten, never appended. It holds what\nthe next person or agent needs in order to continue right now. Closed history\nbelongs in `JOURNAL.md`.\n\n## Position\n- Release 0.2.3. P2 is `COMPLETE` as of 2026-09-22, accepted by the owner under\n  ADR-020. P0 is `COMPLETE`. P1 is `EXIT_PENDING` behind one red gate.\n- Nothing in flight. Intent is empty.\n- 42 of 43 tasks done. The one open task is T-PILOT-01, deliberately parked.\n\n## What is true now\n- Gates A, B, C, D and E are green on recorded evidence. Gate E is green because\n  Codex and Claude audited the same implementation against the same reviewer\n  packet, disagreed on one criterion, and the disagreement was settled at level\n  5 of the arbitration hierarchy by rendering both Gantt variants in a browser.\n  The defect Codex found was real.\n- A cold agent starts from a packet alone, verified against Codex with no\n  repository access. The first, failed attempt is kept as the control.\n- `prokron migrate` gives v0.1 chronicles an upgrade path, which is what\n  reopened and then closed P2.\n\n## Carried debt\n- **Gate P1-CONTINUITY is RED.** The continuity pilot in `docs/SPEC.md` is two\n  steps into seven. Steps 1 and 2 pass, recorded in `docs/pilot-2026-09-21.md`.\n  ADR-020 parks the rest and names the payoff: the P3 exit audit runs the\n  procedure against the Phase 3 build itself, in this repository, across the\n  real multi-session work. Deferred is not passing. P1 stays `EXIT_PENDING`.\n- The accepted risk: P3 is built on a workflow whose cross-session agent\n  compliance is unverified. A pilot failure at that audit lands against P3 work\n  already written. Stated rather than hidden.\n- The README banner and Mermaid diagram still depict the six-file chronicle.\n- `.prokron/` is committed so the README can link to it as a live example. That\n  puts a large dashboard and JSON in every diff touching authority. Nobody has\n  decided whether to keep it that way.\n\n## Next action\nOpen P3 from `docs/Phase 3.md`, authority first and in this order: an ADR\naccepting the specification as governing, the P3 phase record and its gates in\n`PHASES.md`, its tasks in `TASKS.md`, their contracts in `ACCEPTANCE.md`, then\n`validate` and `compile`. Only then claim the first task. Phase 3 \u00a725 requires a\nplanning task that inspects the existing architecture before any code changes,\nwhich is what T-P2-PLAN-01 was for P2."
+    "handoff": "# Handoff\n\nCurrent implementation continuity. Overwritten, never appended. It holds what\nthe next person or agent needs in order to continue right now. Closed history\nbelongs in `JOURNAL.md`.\n\n## Position\n- Release 0.2.4. P2 is `COMPLETE` as of 2026-09-22, accepted by the owner under\n  ADR-020. P0 is `COMPLETE`. P1 is `EXIT_PENDING` behind one red gate.\n- Nothing in flight. Intent is empty.\n- 42 of 43 tasks done. The one open task is T-PILOT-01, deliberately parked.\n\n## What is true now\n- Gates A, B, C, D and E are green on recorded evidence. Gate E is green because\n  Codex and Claude audited the same implementation against the same reviewer\n  packet, disagreed on one criterion, and the disagreement was settled at level\n  5 of the arbitration hierarchy by rendering both Gantt variants in a browser.\n  The defect Codex found was real.\n- A cold agent starts from a packet alone, verified against Codex with no\n  repository access. The first, failed attempt is kept as the control.\n- `prokron migrate` gives v0.1 chronicles an upgrade path, which is what\n  reopened and then closed P2.\n\n## Carried debt\n- **Gate P1-CONTINUITY is RED.** The continuity pilot in `docs/SPEC.md` is two\n  steps into seven. Steps 1 and 2 pass, recorded in `docs/pilot-2026-09-21.md`.\n  ADR-020 parks the rest and names the payoff: the P3 exit audit runs the\n  procedure against the Phase 3 build itself, in this repository, across the\n  real multi-session work. Deferred is not passing. P1 stays `EXIT_PENDING`.\n- The accepted risk: P3 is built on a workflow whose cross-session agent\n  compliance is unverified. A pilot failure at that audit lands against P3 work\n  already written. Stated rather than hidden.\n- The README banner and Mermaid diagram still depict the six-file chronicle.\n- `.prokron/` is committed so the README can link to it as a live example. That\n  puts a large dashboard and JSON in every diff touching authority. Nobody has\n  decided whether to keep it that way.\n\n## Next action\nOpen P3 from `docs/Phase 3.md`, authority first and in this order: an ADR\naccepting the specification as governing, the P3 phase record and its gates in\n`PHASES.md`, its tasks in `TASKS.md`, their contracts in `ACCEPTANCE.md`, then\n`validate` and `compile`. Only then claim the first task. Phase 3 \u00a725 requires a\nplanning task that inspects the existing architecture before any code changes,\nwhich is what T-P2-PLAN-01 was for P2."
   },
   "sources": {
     "authority": "prokron",
