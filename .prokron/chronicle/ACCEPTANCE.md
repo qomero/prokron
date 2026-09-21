@@ -1174,3 +1174,48 @@ projection — the other half of its own thesis — not at all.
     specification keeps the invariants and gains corrections; the thesis adds
     a second layer on the compiler, the acceptance freeze, the arbitration
     order and the evidence model. Nothing was deleted to make room.
+
+## AC-T-CLI-01 — Install with one line, and type one word
+
+Installing took `curl … | sh -s -- existing` and every command afterwards was
+`.prokron/prokron status`. Both are artefacts of a private tool, where nobody
+paid the cost of an awkward invocation.
+
+- `AC-T-CLI-01-01` — Installing takes one line with no arguments, and defaults
+  to the mode almost everyone wants. `TEST` · `PASS`
+  - Evidence: the installer suite runs `install.sh` with no arguments from
+    inside a directory and gets a populated chronicle and `existing` mode. A
+    misspelled mode is rejected rather than accepted as a target directory,
+    and a second positional argument is an error, so a typo cannot install
+    somewhere unintended.
+- `AC-T-CLI-01-02` — After installing, the command is `prokron`, and it works
+  from any subdirectory of the project. `TEST` · `PASS`
+  - Evidence: the suite installs with a fake `HOME` and `PATH`, asserts the
+    launcher is written and executable, then runs `prokron validate` from
+    three directories below the project root and gets the project's state.
+- `AC-T-CLI-01-03` — The launcher runs the project's own runtime, not a
+  global one, so two projects on different releases each get their own.
+  `TEST` · `PASS`
+  - Evidence: the suite replaces a project's `.prokron/prokron` with a marker
+    script and confirms that `prokron` run from a subdirectory executes the
+    marker. The launcher holds no version-specific behaviour of its own.
+- `AC-T-CLI-01-04` — The installer creates no directory, edits no shell
+  configuration, and never overwrites a `prokron` it did not write. When it
+  cannot link, it says so and prints what to run instead. `TEST` · `PASS`
+  - Evidence: a shell configuration file in the fake `HOME` is compared byte
+    for byte after installing and is unchanged. A foreign `prokron` already on
+    `PATH` survives, and the installer falls back to printing the alias.
+    `--no-link` writes nothing outside the project. Outside any project the
+    launcher explains itself rather than failing obscurely.
+- `AC-T-CLI-01-05` — `.prokron/prokron` keeps working unchanged, and remains
+  what the installed agent instructions use. `TEST` · `PASS`
+  - Evidence: every other check in the installer suite still invokes
+    `.prokron/prokron` directly and passes. `AGENTS.md`, the installed command
+    documents and the agent skill are unchanged, because an agent may run with
+    a different `PATH` than the person who installed.
+- `AC-T-CLI-01-06` — The published documentation names one form per audience
+  and does not mix them. `TEST` · `PASS`
+  - Evidence: a test asserts the primary install block is `install.sh | sh`
+    with no argument forwarding, and that no runnable example in the README
+    begins with `.prokron/prokron`. The path appears twice: once explaining
+    the fallback, once for `new` mode inside a fold.

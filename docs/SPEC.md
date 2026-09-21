@@ -89,10 +89,20 @@ default workflow.
 ### 3.3 Bootstrap
 
 A single POSIX shell command installs the static chronicle, workflows, and agent
-adapters into the current repository. It accepts `new` or `existing`, preserves
-an existing chronicle and project instructions, and prints the matching command
-to start in the agent chat. The bootstrap is installation tooling, not a
-project runtime.
+adapters into the current repository. It takes no arguments: `existing` is the
+default mode and `new` remains available, as does an optional target directory.
+It preserves an existing chronicle and project instructions, and prints the
+matching command to start in the agent chat. The bootstrap is installation
+tooling, not a project runtime.
+
+The installer also writes a launcher named `prokron` into a directory already
+on the reader's `PATH`, so the command is `prokron` rather than a path
+(ADR-027). The launcher carries no behaviour: it finds the nearest
+`.prokron/prokron` by walking up from the working directory and execs it, so
+every repository runs its own runtime. It creates no directory, edits no shell
+configuration, and never replaces a `prokron` it did not write; `--no-link`
+skips it. `.prokron/prokron` remains valid and is what the installed agent
+instructions use, because an agent may run with a different `PATH`.
 
 Repeated initialization preserves populated records and resumes. Reinstallation
 restores missing files, preserves existing guidance, and points to the manual

@@ -4,6 +4,38 @@ Prokron records its own history in `.prokron/chronicle/JOURNAL.md` and its
 decisions in `.prokron/chronicle/ADR/`. This file is the short version, for
 people arriving from a release page.
 
+## 0.4.0 — 2026-09-22
+
+Installing and running Prokron both got shorter.
+
+### Changed
+
+- **Installing takes one line with no arguments.**
+
+  ```sh
+  curl -fsSL https://raw.githubusercontent.com/qomero/prokron/main/install.sh | sh
+  ```
+
+  `existing` is the default mode; `new` and a target directory are still
+  accepted. A misspelled mode is now an error rather than being read as a
+  target directory.
+- **The command is `prokron`.** The installer writes a small launcher into a
+  directory already on your `PATH`, so it works from anywhere in the project
+  instead of `.prokron/prokron` from the root only. The launcher carries no
+  behaviour: it finds the nearest project and runs that project's own runtime,
+  so two repositories on different releases stay independent. ADR-027.
+
+  It creates no directories, changes no shell configuration, and never replaces
+  a `prokron` it did not write. `--no-link` skips it, and `.prokron/prokron`
+  keeps working — which is still what the installed agent instructions use,
+  since an agent may run with a different `PATH`.
+
+### Fixed
+
+- The README showed `prokron status` in its examples while telling readers to
+  type `.prokron/prokron status`. A test now holds the published examples to
+  one form.
+
 ## 0.3.3 — 2026-09-22
 
 Documentation only. No behaviour changed.

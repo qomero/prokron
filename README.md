@@ -182,13 +182,12 @@ Below them, the schedule line says plainly that this project records no dates �
 
 ### 1. Install in your project
 
-From the root of an **existing project**, run:
+From the root of your project:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/qomero/prokron/main/install.sh | sh -s -- existing
+curl -fsSL https://raw.githubusercontent.com/qomero/prokron/main/install.sh | sh
 ```
 
-For a **new project**, replace `existing` with `new` and bring your product spec.
 Read the script before you pipe it to a shell, as you should with any installer
 delivered this way.
 
@@ -199,22 +198,38 @@ writes only what an agent host reads by fixed address: `AGENTS.md`,
 preserves existing records and custom instructions, restores missing files, and
 prints what to run next.
 
+It also puts a small `prokron` launcher in a directory already on your `PATH`,
+so the command is `prokron` from anywhere in the project. The launcher runs
+each project's own copy, so two repositories on different releases stay
+independent. It creates no directories, changes no shell configuration, and
+never replaces a `prokron` it did not write — if there is nowhere to put it,
+the installer says so and `.prokron/prokron` works exactly the same. Pass
+`--no-link` to skip it.
+
 <details>
-<summary>Install from a local checkout, or through the GitHub CLI</summary>
+<summary>Starting a new project, installing from a checkout, or using the GitHub CLI</summary>
+
+Installing defaults to `existing`, which records from now on. A **new project**
+starts from your product specification instead:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/qomero/prokron/main/install.sh | sh -s -- new
+```
 
 From a downloaded or cloned Prokron checkout, installation works offline:
 
 ```sh
-sh ./install.sh existing /path/to/your/project
+sh ./install.sh /path/to/your/project
 ```
 
 With an authenticated [GitHub CLI](https://cli.github.com/):
 
 ```sh
-gh api -H 'Accept: application/vnd.github.raw+json' 'repos/qomero/prokron/contents/install.sh?ref=main' | sh -s -- existing
+gh api -H 'Accept: application/vnd.github.raw+json' 'repos/qomero/prokron/contents/install.sh?ref=main' | sh
 ```
 
-Use `new` for a new project.
+Every form takes an optional `new` or `existing`, an optional target
+directory, and `--no-link`.
 
 </details>
 
@@ -241,8 +256,8 @@ made, and keep progress current — without a slash command for every update.
 Then check it yourself:
 
 ```sh
-.prokron/prokron status
-.prokron/prokron dashboard && open .prokron/compiled/dashboard.html
+prokron status
+prokron dashboard && open .prokron/compiled/dashboard.html
 ```
 
 A session then looks like this, and the loop is the point:
@@ -266,14 +281,14 @@ every time, which is what lets two agents and a person agree on the numbers.
 ```console
 $ prokron status
 Prokron — phase P1
-  tasks        51 / 52
-  acceptance   135 / 140 criteria passing
-  validation   19 / 52 reviewed or verified
+  tasks        52 / 53
+  acceptance   141 / 146 criteria passing
+  validation   19 / 53 reviewed or verified
   gates        5 / 6 green
   P0           14 / 14 · COMPLETE
   P1           9 / 10 · EXIT_PENDING
   P2           17 / 17 · COMPLETE
-  no phase     11 tasks
+  no phase     12 tasks
 
   WIP       none
   Ready     T-PILOT-01
@@ -285,7 +300,7 @@ Prokron — phase P1
     PHASE_BLOCKER        P1 has 1 unfinished task
 ```
 
-That is this repository at v0.3.3, reporting its own unfinished work.
+That is this repository at v0.4.0, reporting its own unfinished work.
 
 ```console
 $ prokron explain T-PILOT-01
@@ -395,7 +410,7 @@ regression suite, and deleting the compiled directory reproduces every generated
 file byte for byte:
 
 ```sh
-rm -rf .prokron/compiled && .prokron/prokron compile && .prokron/prokron graph
+rm -rf .prokron/compiled && prokron compile && prokron graph
 ```
 
 Two different coding agents have audited the same implementation against the
@@ -466,8 +481,8 @@ root. v0.3 moved everything Prokron owns back inside `.prokron/`, as
 place, and the tool reports an empty project until you move them:
 
 ```sh
-.prokron/prokron migrate           # shows what it would do
-.prokron/prokron migrate --apply   # performs it
+prokron migrate           # shows what it would do
+prokron migrate --apply   # performs it
 ```
 
 Coming from v0.2 this is a relocation: every record moves byte for byte and

@@ -1200,6 +1200,23 @@ class TestPublishedDocumentation(unittest.TestCase):
                         f"{path.name} deletes {command}, which is not compiled output",
                     )
 
+    def test_the_readme_teaches_one_way_to_install_and_one_way_to_run(self) -> None:
+        """Installing took `| sh -s -- existing` and every command afterwards
+        was `.prokron/prokron status`. Both are artefacts of a private tool.
+        A README that shows two forms teaches neither."""
+        readme = (self.ROOT / "README.md").read_text()
+        primary = readme.split("### 1. Install in your project", 1)[1].split("<details>", 1)[0]
+        self.assertIn("install.sh | sh\n", primary)
+        self.assertNotIn("sh -s --", primary)
+        for block in re.findall(r"```(?:sh|console)\n(.*?)```", readme, re.S):
+            for line in block.splitlines():
+                command = line.lstrip("$ ").strip()
+                with self.subTest(line=line):
+                    self.assertFalse(
+                        command.startswith(".prokron/prokron"),
+                        "published examples run `prokron`, not a path",
+                    )
+
     def test_the_readme_names_the_release_it_ships_with(self) -> None:
         version = (self.ROOT / "VERSION").read_text().strip()
         readme = (self.ROOT / "README.md").read_text()

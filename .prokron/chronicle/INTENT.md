@@ -2,10 +2,8 @@
 
 No task in progress.
 
-T-SAFETY-01 and T-DOCS-05 closed on 2026-09-22. The public documentation leads
-with the problem, shows both projections of project state, and separates what
-is implemented from what is only specified. Phase specifications are internal
-under ADR-026.
+T-CLI-01 closed on 2026-09-22 under ADR-027: installing takes one line with no
+arguments, and the command is `prokron` rather than a path.
 
 Next: open P3 from its internal specification — an ADR accepting it as
 governing authority, its phase record and gates in `PHASES.md`, its tasks in

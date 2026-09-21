@@ -1,24 +1,49 @@
 #!/bin/sh
 set -eu
 
-mode=${1:-}
-target=${2:-.}
+mode=existing
+target=.
+target_set=0
+link=1
 retained=0
 
 # Everything Prokron installs lives in one directory (ADR-024). The only paths
-# written outside it are the ones an agent host reads by fixed address.
+# written outside it are the ones an agent host reads by fixed address, and the
+# launcher described below, which goes on the reader's machine (ADR-027).
 home=.prokron
 chronicle="$home/chronicle"
 commands="$home/commands"
 runtime="$home/runtime"
 
-case "$mode" in
-  new|existing) ;;
-  *)
-    echo "Usage: install.sh new|existing [target-directory]" >&2
-    exit 2
-    ;;
-esac
+# `existing` is the mode almost everyone wants, so installing takes no
+# arguments. Both modes stay available, and either may name a target.
+while [ $# -gt 0 ]; do
+  case $1 in
+    new|existing) mode=$1 ;;
+    --no-link) link=0 ;;
+    -h|--help)
+      echo "Usage: install.sh [new|existing] [target-directory] [--no-link]"
+      exit 0
+      ;;
+    -*)
+      echo "Unknown option: $1" >&2
+      echo "Usage: install.sh [new|existing] [target-directory] [--no-link]" >&2
+      exit 2
+      ;;
+    *)
+      # One target, and it must be a directory. Anything else is a typo for a
+      # mode, and silently installing somewhere unintended is the worst answer.
+      if [ "$target_set" -eq 1 ]; then
+        echo "Unexpected argument: $1" >&2
+        echo "Usage: install.sh [new|existing] [target-directory] [--no-link]" >&2
+        exit 2
+      fi
+      target=$1
+      target_set=1
+      ;;
+  esac
+  shift
+done
 
 if [ ! -d "$target" ]; then
   echo "Target directory does not exist: $target" >&2
@@ -127,6 +152,44 @@ cp "$source_dir/VERSION" "$target/$runtime/VERSION"
 cp "$source_dir/.prokron/prokron" "$target/$home/prokron"
 chmod +x "$target/$home/prokron"
 
+# A path is not a command. The launcher below goes on the reader's PATH so the
+# command is `prokron`; it holds no logic of its own, walking up to the nearest
+# project and running that project's runtime, so two repositories on different
+# releases each keep their own (ADR-027).
+#
+# It creates no directory, edits no shell configuration, and never replaces a
+# `prokron` it did not write.
+linked=
+if [ "$link" -eq 1 ]; then
+  for dir in "${HOME:-}/.local/bin" "${HOME:-}/bin" /usr/local/bin; do
+    [ -n "$dir" ] && [ -d "$dir" ] && [ -w "$dir" ] || continue
+    case ":${PATH:-}:" in *":$dir:"*) ;; *) continue ;; esac
+    if [ -e "$dir/prokron" ] && ! grep -q 'prokron-launcher' "$dir/prokron" 2>/dev/null; then
+      continue
+    fi
+    cat > "$dir/prokron" <<'LAUNCHER'
+#!/bin/sh
+# prokron-launcher: run the nearest project's own copy of Prokron.
+set -eu
+dir=$(pwd -P)
+while :; do
+  if [ -x "$dir/.prokron/prokron" ]; then
+    exec "$dir/.prokron/prokron" "$@"
+  fi
+  [ "$dir" != "/" ] || break
+  dir=$(dirname "$dir")
+done
+echo "No .prokron/ in $(pwd) or any parent directory." >&2
+echo "Install Prokron in this project with:" >&2
+echo "  curl -fsSL https://raw.githubusercontent.com/qomero/prokron/main/install.sh | sh" >&2
+exit 2
+LAUNCHER
+    chmod +x "$dir/prokron"
+    linked=$dir
+    break
+  done
+fi
+
 if [ ! -f "$target/AGENTS.md" ]; then
   cp "$source_dir/AGENTS.md" "$target/AGENTS.md"
 elif ! grep -Fq '<!-- project-prokron:start -->' "$target/AGENTS.md"; then
@@ -142,7 +205,15 @@ elif ! grep -Fxq '@AGENTS.md' "$target/CLAUDE.md"; then
   printf '\n@AGENTS.md\n' >> "$target/CLAUDE.md"
 fi
 
-printf 'Prokron installed in %s\n\n' "$target"
+printf 'Prokron installed in %s\n' "$target"
+if [ -n "$linked" ]; then
+  printf 'The command is `prokron`, linked in %s\n\n' "$linked"
+elif [ "$link" -eq 1 ]; then
+  printf 'Run it as `%s/prokron`, or put it on your PATH:\n' "$home"
+  printf '  alias prokron="%s/prokron"\n\n' "$home"
+else
+  printf 'Run it as `%s/prokron`.\n\n' "$home"
+fi
 if grep -q '^## T-' "$target/prokron/TASKS.md" 2>/dev/null; then
   printf 'A v0.2 chronicle was found at prokron/ and the new layout reads %s/.\n' "$chronicle"
   printf 'Your records are intact. Move them with:\n'

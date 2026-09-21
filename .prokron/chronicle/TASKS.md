@@ -572,3 +572,14 @@
 - AC: AC-T-DOCS-05
 - Evidence: The README now opens with the problem — a session ends and the next participant loses what the code meant — before naming any record, and shows both projections of project state instead of asserting them: the dashboard for a person, an abridged `prokron context` packet for an agent. Implemented, designed and unproven claims are separated in the README and labelled per claim in a new `docs/PRODUCT-THESIS.md`. `docs/SPEC.md` was corrected where it contradicted the shipped product: it listed the CLI and dashboard as out of scope, cited a v0.1 file, and named a moved directory. All five images are preserved, unmodified and unrenamed. Three new tests hold the documentation to its own facts; 122 unit tests and the installer suite pass.
 - Governed by: ADR-026
+
+## T-CLI-01: Install with one line, and type one word
+- Status: DONE
+- Phase: P-NONE
+- Validation: SYNTHETIC
+- Dependencies: T-LAYOUT-01
+- Owner: claude/primary
+- Claimed: 2026-09-22
+- AC: AC-T-CLI-01
+- Evidence: Installing is `curl -fsSL <url> | sh` with no arguments; `existing` is the default and `new` still works. The installer writes a `prokron` launcher into a directory already on `PATH`, which walks up to the nearest `.prokron/prokron` and execs it, so the command works from any subdirectory and each project keeps its own runtime. It creates no directory, leaves shell configuration untouched, never replaces a `prokron` it did not write, and prints the alias when it cannot link. `--no-link` opts out. 123 unit tests and the installer suite pass, including a full install under a fake `HOME` and `PATH`.
+- Governed by: ADR-027

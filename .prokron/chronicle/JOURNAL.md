@@ -639,3 +639,37 @@
   way. Writing them as capability would have been the easiest way to make the
   documentation sound better and the product less true.
 - Next: open P3, authority before implementation.
+
+## 2026-09-22 — T-CLI-01
+
+- Did: installing is now `curl -fsSL <url> | sh`, and the command is `prokron`
+  rather than `.prokron/prokron`.
+- Why: both were artefacts of the tool being private. Nobody pays the cost of
+  an awkward invocation when the only user wrote it. `sh -s -- existing` asks a
+  first-time reader to understand shell argument forwarding before they have
+  seen the product, and a path cannot be typed from a subdirectory at all.
+- Chose: a launcher on PATH that holds no behaviour. It walks up to the nearest
+  `.prokron/prokron` and execs it, so each repository keeps running its own
+  runtime and ADR-017's guarantee survives. A global runtime would have been
+  simpler and would have silently run one project's compiler against another
+  project's records.
+- Held to: no directories created, no shell configuration edited, no `prokron`
+  replaced that we did not write. Those are the three things installers do that
+  make people distrust them. When there is nowhere to link, it prints the alias
+  and stops.
+- Found, mine: the first version of the installer test wrote a launcher into
+  the real `/usr/local/bin` on this machine. The fake `HOME` was honoured but
+  the fallback candidate list walked past it to a directory that genuinely
+  existed and was writable. Removed it and constrained `PATH` in every
+  machine-level case, so the suite cannot reach outside its fixture. A test
+  that modifies the machine it runs on is a worse defect than the one it was
+  written to catch.
+- Found: `install.sh invalid` used to be an error and briefly stopped being
+  one, because an unrecognised word became a target directory. Now a second
+  positional argument is an error and a target must exist, so a misspelled mode
+  fails loudly instead of installing somewhere unintended.
+- Fixed, mine: the README I rewrote yesterday showed `$ prokron status` in its
+  output blocks while telling readers to type `.prokron/prokron status`. Only
+  the second was true. A test now asserts no runnable example starts with the
+  path.
+- Next: open P3, authority before implementation.
