@@ -36,8 +36,8 @@ belongs in `JOURNAL.md`.
   decided whether to keep it that way.
 
 ## Repository identity
-- Commits are authored as `qomero <qomerovn@gmail.com>`, set repository-locally
-  under ADR-023. The whole history was rewritten to match on 2026-09-22 and
+- Commits are authored as `qomero`, with an address verified on that account,
+  set repository-locally under ADR-023. `git config --local user.email` shows it. The whole history was rewritten to match on 2026-09-22 and
   force-pushed, so every hash before that date is dead. `backup-pre-author-rewrite`
   holds the pre-rewrite tip locally and is safe to delete.
 

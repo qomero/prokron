@@ -938,11 +938,14 @@ describe it.
     Chrome. Content is unmodified; only scroll offset and, for the drill-down,
     the task selection were scripted so the capture is reproducible.
 - `AC-T-DOCS-04-03` — Every project figure quoted in the README matches a
-  compile of the chronicle as committed, and no stale figure survives.
+  compile of the chronicle as committed, and the figures say which release they
+  were taken at, so later work dates them rather than falsifying them.
   `INSPECTION` · `PASS`
   - Evidence: the `status` and `explain` blocks are copied from runs against
-    this chronicle. The previous README quoted 37 of 39 tasks from an earlier
-    release and described a six-file chronicle that no longer exists.
+    this chronicle, and both the quoted output and the dashboard caption name
+    v0.2.5 and point the reader at the command for current numbers. The
+    previous README quoted 37 of 39 tasks from an earlier release and described
+    a six-file chronicle that no longer exists.
 - `AC-T-DOCS-04-04` — The README states what is verified and what is not, and
   does not hide this project's own unfinished work. `INSPECTION` · `PASS`
   - Evidence: the red gate and the one unfinished task appear in both the

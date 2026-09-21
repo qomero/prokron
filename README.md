@@ -23,8 +23,9 @@ gets a private version of the truth.
   <img src="docs/assets/dashboard-state.png" alt="The Prokron dashboard showing progress metrics for task completion, acceptance, validation coverage, gate readiness and critical path, followed by three phases with status badges and five gates marked green." width="900">
 </p>
 
-<p align="center"><em><code>prokron dashboard</code>, generated from this repository's own chronicle.<br>
-Every figure is computed from the Markdown files in <code>prokron/</code>. No model, no service, no network.</em></p>
+<p align="center"><em><code>prokron dashboard</code>, generated from this repository's own chronicle at v0.2.5.<br>
+Every figure is computed from the Markdown files in <code>prokron/</code>. No model, no service, no network.<br>
+The project keeps moving, so run the command for today's numbers rather than trusting this picture.</em></p>
 
 ## Project management from the files you already write
 
@@ -220,14 +221,14 @@ every time, which is what lets two agents and a person agree on the numbers.
 ```console
 $ ./bin/prokron status
 Prokron — phase P1
-  tasks        45 / 46
-  acceptance   109 / 114 criteria passing
-  validation   19 / 46 reviewed or verified
+  tasks        46 / 47
+  acceptance   113 / 118 criteria passing
+  validation   19 / 47 reviewed or verified
   gates        5 / 6 green
   P0           14 / 14 · COMPLETE
   P1           9 / 10 · EXIT_PENDING
   P2           17 / 17 · COMPLETE
-  no phase     5 tasks
+  no phase     6 tasks
 
   WIP       none
   Ready     T-PILOT-01
@@ -239,7 +240,7 @@ Prokron — phase P1
     PHASE_BLOCKER        P1 has 1 unfinished task
 ```
 
-That is this repository, right now, reporting its own unfinished work.
+That is this repository at v0.2.5, reporting its own unfinished work.
 
 ```console
 $ ./bin/prokron explain T-PILOT-01

@@ -294,7 +294,7 @@
 - Owner: claude/primary
 - Claimed: 2026-09-22
 - AC: AC-T-AUTHOR-01
-- Evidence: All 32 commits on `main` carry `qomero <qomerovn@gmail.com>` as author and committer, and the GitHub API resolves each sampled commit to the `qomero` account. The six version tags were re-pointed and force-pushed. Content is unchanged: `git diff` against the pre-rewrite backup is empty, 105 unit tests pass and validation is clean.
+- Evidence: All 32 commits on `main` carry the owner as author and committer, with an address verified on the owning account, and the GitHub API resolves each sampled commit to the `qomero` account. The six version tags were re-pointed and force-pushed. Content is unchanged: `git diff` against the pre-rewrite backup is empty, 105 unit tests pass and validation is clean.
 - Governed by: ADR-023
 
 ## T-GATEVIEW-01: Repair the gate diagram identifier
