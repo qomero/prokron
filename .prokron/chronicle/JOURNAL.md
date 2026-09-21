@@ -673,3 +673,41 @@
   the second was true. A test now asserts no runnable example starts with the
   path.
 - Next: open P3, authority before implementation.
+
+## 2026-09-22 — T-PILOT-01 complete; P1 closed
+
+- Did: ran the continuity pilot in full against v0.4.0. All seven criteria
+  pass. Gate P1-CONTINUITY is green, P1 is COMPLETE, and every phase on record
+  is now closed with every gate green.
+- Why now: ADR-020 had parked the pilot at step 3 of 7 and set its payoff at
+  the P3 exit audit, on the assumption that finishing it was expensive. It was
+  not — the five outstanding steps took one session. The risk ADR-020 named,
+  that Phase 3 would be built on unverified cross-session compliance, is gone
+  before Phase 3 opens rather than after.
+- Discarded: the 2026-09-21 evidence for steps 1 and 2. It was measured against
+  v0.2.1 and cites `./bin/prokron` and a `prokron/` directory that no longer
+  exist, so it described a product that is not shipping. Re-run rather than
+  reused.
+- Learned, from step 5: a cold agent found a stale path in `HANDOFF.md` and
+  silently used the correct one, making it more right than the document it was
+  reading. A prose path is not a reference the compiler resolves, so neither
+  validation nor any test could have caught it. The pilot caught what the
+  machinery cannot.
+- Learned, from step 6: the agent's own summary was "`new` is an entry mode,
+  not a reset of populated history", and on an outstanding validator warning,
+  "No evidence was removed to silence the warning." Journal appended with zero
+  lines removed; tasks, contracts, phases and every ADR byte-identical.
+- Noticed: two of three agents discovered and ran `prokron` without being told
+  it existed, using the bare command, which also exercised the v0.4.0 launcher
+  from an agent rather than a person.
+- Recorded as unproven rather than passed: no host exposed a real limit warning
+  to observe, and nothing was simulated in its place. Step 7 passed on the
+  owner's attestation without a point-by-point comparison.
+- Fixed, mine: the harness twice, not the product. Codex refuses to run outside
+  a git repository, and overriding `HOME` to sandbox the launcher also hid
+  Codex's credentials.
+- Consequence handled: the README and the thesis both pointed at a red gate as
+  proof of honesty. That claim is now false, so both were corrected and the
+  four dashboard figures regenerated rather than left describing a project that
+  no longer exists.
+- Next: Phase 0 or Phase 3. New scope, not remaining scope. Authority first.

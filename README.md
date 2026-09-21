@@ -56,11 +56,11 @@ $ prokron context T-PILOT-01
 {
   "role": "builder",
   "packetFor": "T-PILOT-01",
-  "phase": { "id": "P1", "status": "EXIT_PENDING", "outcome": "..." },
+  "phase": { "id": "P1", "status": "COMPLETE", "outcome": "..." },
   "task": {
     "id": "T-PILOT-01",
-    "status": "TODO",
-    "validation": "UNTESTED",
+    "status": "DONE",
+    "validation": "HUMAN_VERIFIED",
     "dependencies": [ { "id": "T-READINESS-01", "done": true } ]
   },
   "blockers": [],
@@ -120,11 +120,11 @@ Nothing here is a status report someone wrote by hand. It is computed from the
 authored documents, so it cannot drift away from them.
 
 <p align="center">
-  <img src="docs/assets/dashboard-next.png" alt="Dashboard sections showing nothing in flight, one ready task, two obstacles labelled GATE_BLOCKER and PHASE_BLOCKER, and the critical path." width="900">
+  <img src="docs/assets/dashboard-next.png" alt="Dashboard sections showing nothing in flight, nothing ready, no obstacles, no open work, and the task graph below." width="900">
 </p>
 
 <p align="center"><em>What is in flight, what is ready, what blocks the project, and what lies on the critical path.<br>
-This is Prokron reporting honestly on itself: one red gate, one unfinished task, and it says so.</em></p>
+Prokron reporting on itself with every phase closed: nothing in flight, no obstacles, no open work — and it says that plainly rather than inventing something to show.</em></p>
 
 ## Done is a contract, not an opinion
 
@@ -142,11 +142,11 @@ Completion and confidence stay separate. A task can be `DONE` and still be
 manual evidence.
 
 <p align="center">
-  <img src="docs/assets/dashboard-contract.png" alt="A task drill-down showing T-P2-14 with status DONE, dependencies, its four acceptance criteria each marked PASS with an evidence class, inherited invariants, and a paragraph of recorded evidence." width="900">
+  <img src="docs/assets/dashboard-contract.png" alt="A task drill-down showing T-PILOT-01 with status DONE and validation HUMAN_VERIFIED, its dependency, and its seven acceptance criteria each marked PASS with an evidence class." width="900">
 </p>
 
 <p align="center"><em>Click any task for its contract, its criteria, and the evidence behind each one.<br>
-The evidence here records two coding agents disagreeing about a criterion, and how that disagreement was settled.</em></p>
+This is the continuity pilot: seven criteria, three participants across two disposable projects, and the one validation state only a named human may record.</em></p>
 
 That last part matters more than it looks. When two people — or two agents —
 disagree about whether something is finished, the contract makes the
@@ -280,32 +280,27 @@ every time, which is what lets two agents and a person agree on the numbers.
 
 ```console
 $ prokron status
-Prokron — phase P1
-  tasks        52 / 53
-  acceptance   141 / 146 criteria passing
-  validation   19 / 53 reviewed or verified
-  gates        5 / 6 green
+Prokron — phase none
+  tasks        53 / 53
+  acceptance   146 / 146 criteria passing
+  validation   20 / 53 reviewed or verified
+  gates        6 / 6 green
   P0           14 / 14 · COMPLETE
-  P1           9 / 10 · EXIT_PENDING
+  P1           10 / 10 · COMPLETE
   P2           17 / 17 · COMPLETE
   no phase     12 tasks
 
   WIP       none
-  Ready     T-PILOT-01
+  Ready     none
   Blocked   none
-  Next      T-PILOT-01 (critical path)
-
-  2 obstacles:
-    GATE_BLOCKER         P1 cannot exit while Gate P1-CONTINUITY is red
-    PHASE_BLOCKER        P1 has 1 unfinished task
 ```
 
-That is this repository at v0.4.0, reporting its own unfinished work.
+That is this repository at v0.4.1, reporting its own unfinished work.
 
 ```console
 $ prokron explain T-PILOT-01
 T-PILOT-01 — Run the continuity pilot
-  phase P1 · TODO · UNTESTED
+  phase P1 · DONE · HUMAN_VERIFIED
 
   Dependencies
     ✓ T-READINESS-01
@@ -313,13 +308,13 @@ T-PILOT-01 — Run the continuity pilot
   Acceptance
     ✓ AC-T-PILOT-01-01 [RUNTIME] Given a disposable project and a small specification, When Prokron is installed in `new` m
     ✓ AC-T-PILOT-01-02 [RUNTIME] Given an ordinary work request carrying no Prokron command, When an agent acts on it, Then
-    ○ AC-T-PILOT-01-03 [RUNTIME] Given a material choice that is later changed, When the agent records it without `/prokron
-    ○ AC-T-PILOT-01-04 [RUNTIME] Given work paused partway, When the chronicle is read, Then state, intent, and journal car
-    ○ AC-T-PILOT-01-05 [RUNTIME] Given a fresh agent session with no prior chat, When it is asked to resume, Then it states
-    ○ AC-T-PILOT-01-06 [RUNTIME] Given a populated chronicle, When initialization runs again, Then tasks, ADRs, and journal
-    ○ AC-T-PILOT-01-07 [MANUAL] Given a person who did not do the work, When they read the same chronicle, Then they can e
+    ✓ AC-T-PILOT-01-03 [RUNTIME] Given a material choice that is later changed, When the agent records it without `/prokron
+    ✓ AC-T-PILOT-01-04 [RUNTIME] Given work paused partway, When the chronicle is read, Then state, intent, and journal car
+    ✓ AC-T-PILOT-01-05 [RUNTIME] Given a fresh agent session with no prior chat, When it is asked to resume, Then it states
+    ✓ AC-T-PILOT-01-06 [RUNTIME] Given a populated chronicle, When initialization runs again, Then tasks, ADRs, and journal
+    ✓ AC-T-PILOT-01-07 [MANUAL] Given a person who did not do the work, When they read the same chronicle, Then they can e
 
-  Evidence: none recorded
+  Evidence: All seven criteria pass, recorded in `docs/pilot-2026-09-22.md`. The pilot was run in full against v0.4.0 across two disposable projects: Codex CLI 0.155.1 for install, work without a command, a decision and its reversal, stopping partway, and re-initializing over populated history; a Gemini 3.8 Flash session with no prior chat for a cold resume; and the product owner for the human reading. It supersedes the partial run of 2026-09-21, which was measured against v0.2.1 and cites an entry point and a directory that no longer exist. Two things remain unproven and are recorded as unproven: no host exposed a real limit warning to observe, and nothing was simulated in its place; and step 7 passed on the owner's attestation without a point-by-point account or a comparison against an agent's reading.
   Source:   TASKS.md → T-PILOT-01
 ```
 
@@ -417,14 +412,17 @@ Two different coding agents have audited the same implementation against the
 same contract and reached the same verdicts, after a real disagreement that the
 arbitration order settled.
 
-**Not yet proven.** Agent behaviour is a different claim. Prokron's rules ask an
-agent to checkpoint before a handoff, compaction, session end, or any known or
-estimated context, token, time, rate, or quota limit. **Prokron cannot read
-hidden quota counters or guarantee a final write after an abrupt cutoff.** Those
-rules are instructions to a host, and whether hosts follow them across real
-multi-session work is still being measured by the
-[continuity pilot](docs/SPEC.md#handoff-pilot) — which is exactly why this
-repository reports one red gate.
+**Not yet proven.** Prokron's rules ask an agent to checkpoint before a handoff,
+compaction, session end, or any known or estimated context, token, time, rate,
+or quota limit. **Prokron cannot read hidden quota counters or guarantee a
+final write after an abrupt cutoff.** The
+[continuity pilot](docs/SPEC.md#handoff-pilot) has now been run in full against
+this release and all seven of its criteria pass
+([results](docs/pilot-2026-09-22.md)) — but no host exposed a real limit
+warning to observe, and nothing was simulated in its place. Checkpointing
+against an actual quota boundary is therefore still untested rather than
+passed. The human reading also passed on the owner's attestation, without a
+point-by-point comparison against an agent's account of the same chronicle.
 
 **Designed, not built.** Later phases are specified in internal working
 documents and are not part of this release. Nothing in this README describes

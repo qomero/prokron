@@ -4,6 +4,41 @@ Prokron records its own history in `.prokron/chronicle/JOURNAL.md` and its
 decisions in `.prokron/chronicle/ADR/`. This file is the short version, for
 people arriving from a release page.
 
+## 0.4.1 — 2026-09-22
+
+The continuity pilot ran in full. Every phase is closed and every gate is green.
+
+### Changed
+
+- **Gate P1-CONTINUITY is green and P1 is COMPLETE.** The pilot ran end to end
+  against v0.4.0 across two disposable projects and three participants — Codex
+  CLI 0.155.1 for install, uncommanded work, a reversed decision, a mid-task
+  stop and re-initialization; a cold Gemini 3.8 Flash session for resume; the
+  product owner for the human reading. All seven criteria pass. Results in
+  [`docs/pilot-2026-09-22.md`](docs/pilot-2026-09-22.md). ADR-028.
+- The partial run of 2026-09-21 is superseded rather than reused: it was
+  measured against v0.2.1 and cites an entry point and a directory that no
+  longer exist.
+- **The documentation no longer points at a red gate as proof of honesty**,
+  because there isn't one. The README and the product thesis were corrected and
+  the four dashboard figures regenerated.
+
+### Still not proven, and still said so
+
+- No host exposed a real limit warning to observe during the pilot, and nothing
+  was simulated in its place. Checkpointing against an actual quota boundary is
+  untested, not passed.
+- The human reading passed on the owner's attestation across two projects,
+  without a point-by-point account or a comparison against an agent's reading
+  of the same chronicle.
+
+### Fixed
+
+- `HANDOFF.md` directed the next agent at a path that moved when phase
+  specifications became internal. Found by a cold agent during the pilot, which
+  silently used the correct location — a prose path is not a reference the
+  compiler resolves, so no test could have caught it.
+
 ## 0.4.0 — 2026-09-22
 
 Installing and running Prokron both got shorter.

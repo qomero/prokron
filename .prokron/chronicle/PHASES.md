@@ -101,15 +101,17 @@ Exit authority:
 T-READINESS-01
 
 Status:
-EXIT_PENDING
+COMPLETE
 
 Note:
-Delivery is complete. The exit gate is not. The continuity pilot in
-`docs/SPEC.md` is two steps into seven, so cross-session agent compliance and
-host-limit handling remain unverified. P2 closed in parallel by owner decision
-under ADR-020, which parks the pilot and moves its remaining steps into the P3
-exit audit. P1 does not become `COMPLETE` until that evidence exists and the
-gate is green.
+Closed 2026-09-22 under ADR-028. The continuity pilot ran in full against
+v0.4.0 and all seven criteria pass; Gate P1-CONTINUITY is green on complete,
+current evidence. ADR-020 had parked the pilot at step 3 of 7 and set its
+payoff at the P3 exit audit; the remaining steps took one session, so the debt
+was paid here instead. Two claims within the pilot remain unproven and are
+recorded as unproven rather than passed: behaviour against a real host limit
+was never observed, and the human reading passed on the owner's attestation
+without a point-by-point comparison.
 
 ---
 
@@ -250,12 +252,17 @@ understanding of the project.
 
 Blocks: P1 exit
 Verified by: the pilot procedure in `docs/SPEC.md`
-Status: RED
+Status: GREEN
 
-Two of seven criteria pass, recorded in `docs/pilot-2026-09-21.md`. The rest are
-deferred under ADR-020 to the P3 exit audit, which runs the procedure against
-the Phase 3 build rather than a disposable project. Deferred is not passing: the
-gate stays red and P1 stays EXIT_PENDING until the evidence exists.
+Evidence, 2026-09-22: all seven criteria pass, recorded in
+`docs/pilot-2026-09-22.md`. The pilot ran against v0.4.0 across two disposable
+projects and three participants — Codex CLI 0.155.1 for install, uncommanded
+work, a reversed decision, a mid-task stop and re-initialization; a cold Gemini
+3.8 Flash session for resume; the product owner for the human reading. It
+supersedes the partial 2026-09-21 run, which was measured against v0.2.1 and
+cites paths that no longer exist. What the pilot did not establish is recorded
+with it: no host exposed a real limit warning to observe, and nothing was
+simulated in its place.
 
 ---
 

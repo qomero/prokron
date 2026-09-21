@@ -496,17 +496,15 @@
 - Governed by: ADR-013, ADR-016
 
 ## T-PILOT-01: Run the continuity pilot
-- Status: TODO
+- Status: DONE
 - Phase: P1
-- Validation: UNTESTED
+- Validation: HUMAN_VERIFIED
 - Dependencies: T-READINESS-01
 - Owner: claude/primary
 - Claimed: 2026-09-21
 - AC: AC-T-PILOT-01
-- Evidence: —
-- Governed by: ADR-008, ADR-011, ADR-020
-- Note: Parked at step 3 of 7 under ADR-020, not abandoned. Steps 1 and 2 ran against Codex CLI 0.155.0 with Prokron 0.2.1 in a disposable project on 2026-09-21; two of seven criteria carry PASS in the contract and the observations are in `docs/pilot-2026-09-21.md`. Task evidence stays empty because the task is not complete. The contract froze when this task first went WIP and stays frozen; no criterion is weakened or dropped. It resumes at the P3 exit audit, run against the Phase 3 build itself.
-
+- Evidence: All seven criteria pass, recorded in `docs/pilot-2026-09-22.md`. The pilot was run in full against v0.4.0 across two disposable projects: Codex CLI 0.155.1 for install, work without a command, a decision and its reversal, stopping partway, and re-initializing over populated history; a Gemini 3.8 Flash session with no prior chat for a cold resume; and the product owner for the human reading. It supersedes the partial run of 2026-09-21, which was measured against v0.2.1 and cites an entry point and a directory that no longer exist. Two things remain unproven and are recorded as unproven: no host exposed a real limit warning to observe, and nothing was simulated in its place; and step 7 passed on the owner's attestation without a point-by-point account or a comparison against an agent's reading.
+- Governed by: ADR-008, ADR-011, ADR-020, ADR-028
 ## T-MIGRATE-01: Migrate a v0.1 chronicle to the v0.2 layout
 - Status: DONE
 - Phase: P2

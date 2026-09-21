@@ -24,7 +24,7 @@ editing history.
 - [ADR-017](ADR-017.md) — Ship the runtime as copied files beside the chronicle (ACCEPTED) — amended by ADR-024, ADR-027
 - [ADR-018](ADR-018.md) — Scope a context packet to its own task (ACCEPTED)
 - [ADR-019](ADR-019.md) — Migrate v0.1 chronicles explicitly, and never in place (ACCEPTED) — amended by ADR-024
-- [ADR-020](ADR-020.md) — Close Phase 2 and carry the continuity pilot as audited debt (ACCEPTED)
+- [ADR-020](ADR-020.md) — Close Phase 2 and carry the continuity pilot as audited debt (ACCEPTED) — amended by ADR-028
 - [ADR-021](ADR-021.md) — Address the GitHub owner by its current name, never by redirect (ACCEPTED)
 - [ADR-022](ADR-022.md) — Lead with project management, and show the product rather than describe it (ACCEPTED)
 - [ADR-023](ADR-023.md) — Attribute commits by an address on the owning account (ACCEPTED)
@@ -32,3 +32,4 @@ editing history.
 - [ADR-025](ADR-025.md) — The dashboard answers from compiled data, never from the drawing (ACCEPTED)
 - [ADR-026](ADR-026.md) — Phase specifications are internal; the public documentation leads with the problem (ACCEPTED)
 - [ADR-027](ADR-027.md) — Install with one line, and put the command on PATH (ACCEPTED)
+- [ADR-028](ADR-028.md) — The continuity pilot was completed rather than deferred (ACCEPTED)

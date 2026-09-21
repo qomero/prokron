@@ -275,15 +275,18 @@ today.
 ## What this repository proves about itself
 
 **Implemented.** Prokron tracks its own development in its own chronicle, which
-is the only claim here that can be checked without installing anything. Its
-dashboard reports one red gate and an unfinished task, because that is true.
+is the only claim here that can be checked without installing anything. Every
+phase on record is closed and every gate is green, and the evidence behind each
+one is in the chronicle rather than in this sentence.
 
-**Not proven.** Whether agent hosts reliably maintain the chronicle across real
-multi-session work is still being measured. The rules ask an agent to checkpoint
-before a handoff, a compaction, a session end, or an approaching limit — but they
-are instructions, a host may not honour them, and Prokron cannot read a quota
-counter it is not shown. That is why the continuity gate is red rather than
-quietly green.
+**Partly proven.** Whether agent hosts maintain the chronicle across real
+multi-session work was measured rather than assumed: the continuity pilot ran in
+full against v0.4.1 with three participants across two disposable projects, and
+all seven criteria pass. Two things it did not establish are recorded as not
+established. No host exposed a real limit warning to observe, so checkpointing
+against an actual quota boundary remains untested — Prokron cannot read a
+counter it is not shown. And the human reading passed on the owner's
+attestation, without a point-by-point comparison against an agent's account.
 
 ---
 
