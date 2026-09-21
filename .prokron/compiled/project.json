@@ -1358,7 +1358,9 @@
       "deps": [
         "T-MIGRATE-01"
       ],
-      "blocks": [],
+      "blocks": [
+        "T-SAFETY-01"
+      ],
       "ac": "AC-T-LAYOUT-01",
       "owner": "claude/primary",
       "claimed": "2026-09-22",
@@ -1424,6 +1426,58 @@
       "source": {
         "file": "TASKS.md",
         "anchor": "T-GRAPHVIEW-02"
+      }
+    },
+    {
+      "id": "T-SAFETY-01",
+      "title": "Remove a destructive command from the published documentation",
+      "phase": "P-NONE",
+      "status": "DONE",
+      "validation": "SYNTHETIC",
+      "deps": [
+        "T-LAYOUT-01"
+      ],
+      "blocks": [
+        "T-DOCS-05"
+      ],
+      "ac": "AC-T-SAFETY-01",
+      "owner": "claude/primary",
+      "claimed": "2026-09-22",
+      "evidence": "The README told readers to run `rm -rf .prokron && prokron compile`. That was accurate until v0.3.0 moved the installation into `.prokron/`, after which it deleted the chronicle, the runtime and the command. The instruction now names `.prokron/compiled/` and was run to confirm it still demonstrates the regeneration claim. The stale test count beside it was corrected to 119.",
+      "decisions": [
+        "ADR-024"
+      ],
+      "schedule": null,
+      "ready": false,
+      "blocked": false,
+      "source": {
+        "file": "TASKS.md",
+        "anchor": "T-SAFETY-01"
+      }
+    },
+    {
+      "id": "T-DOCS-05",
+      "title": "Lead the public documentation with the problem",
+      "phase": "P-NONE",
+      "status": "WIP",
+      "validation": "UNTESTED",
+      "deps": [
+        "T-SAFETY-01"
+      ],
+      "blocks": [],
+      "ac": "AC-T-DOCS-05",
+      "owner": "claude/primary",
+      "claimed": "2026-09-22",
+      "evidence": null,
+      "decisions": [
+        "ADR-026"
+      ],
+      "schedule": null,
+      "ready": false,
+      "blocked": false,
+      "source": {
+        "file": "TASKS.md",
+        "anchor": "T-DOCS-05"
       }
     }
   ],
@@ -3465,6 +3519,116 @@
         "file": "ACCEPTANCE.md",
         "anchor": "AC-T-GRAPHVIEW-02"
       }
+    },
+    "AC-T-SAFETY-01": {
+      "title": "Remove a destructive command from the published documentation",
+      "inherits": [],
+      "evidence": null,
+      "criteria": [
+        {
+          "id": "AC-T-SAFETY-01-01",
+          "text": "No published document instructs a reader to delete a path that holds authored records.",
+          "evidenceClass": "INSPECTION",
+          "state": "PASS",
+          "evidence": "one `rm -rf` remains across the README, the specification, the",
+          "source": {
+            "file": "ACCEPTANCE.md",
+            "anchor": "AC-T-SAFETY-01-01"
+          }
+        },
+        {
+          "id": "AC-T-SAFETY-01-02",
+          "text": "The regeneration claim is still demonstrable by the command the documentation gives.",
+          "evidenceClass": "RUNTIME",
+          "state": "PASS",
+          "evidence": "the published command was run against this repository and",
+          "source": {
+            "file": "ACCEPTANCE.md",
+            "anchor": "AC-T-SAFETY-01-02"
+          }
+        }
+      ],
+      "source": {
+        "file": "ACCEPTANCE.md",
+        "anchor": "AC-T-SAFETY-01"
+      }
+    },
+    "AC-T-DOCS-05": {
+      "title": "Lead the public documentation with the problem",
+      "inherits": [],
+      "evidence": null,
+      "criteria": [
+        {
+          "id": "AC-T-DOCS-05-01",
+          "text": "The README states the problem Prokron exists for before it describes any mechanism.",
+          "evidenceClass": "INSPECTION",
+          "state": "NOT_RUN",
+          "evidence": "\u2014",
+          "source": {
+            "file": "ACCEPTANCE.md",
+            "anchor": "AC-T-DOCS-05-01"
+          }
+        },
+        {
+          "id": "AC-T-DOCS-05-02",
+          "text": "Both projections of project state are shown, not asserted: the dashboard for a person and real `prokron context` output for an agent.",
+          "evidenceClass": "INSPECTION",
+          "state": "NOT_RUN",
+          "evidence": "\u2014",
+          "source": {
+            "file": "ACCEPTANCE.md",
+            "anchor": "AC-T-DOCS-05-02"
+          }
+        },
+        {
+          "id": "AC-T-DOCS-05-03",
+          "text": "Every existing image is preserved, unmodified and unrenamed, and each one carries text that earns it.",
+          "evidenceClass": "INSPECTION",
+          "state": "NOT_RUN",
+          "evidence": "\u2014",
+          "source": {
+            "file": "ACCEPTANCE.md",
+            "anchor": "AC-T-DOCS-05-03"
+          }
+        },
+        {
+          "id": "AC-T-DOCS-05-04",
+          "text": "Implemented behaviour, specified design and unproven claims are distinguishable by a reader, and nothing specified-only is described as available.",
+          "evidenceClass": "INSPECTION",
+          "state": "NOT_RUN",
+          "evidence": "\u2014",
+          "source": {
+            "file": "ACCEPTANCE.md",
+            "anchor": "AC-T-DOCS-05-04"
+          }
+        },
+        {
+          "id": "AC-T-DOCS-05-05",
+          "text": "Every relative link in the published documentation resolves, and every command, path, count and version named in it is current.",
+          "evidenceClass": "TEST",
+          "state": "NOT_RUN",
+          "evidence": "\u2014",
+          "source": {
+            "file": "ACCEPTANCE.md",
+            "anchor": "AC-T-DOCS-05-05"
+          }
+        },
+        {
+          "id": "AC-T-DOCS-05-06",
+          "text": "A technical reader can still reach the compiler's behaviour, the invariants, the CLI and the specification; depth is moved, not removed.",
+          "evidenceClass": "INSPECTION",
+          "state": "NOT_RUN",
+          "evidence": "\u2014",
+          "source": {
+            "file": "ACCEPTANCE.md",
+            "anchor": "AC-T-DOCS-05-06"
+          }
+        }
+      ],
+      "source": {
+        "file": "ACCEPTANCE.md",
+        "anchor": "AC-T-DOCS-05"
+      }
     }
   },
   "invariants": [
@@ -4083,9 +4247,35 @@
         "file": "ADR/ADR-025.md",
         "anchor": "ADR-025"
       }
+    },
+    {
+      "id": "ADR-026",
+      "title": "Phase specifications are internal; the public documentation leads with the problem",
+      "status": "ACCEPTED",
+      "supersedes": [],
+      "affects": [
+        "T-DOCS-05"
+      ],
+      "source": {
+        "file": "ADR/ADR-026.md",
+        "anchor": "ADR-026"
+      }
     }
   ],
   "obstacles": [
+    {
+      "type": "ACCEPTANCE_BLOCKER",
+      "subject": "T-DOCS-05",
+      "blockers": [
+        "AC-T-DOCS-05-01",
+        "AC-T-DOCS-05-02",
+        "AC-T-DOCS-05-03",
+        "AC-T-DOCS-05-04",
+        "AC-T-DOCS-05-05",
+        "AC-T-DOCS-05-06"
+      ],
+      "detail": "T-DOCS-05 cannot complete while 6 criteria are unmet"
+    },
     {
       "type": "GATE_BLOCKER",
       "subject": "P1",
@@ -4109,14 +4299,15 @@
   "schedule": {
     "scheduled": [],
     "unscheduled": [
-      "T-PILOT-01"
+      "T-PILOT-01",
+      "T-DOCS-05"
     ]
   },
   "metrics": {
     "taskCompletion": {
-      "done": 49,
-      "total": 50,
-      "fraction": 0.98
+      "done": 50,
+      "total": 52,
+      "fraction": 0.9615
     },
     "phaseCompletion": {
       "P0": {
@@ -4142,37 +4333,40 @@
     },
     "validationCoverage": {
       "done": 19,
-      "total": 50,
-      "fraction": 0.38
+      "total": 52,
+      "fraction": 0.3654
     },
-    "phaseIndependent": 9,
+    "phaseIndependent": 11,
     "gateReadiness": {
       "done": 5,
       "total": 6,
       "fraction": 0.8333
     },
     "acceptanceCompletion": {
-      "done": 127,
-      "total": 132,
-      "fraction": 0.9621
+      "done": 129,
+      "total": 140,
+      "fraction": 0.9214
     },
     "validationBreakdown": {
-      "SYNTHETIC": 30,
+      "SYNTHETIC": 31,
       "AI_REVIEWED": 19,
-      "UNTESTED": 1
+      "UNTESTED": 2
     },
     "statusBreakdown": {
-      "DONE": 49,
-      "TODO": 1
+      "DONE": 50,
+      "TODO": 1,
+      "WIP": 1
     }
   },
   "ready": [
     "T-PILOT-01"
   ],
   "blocked": [],
-  "wip": [],
+  "wip": [
+    "T-DOCS-05"
+  ],
   "handoff": {
-    "intent": "# Intent\n\nNo task in progress.\n\nT-GRAPHVIEW-02 closed on 2026-09-22 under ADR-025: a task opens from the graph\ninto the same dialog its table row opens.\n\nNext: open P3 from `docs/Phase 3.md` \u2014 an ADR accepting it as governing\nauthority, its phase record and gates in `PHASES.md`, its tasks in `TASKS.md`,\nand their contracts in `ACCEPTANCE.md`, before any implementation starts.",
+    "intent": "# Intent\n\nT-DOCS-05 \u2014 lead the public documentation with the problem.\n\nT-SAFETY-01 closed: the destructive command is out of the README. Phase\nspecifications are now internal under ADR-026 and no longer published.\n\nPosition: task claimed for the README restructure, `docs/SPEC.md` corrections\nand a new `docs/PRODUCT-THESIS.md`. Every existing image is preserved.",
     "handoff": "# Handoff\n\nCurrent implementation continuity. Overwritten, never appended. It holds what\nthe next person or agent needs in order to continue right now. Closed history\nbelongs in `JOURNAL.md`.\n\n## Position\n- Release 0.3.0. P2 is `COMPLETE` as of 2026-09-22, accepted by the owner under\n  ADR-020. P0 is `COMPLETE`. P1 is `EXIT_PENDING` behind one red gate.\n- Nothing in flight. Intent is empty.\n- 47 of 48 tasks done. The one open task is T-PILOT-01, deliberately parked.\n- Everything Prokron installs now lives in `.prokron/` (ADR-024). This\n  repository's own chronicle moved to `.prokron/chronicle/` and its compiled\n  views to `.prokron/compiled/`; the command is `.prokron/prokron`.\n\n## What is true now\n- Gates A, B, C, D and E are green on recorded evidence. Gate E is green because\n  Codex and Claude audited the same implementation against the same reviewer\n  packet, disagreed on one criterion, and the disagreement was settled at level\n  5 of the arbitration hierarchy by rendering both Gantt variants in a browser.\n  The defect Codex found was real.\n- A cold agent starts from a packet alone, verified against Codex with no\n  repository access. The first, failed attempt is kept as the control.\n- `prokron migrate` gives v0.1 chronicles an upgrade path, which is what\n  reopened and then closed P2.\n\n## Carried debt\n- **Gate P1-CONTINUITY is RED.** The continuity pilot in `docs/SPEC.md` is two\n  steps into seven. Steps 1 and 2 pass, recorded in `docs/pilot-2026-09-21.md`.\n  ADR-020 parks the rest and names the payoff: the P3 exit audit runs the\n  procedure against the Phase 3 build itself, in this repository, across the\n  real multi-session work. Deferred is not passing. P1 stays `EXIT_PENDING`.\n- The accepted risk: P3 is built on a workflow whose cross-session agent\n  compliance is unverified. A pilot failure at that audit lands against P3 work\n  already written. Stated rather than hidden.\n- `.prokron/compiled/` is committed so the README can link to it as a live\n  example. That puts a large dashboard and JSON in every diff touching\n  authority. Nobody has decided whether to keep it that way.\n- The chronicle now sits in a directory a file browser hides by default, and\n  it is written to be read by people. ADR-024 accepted that cost; whether it\n  actually costs anything is worth watching.\n- Records written under the older layouts still name the old paths. That is\n  deliberate \u2014 they were accurate when written \u2014 but it means a reader of the\n  journal or the earlier ADRs will see `prokron/` and `./bin/prokron`.\n\n## Repository identity\n- Commits are authored as `qomero`, with an address verified on that account,\n  set repository-locally under ADR-023. `git config --local user.email` shows it. The whole history was rewritten to match on 2026-09-22 and\n  force-pushed, so every hash before that date is dead. `backup-pre-author-rewrite`\n  holds the pre-rewrite tip locally and is safe to delete.\n\n## Next action\nOpen P3 from `docs/Phase 3.md`, authority first and in this order: an ADR\naccepting the specification as governing, the P3 phase record and its gates in\n`PHASES.md`, its tasks in `TASKS.md`, their contracts in `ACCEPTANCE.md`, then\n`validate` and `compile`. Only then claim the first task. Phase 3 \u00a725 requires a\nplanning task that inspects the existing architecture before any code changes,\nwhich is what T-P2-PLAN-01 was for P2."
   },
   "sources": {

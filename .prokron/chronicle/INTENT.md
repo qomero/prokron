@@ -1,10 +1,9 @@
 # Intent
 
-No task in progress.
+T-DOCS-05 — lead the public documentation with the problem.
 
-T-GRAPHVIEW-02 closed on 2026-09-22 under ADR-025: a task opens from the graph
-into the same dialog its table row opens.
+T-SAFETY-01 closed: the destructive command is out of the README. Phase
+specifications are now internal under ADR-026 and no longer published.
 
-Next: open P3 from `docs/Phase 3.md` — an ADR accepting it as governing
-authority, its phase record and gates in `PHASES.md`, its tasks in `TASKS.md`,
-and their contracts in `ACCEPTANCE.md`, before any implementation starts.
+Position: task claimed for the README restructure, `docs/SPEC.md` corrections
+and a new `docs/PRODUCT-THESIS.md`. Every existing image is preserved.

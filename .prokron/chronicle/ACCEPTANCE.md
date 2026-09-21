@@ -1102,3 +1102,53 @@ task tables open. The graph should reach it too.
   - Evidence: on the gate view, `Gate_A` carries no `opens` class and no
     pointer cursor, and clicking it opens nothing. The node map holds tasks
     only, so a node it does not name is inert.
+
+## AC-T-SAFETY-01 — Remove a destructive command from the published documentation
+
+The README told readers to run `rm -rf .prokron && prokron compile` to prove
+regeneration. That was correct until v0.3.0, when `.prokron/` stopped being the
+compiled directory and became the whole installation — the chronicle, the
+runtime and the command. The instruction survived the move unchanged, so the
+published documentation invited a reader to delete their project records.
+
+- `AC-T-SAFETY-01-01` — No published document instructs a reader to delete a
+  path that holds authored records. `INSPECTION` · `PASS`
+  - Evidence: one `rm -rf` remains across the README, the specification, the
+    chronicle guide, the installed template and `AGENTS.md`, and it names
+    `.prokron/compiled/`. Every other reference to deleting generated state
+    names the compiled directory explicitly rather than the installation.
+- `AC-T-SAFETY-01-02` — The regeneration claim is still demonstrable by the
+  command the documentation gives. `RUNTIME` · `PASS`
+  - Evidence: the published command was run against this repository and
+    rebuilt every generated file; the existing regeneration tests and the
+    installer suite continue to pass.
+
+## AC-T-DOCS-05 — Lead the public documentation with the problem
+
+A first-time visitor met the mechanism before the reason. The README named
+seven chronicle files before explaining what a chronicle was, and showed the
+human projection of project state four times while showing the agent
+projection — the other half of its own thesis — not at all.
+
+- `AC-T-DOCS-05-01` — The README states the problem Prokron exists for before
+  it describes any mechanism. `INSPECTION` · `NOT_RUN`
+  - Evidence: —
+- `AC-T-DOCS-05-02` — Both projections of project state are shown, not
+  asserted: the dashboard for a person and real `prokron context` output for
+  an agent. `INSPECTION` · `NOT_RUN`
+  - Evidence: —
+- `AC-T-DOCS-05-03` — Every existing image is preserved, unmodified and
+  unrenamed, and each one carries text that earns it. `INSPECTION` · `NOT_RUN`
+  - Evidence: —
+- `AC-T-DOCS-05-04` — Implemented behaviour, specified design and unproven
+  claims are distinguishable by a reader, and nothing specified-only is
+  described as available. `INSPECTION` · `NOT_RUN`
+  - Evidence: —
+- `AC-T-DOCS-05-05` — Every relative link in the published documentation
+  resolves, and every command, path, count and version named in it is current.
+  `TEST` · `NOT_RUN`
+  - Evidence: —
+- `AC-T-DOCS-05-06` — A technical reader can still reach the compiler's
+  behaviour, the invariants, the CLI and the specification; depth is moved,
+  not removed. `INSPECTION` · `NOT_RUN`
+  - Evidence: —

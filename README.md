@@ -359,9 +359,13 @@ For OpenCode setup, see its [providers](https://opencode.ai/docs/providers),
 
 ## What is verified, and what is not
 
-The compiler is tested and deterministic: 105 unit tests plus an installer
-regression suite, and `rm -rf .prokron && prokron compile` reproduces every
-generated file byte for byte. Two different coding agents have audited the same
+The compiler is tested and deterministic: 119 unit tests plus an installer
+regression suite, and deleting the compiled directory reproduces every
+generated file byte for byte:
+
+```sh
+rm -rf .prokron/compiled && .prokron/prokron compile && .prokron/prokron graph
+``` Two different coding agents have audited the same
 implementation against the same contract and reached the same verdicts, after a
 real disagreement that the arbitration order settled.
 

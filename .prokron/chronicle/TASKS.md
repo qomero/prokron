@@ -550,3 +550,25 @@
 - AC: AC-T-GRAPHVIEW-02
 - Evidence: Clicking a task in any diagram opens the detail dialog the task tables open, verified in headless Chrome to produce the same heading by both routes. A pan does not count as a click: movement beyond three pixels marks the gesture and suppresses it. Only nodes the node map names as tasks carry a pointer cursor and respond; `Gate_A` on the gate view does neither. 119 unit tests and the installer suite pass.
 - Governed by: ADR-025
+
+## T-SAFETY-01: Remove a destructive command from the published documentation
+- Status: DONE
+- Phase: P-NONE
+- Validation: SYNTHETIC
+- Dependencies: T-LAYOUT-01
+- Owner: claude/primary
+- Claimed: 2026-09-22
+- AC: AC-T-SAFETY-01
+- Evidence: The README told readers to run `rm -rf .prokron && prokron compile`. That was accurate until v0.3.0 moved the installation into `.prokron/`, after which it deleted the chronicle, the runtime and the command. The instruction now names `.prokron/compiled/` and was run to confirm it still demonstrates the regeneration claim. The stale test count beside it was corrected to 119.
+- Governed by: ADR-024
+
+## T-DOCS-05: Lead the public documentation with the problem
+- Status: WIP
+- Phase: P-NONE
+- Validation: UNTESTED
+- Dependencies: T-SAFETY-01
+- Owner: claude/primary
+- Claimed: 2026-09-22
+- AC: AC-T-DOCS-05
+- Evidence: —
+- Governed by: ADR-026

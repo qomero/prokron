@@ -30,3 +30,4 @@ editing history.
 - [ADR-023](ADR-023.md) — Attribute commits by an address on the owning account (ACCEPTED)
 - [ADR-024](ADR-024.md) — Everything Prokron installs lives in one directory (ACCEPTED)
 - [ADR-025](ADR-025.md) — The dashboard answers from compiled data, never from the drawing (ACCEPTED)
+- [ADR-026](ADR-026.md) — Phase specifications are internal; the public documentation leads with the problem (ACCEPTED)
