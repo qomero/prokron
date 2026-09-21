@@ -35,6 +35,12 @@ belongs in `JOURNAL.md`.
   puts a large dashboard and JSON in every diff touching authority. Nobody has
   decided whether to keep it that way.
 
+## Repository identity
+- Commits are authored as `qomero <qomerovn@gmail.com>`, set repository-locally
+  under ADR-023. The whole history was rewritten to match on 2026-09-22 and
+  force-pushed, so every hash before that date is dead. `backup-pre-author-rewrite`
+  holds the pre-rewrite tip locally and is safe to delete.
+
 ## Next action
 Open P3 from `docs/Phase 3.md`, authority first and in this order: an ADR
 accepting the specification as governing, the P3 phase record and its gates in

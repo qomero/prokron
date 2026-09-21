@@ -481,3 +481,33 @@
   error. A view that is generated but never looked at is not covered.
 - Left mid-air: Nothing.
 - Next: Open P3 from `docs/Phase 3.md`, authority before implementation.
+
+## 2026-09-22 — the author was never the name
+- Task: T-AUTHOR-01
+- Owner: claude/primary
+- Did: Asked to change the commit author, and found the request was aimed at
+  the wrong field. GitHub attributes a commit by its email address, so all 32
+  commits — including the seven that already carried the current name —
+  resolved to a different account holding the address they were written with.
+  The address could not be moved, because GitHub refuses one address on two
+  accounts and removing it from the other would have un-attributed that
+  account's unrelated history. Verified a new address on a throwaway remote
+  branch first, confirmed it resolved to the owning account, deleted the
+  branch, then rewrote author and committer across the whole history,
+  re-pointed the six version tags, and force-pushed once. Kept the pre-rewrite
+  tip on a local branch.
+- Validation: SYNTHETIC. All 32 commits report one author and one committer;
+  the commits API resolves sampled commits from head to root to the owning
+  account; `git diff` against the backup is empty; 105 unit tests pass and
+  validation is clean.
+- Learned: The check that mattered cost one throwaway branch and saved a second
+  force-push of a public history. Rewriting first and verifying after would
+  have looked identical right up to the point where it was wrong. Also worth
+  recording that the probe was run in the working repository rather than in a
+  scratch clone, which briefly detached the index from `main` and had to be
+  forced back — the right place for a disposable experiment is a disposable
+  checkout.
+- Left mid-air: Nothing. The pre-rewrite branch `backup-pre-author-rewrite` is
+  local only and can be deleted once the rewritten history has been seen to be
+  correct.
+- Next: Open P3 from `docs/Phase 3.md`, authority before implementation.

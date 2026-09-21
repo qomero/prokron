@@ -27,3 +27,4 @@ editing history.
 - [ADR-020](ADR-020.md) — Close Phase 2 and carry the continuity pilot as audited debt (ACCEPTED)
 - [ADR-021](ADR-021.md) — Address the GitHub owner by its current name, never by redirect (ACCEPTED)
 - [ADR-022](ADR-022.md) — Lead with project management, and show the product rather than describe it (ACCEPTED)
+- [ADR-023](ADR-023.md) — Attribute commits by an address on the owning account (ACCEPTED)

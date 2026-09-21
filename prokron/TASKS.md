@@ -286,6 +286,17 @@
 - Evidence: No reference to the previous owner remains in `install.sh` or `README.md`. Anonymous install from `https://raw.githubusercontent.com/qomero/prokron/main/install.sh` completed against a disposable repository. 104 unit tests and the installer suite pass.
 - Governed by: ADR-021
 
+## T-AUTHOR-01: Attribute the history to the owning account
+- Status: DONE
+- Phase: P-NONE
+- Validation: SYNTHETIC
+- Dependencies: T-RENAME-01
+- Owner: claude/primary
+- Claimed: 2026-09-22
+- AC: AC-T-AUTHOR-01
+- Evidence: All 32 commits on `main` carry `qomero <qomerovn@gmail.com>` as author and committer, and the GitHub API resolves each sampled commit to the `qomero` account. The six version tags were re-pointed and force-pushed. Content is unchanged: `git diff` against the pre-rewrite backup is empty, 105 unit tests pass and validation is clean.
+- Governed by: ADR-023
+
 ## T-GATEVIEW-01: Repair the gate diagram identifier
 - Status: DONE
 - Phase: P-NONE

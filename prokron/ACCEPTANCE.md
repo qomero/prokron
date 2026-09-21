@@ -872,6 +872,29 @@ interoperability, and regeneration each check PASS.
 - `AC-T-REMOTE-01-01` — Origin resolves to https://github.com/qomero/ten-repo.git. `INSPECTION` · `PASS`
   - Evidence: git remote -v confirms the requested URL for both fetch and push.
 
+## AC-T-AUTHOR-01 — Attribute the history to the owning account
+
+GitHub attributes a commit by its email address, not by the name string, so
+the name alone could not move the history to the owning account.
+
+- `AC-T-AUTHOR-01-01` — Every commit reachable from `main` names the owner as
+  author and committer. `INSPECTION` · `PASS`
+  - Evidence: a name and email tally over all 32 commits returns one entry for
+    each of author and committer.
+- `AC-T-AUTHOR-01-02` — GitHub resolves the rewritten commits to the owning
+  account. `RUNTIME` · `PASS`
+  - Evidence: the commits API reports `author.login` as `qomero` for sampled
+    commits at the head, and at three points spread through the history. A
+    throwaway branch verified the address before anything was rewritten, so
+    the published history was force-pushed once rather than twice.
+- `AC-T-AUTHOR-01-03` — No content changed. `TEST` · `PASS`
+  - Evidence: `git diff` between the pre-rewrite backup and the rewritten
+    `main` is empty; 105 unit tests pass and `prokron validate` is clean.
+- `AC-T-AUTHOR-01-04` — Every published tag points into the rewritten history.
+  `INSPECTION` · `PASS`
+  - Evidence: `git ls-remote` resolves all six version tags to rewritten
+    commits; no remote ref still points at an abandoned one.
+
 ## AC-T-GATEVIEW-01 — Repair the gate diagram identifier
 
 Found while capturing screenshots for the README: the Gates tab rendered
