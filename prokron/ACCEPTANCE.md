@@ -194,6 +194,49 @@ is edited in place with its request identifier noted.
 
 # Contracts
 
+## AC-T-MIGRATE-01 — Migrate a v0.1 chronicle to the v0.2 layout
+
+Inherits: `AC-GLOBAL-PRESERVE`, `AC-GLOBAL-AUTHORITY`
+
+- `AC-T-MIGRATE-01-01` — Given a repository holding a v0.1 chronicle under
+  `.prokron/`, When migration runs, Then every task, decision, intent and
+  journal entry is present under `prokron/` and the project reports its real
+  task count instead of zero. `TEST` · `PASS`
+- `AC-T-MIGRATE-01-02` — Given a task carrying a prose acceptance statement,
+  When it is migrated, Then that statement becomes a criterion under its own
+  contract with its original wording preserved, and the task carries an `AC`
+  reference. `TEST` · `PASS`
+- `AC-T-MIGRATE-01-03` — Given `DECISIONS.md`, When it is migrated, Then each
+  ADR becomes a file under `prokron/ADR/` with its identifier, status and body
+  unchanged, and an index records supersession. `TEST` · `PASS`
+- `AC-T-MIGRATE-01-04` — Given a `STATE.md` carrying risks and next steps that
+  no compiler can derive, When it is migrated, Then that prose is preserved in
+  `HANDOFF.md` rather than discarded, while `TASK_GRAPH.md` is left to be
+  regenerated. `TEST` · `PASS`
+- `AC-T-MIGRATE-01-05` — Given migration, When it completes, Then the original
+  `.prokron/` files are archived unchanged and nothing is deleted.
+  `TEST` · `PASS`
+- `AC-T-MIGRATE-01-06` — Given migration, When it runs without an explicit
+  instruction to apply, Then it reports what it would do and changes nothing.
+  `TEST` · `PASS`
+- `AC-T-MIGRATE-01-07` — Given a migrated repository, When `prokron validate`
+  runs, Then it reports no error. `TEST` · `PASS`
+- `AC-T-MIGRATE-01-08` — Given an installation that finds a v0.1 chronicle,
+  When the installer finishes, Then it says migration is needed and names the
+  command. `TEST` · `PASS`
+
+
+Evidence, 2026-09-21: eleven unit tests cover detection, the report-only default,
+task and contract migration with original wording and inferred evidence class,
+ADR splitting with supersession, rescuing STATE.md prose into HANDOFF.md while
+dropping the derivable TASK_GRAPH.md, archiving originals byte for byte, phase
+assignment, and that the result validates and compiles. The installer suite runs
+the whole upgrade end to end on a synthetic v0.1 project: install, the warning
+in both the installer output and `prokron status`, a dry run that changes
+nothing, `--apply`, and then checks the task, its contract, the rescued prose,
+the ADR file, the archive, and a clean validate. Reproduced first by hand on the
+project that reported the defect.
+
 ## AC-T-PILOT-01 — Run the continuity pilot
 
 The gate behind P1's exit. Each criterion is one step of the procedure in

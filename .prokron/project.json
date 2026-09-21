@@ -74,10 +74,10 @@
         "Gate A, Gate B, Gate C, Gate D, and Gate E."
       ],
       "exitAuthority": "T-P2-14",
-      "status": "EXIT_PENDING",
+      "status": "ACTIVE",
       "progress": {
-        "done": 16,
-        "total": 16,
+        "done": 17,
+        "total": 17,
         "fraction": 1.0
       },
       "source": {
@@ -787,7 +787,8 @@
       "validation": "AI_REVIEWED",
       "deps": [],
       "blocks": [
-        "T-P2-02"
+        "T-P2-02",
+        "T-MIGRATE-01"
       ],
       "ac": "AC-T-P2-01",
       "owner": "claude/primary",
@@ -1212,9 +1213,137 @@
         "file": "TASKS.md",
         "anchor": "T-PILOT-01"
       }
+    },
+    {
+      "id": "T-MIGRATE-01",
+      "title": "Migrate a v0.1 chronicle to the v0.2 layout",
+      "phase": "P2",
+      "status": "DONE",
+      "validation": "AI_REVIEWED",
+      "deps": [
+        "T-P2-01"
+      ],
+      "blocks": [],
+      "ac": "AC-T-MIGRATE-01",
+      "owner": "claude/primary",
+      "claimed": "2026-09-21",
+      "evidence": "`prokron migrate` reports by default and applies only with --apply, archiving every original unchanged. Moves tasks, decisions, intent and journal to prokron/, converts prose acceptance into contracts with original wording, splits DECISIONS.md into prokron/ADR/ with a supersession index, rescues STATE.md prose into HANDOFF.md, and drops the derivable TASK_GRAPH.md. The installer and `prokron status` both detect a stranded v0.1 chronicle and name the command. Task completion now counts phase-independent work, which had made a migrated project report 0 / 0. 104 unit tests and the installer suite pass.",
+      "decisions": [
+        "ADR-014",
+        "ADR-015"
+      ],
+      "schedule": null,
+      "ready": false,
+      "blocked": false,
+      "source": {
+        "file": "TASKS.md",
+        "anchor": "T-MIGRATE-01"
+      }
     }
   ],
   "acceptance": {
+    "AC-T-MIGRATE-01": {
+      "title": "Migrate a v0.1 chronicle to the v0.2 layout",
+      "inherits": [
+        "AC-GLOBAL-PRESERVE",
+        "AC-GLOBAL-AUTHORITY"
+      ],
+      "evidence": "eleven unit tests cover detection, the report-only default, task and contract migration with original wording and inferred evidence class, ADR splitting with supersession, rescuing STATE.md prose into HANDOFF.md while dropping the derivable TASK_GRAPH.md, archiving originals byte for byte, phase assignment, and that the result validates and compiles. The installer suite runs the whole upgrade end to end on a synthetic v0.1 project: install, the warning in both the installer output and `prokron status`, a dry run that changes nothing, `--apply`, and then checks the task, its contract, the rescued prose, the ADR file, the archive, and a clean validate. Reproduced first by hand on the project that reported the defect.",
+      "criteria": [
+        {
+          "id": "AC-T-MIGRATE-01-01",
+          "text": "Given a repository holding a v0.1 chronicle under `.prokron/`, When migration runs, Then every task, decision, intent and journal entry is present under `prokron/` and the project reports its real task count instead of zero.",
+          "evidenceClass": "TEST",
+          "state": "PASS",
+          "evidence": null,
+          "source": {
+            "file": "ACCEPTANCE.md",
+            "anchor": "AC-T-MIGRATE-01-01"
+          }
+        },
+        {
+          "id": "AC-T-MIGRATE-01-02",
+          "text": "Given a task carrying a prose acceptance statement, When it is migrated, Then that statement becomes a criterion under its own contract with its original wording preserved, and the task carries an `AC` reference.",
+          "evidenceClass": "TEST",
+          "state": "PASS",
+          "evidence": null,
+          "source": {
+            "file": "ACCEPTANCE.md",
+            "anchor": "AC-T-MIGRATE-01-02"
+          }
+        },
+        {
+          "id": "AC-T-MIGRATE-01-03",
+          "text": "Given `DECISIONS.md`, When it is migrated, Then each ADR becomes a file under `prokron/ADR/` with its identifier, status and body unchanged, and an index records supersession.",
+          "evidenceClass": "TEST",
+          "state": "PASS",
+          "evidence": null,
+          "source": {
+            "file": "ACCEPTANCE.md",
+            "anchor": "AC-T-MIGRATE-01-03"
+          }
+        },
+        {
+          "id": "AC-T-MIGRATE-01-04",
+          "text": "Given a `STATE.md` carrying risks and next steps that no compiler can derive, When it is migrated, Then that prose is preserved in `HANDOFF.md` rather than discarded, while `TASK_GRAPH.md` is left to be regenerated.",
+          "evidenceClass": "TEST",
+          "state": "PASS",
+          "evidence": null,
+          "source": {
+            "file": "ACCEPTANCE.md",
+            "anchor": "AC-T-MIGRATE-01-04"
+          }
+        },
+        {
+          "id": "AC-T-MIGRATE-01-05",
+          "text": "Given migration, When it completes, Then the original `.prokron/` files are archived unchanged and nothing is deleted.",
+          "evidenceClass": "TEST",
+          "state": "PASS",
+          "evidence": null,
+          "source": {
+            "file": "ACCEPTANCE.md",
+            "anchor": "AC-T-MIGRATE-01-05"
+          }
+        },
+        {
+          "id": "AC-T-MIGRATE-01-06",
+          "text": "Given migration, When it runs without an explicit instruction to apply, Then it reports what it would do and changes nothing.",
+          "evidenceClass": "TEST",
+          "state": "PASS",
+          "evidence": null,
+          "source": {
+            "file": "ACCEPTANCE.md",
+            "anchor": "AC-T-MIGRATE-01-06"
+          }
+        },
+        {
+          "id": "AC-T-MIGRATE-01-07",
+          "text": "Given a migrated repository, When `prokron validate` runs, Then it reports no error.",
+          "evidenceClass": "TEST",
+          "state": "PASS",
+          "evidence": null,
+          "source": {
+            "file": "ACCEPTANCE.md",
+            "anchor": "AC-T-MIGRATE-01-07"
+          }
+        },
+        {
+          "id": "AC-T-MIGRATE-01-08",
+          "text": "Given an installation that finds a v0.1 chronicle, When the installer finishes, Then it says migration is needed and names the command.",
+          "evidenceClass": "TEST",
+          "state": "PASS",
+          "evidence": null,
+          "source": {
+            "file": "ACCEPTANCE.md",
+            "anchor": "AC-T-MIGRATE-01-08"
+          }
+        }
+      ],
+      "source": {
+        "file": "ACCEPTANCE.md",
+        "anchor": "AC-T-MIGRATE-01"
+      }
+    },
     "AC-T-PILOT-01": {
       "title": "Run the continuity pilot",
       "inherits": [],
@@ -2790,7 +2919,8 @@
         "T-P2-10",
         "T-P2-11",
         "T-P2-14",
-        "T-P2-AUDIT-01"
+        "T-P2-AUDIT-01",
+        "T-MIGRATE-01"
       ],
       "source": {
         "file": "ACCEPTANCE.md",
@@ -2873,7 +3003,8 @@
       ],
       "appliesTo": [
         "T-P2-01",
-        "T-P2-03"
+        "T-P2-03",
+        "T-MIGRATE-01"
       ],
       "source": {
         "file": "ACCEPTANCE.md",
@@ -3278,6 +3409,19 @@
         "file": "ADR/ADR-018.md",
         "anchor": "ADR-018"
       }
+    },
+    {
+      "id": "ADR-019",
+      "title": "Migrate v0.1 chronicles explicitly, and never in place",
+      "status": "ACCEPTED",
+      "supersedes": [],
+      "affects": [
+        "T-MIGRATE-01"
+      ],
+      "source": {
+        "file": "ADR/ADR-019.md",
+        "anchor": "ADR-019"
+      }
     }
   ],
   "obstacles": [
@@ -3321,9 +3465,9 @@
   },
   "metrics": {
     "taskCompletion": {
-      "done": 39,
-      "total": 40,
-      "fraction": 0.975
+      "done": 42,
+      "total": 43,
+      "fraction": 0.9767
     },
     "phaseCompletion": {
       "P0": {
@@ -3337,8 +3481,8 @@
         "fraction": 0.9
       },
       "P2": {
-        "done": 16,
-        "total": 16,
+        "done": 17,
+        "total": 17,
         "fraction": 1.0
       }
     },
@@ -3348,27 +3492,28 @@
       "fraction": 0.0
     },
     "validationCoverage": {
-      "done": 18,
-      "total": 40,
-      "fraction": 0.45
+      "done": 19,
+      "total": 43,
+      "fraction": 0.4419
     },
+    "phaseIndependent": 2,
     "gateReadiness": {
       "done": 5,
       "total": 6,
       "fraction": 0.8333
     },
     "acceptanceCompletion": {
-      "done": 90,
-      "total": 95,
-      "fraction": 0.9474
+      "done": 98,
+      "total": 103,
+      "fraction": 0.9515
     },
     "validationBreakdown": {
       "SYNTHETIC": 23,
-      "AI_REVIEWED": 18,
+      "AI_REVIEWED": 19,
       "UNTESTED": 1
     },
     "statusBreakdown": {
-      "DONE": 41,
+      "DONE": 42,
       "WIP": 1
     }
   },

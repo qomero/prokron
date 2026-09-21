@@ -461,3 +461,14 @@
 - AC: AC-T-PILOT-01
 - Evidence: —
 - Governed by: ADR-008, ADR-011
+
+## T-MIGRATE-01: Migrate a v0.1 chronicle to the v0.2 layout
+- Status: DONE
+- Phase: P2
+- Validation: AI_REVIEWED
+- Dependencies: T-P2-01
+- Owner: claude/primary
+- Claimed: 2026-09-21
+- AC: AC-T-MIGRATE-01
+- Evidence: `prokron migrate` reports by default and applies only with --apply, archiving every original unchanged. Moves tasks, decisions, intent and journal to prokron/, converts prose acceptance into contracts with original wording, splits DECISIONS.md into prokron/ADR/ with a supersession index, rescues STATE.md prose into HANDOFF.md, and drops the derivable TASK_GRAPH.md. The installer and `prokron status` both detect a stranded v0.1 chronicle and name the command. Task completion now counts phase-independent work, which had made a migrated project report 0 / 0. 104 unit tests and the installer suite pass.
+- Governed by: ADR-014, ADR-015

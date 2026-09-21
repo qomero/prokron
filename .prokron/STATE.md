@@ -4,16 +4,16 @@
 
 - Project: Prokron
 - Current phase: P2
-- Tasks: 39 of 40 done
-- Acceptance: 90 of 95 criteria passing
-- Validation: 18 of 40 reviewed or verified
+- Tasks: 42 of 43 done
+- Acceptance: 98 of 103 criteria passing
+- Validation: 19 of 43 reviewed or verified
 - Gates: 5 of 6 green
 
 ## Phases
 
 - P0 Executable state harness: 14 / 14 tasks, COMPLETE, exit authority T-HARNESS-02
 - P1 Shared chronicle workflow: 9 / 10 tasks, EXIT_PENDING, exit authority T-READINESS-01
-- P2 From acceptance contracts to project management: 16 / 16 tasks, EXIT_PENDING, exit authority T-P2-14
+- P2 From acceptance contracts to project management: 17 / 17 tasks, ACTIVE, exit authority T-P2-14
 
 ## Gates
 

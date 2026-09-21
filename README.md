@@ -216,6 +216,18 @@ Prokron — phase P2
 | `prokron validate` | Broken dependencies, dangling references, unmet contracts. |
 | `prokron compile` | Rebuilds `.prokron/` from the authored documents. |
 | `prokron dashboard` | A local page: phases, gates, obstacles, critical path, drill-down. |
+| `prokron migrate` | Moves a v0.1 chronicle into the current layout. |
+
+### Upgrading from v0.1
+
+v0.2 moved authority from `.prokron/` to `prokron/`. If you installed Prokron
+before that, your records are intact but in the old place, and the tool will
+report an empty project until you move them:
+
+```sh
+./bin/prokron migrate           # shows what it would do
+./bin/prokron migrate --apply   # performs it, archiving the originals
+```
 
 A task is not done because someone says it is done. It is done when its frozen
 contract has enough evidence — which is what makes two agents disagreeing about

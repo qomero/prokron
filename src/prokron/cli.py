@@ -11,7 +11,7 @@ import json
 import sys
 from pathlib import Path
 
-from . import analytics, compile as compiler, dashboard, mermaid, validate
+from . import analytics, compile as compiler, dashboard, mermaid, migrate, validate
 from .model import Project
 from .parse import ParseError
 
@@ -110,6 +110,10 @@ def cmd_status(root: Path, args: argparse.Namespace) -> int:
     metrics = report.metrics()
 
     print(f"{project.name} — phase {project.current_phase or 'none'}")
+    if migrate.needs_migration(root):
+        print(
+            "\n  A v0.1 chronicle is present and unread. Run `prokron migrate`.\n"
+        )
     print(
         f"  tasks        {metrics['taskCompletion']['done']} / "
         f"{metrics['taskCompletion']['total']}"
@@ -129,6 +133,9 @@ def cmd_status(root: Path, args: argparse.Namespace) -> int:
     for phase in project.phases:
         progress = report.phase_progress[phase.id]
         print(f"  {phase.id:<12} {progress} · {phase.status}")
+    independent = metrics["phaseIndependent"]
+    if independent:
+        print(f"  {'no phase':<12} {independent} task{'' if independent == 1 else 's'}")
     print(f"\n  WIP       {', '.join(report.wip) or 'none'}")
     print(f"  Ready     {', '.join(report.ready) or 'none'}")
     print(f"  Blocked   {', '.join(report.blocked) or 'none'}")
@@ -186,6 +193,27 @@ def cmd_context(root: Path, args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_migrate(root: Path, args: argparse.Namespace) -> int:
+    try:
+        result = migrate.apply(root, args.phase) if args.apply else migrate.plan(root, args.phase)
+    except migrate.MigrationError as error:
+        return _fail(str(error))
+    print(result.render())
+    if not args.apply:
+        print("\nNothing was changed. Re-run with --apply to perform it.")
+        return 0
+    print(f"\nMigrated. Originals archived in {result.archive.name}/")
+    findings = validate.errors(validate.check(_load(root)))
+    if findings:
+        print(f"\n{len(findings)} validation errors remain:", file=sys.stderr)
+        _report_findings(findings, sys.stderr)
+        print("The records are migrated; fix these, then run compile.", file=sys.stderr)
+        return 1
+    compiler.write(root, _load(root))
+    print("Authority validates. Compiled state written.")
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="prokron",
@@ -218,6 +246,13 @@ def build_parser() -> argparse.ArgumentParser:
     why.add_argument("task")
     why.add_argument("--json", action="store_true")
     why.set_defaults(handler=cmd_explain)
+
+    move = subparsers.add_parser(
+        "migrate", help="move a v0.1 chronicle into the v0.2 layout"
+    )
+    move.add_argument("--apply", action="store_true", help="perform it; otherwise report only")
+    move.add_argument("--phase", default="P-NONE", help="phase to assign migrated tasks")
+    move.set_defaults(handler=cmd_migrate)
 
     packet = subparsers.add_parser("context", help="emit an agent context packet")
     packet.add_argument("task")

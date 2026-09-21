@@ -108,6 +108,26 @@ done
 cmp "$root/templates/prokron/ADR/README.md" "$fixture/partial/prokron/ADR/README.md"
 test ! -d "$fixture/partial/.prokron"  # compiled state appears only after compiling
 
+# Upgrading a v0.1 project must not strand its chronicle.
+legacy="$fixture/legacy"
+mkdir -p "$legacy/.prokron"
+( cd "$legacy" && git init -q )
+printf '# Tasks\n\n## T-OLD-01: Ship it\n- Status: DONE\n- Validation: SYNTHETIC\n- Dependencies: none\n- Acceptance: It ships.\n- Evidence: It shipped.\n- Governed by: ADR-001\n' > "$legacy/.prokron/TASKS.md"
+printf '# Decisions\n\n## ADR-001: Do it\n- Date: 2026-01-01\n- Status: ACCEPTED\n- Decision: Do it.\n' > "$legacy/.prokron/DECISIONS.md"
+printf '# State\n\n## Next\n- Call the vendor.\n' > "$legacy/.prokron/STATE.md"
+"$root/install.sh" existing "$legacy" > "$legacy/output"
+grep -Fq 'prokron migrate' "$legacy/output"
+( cd "$legacy" && ./bin/prokron status ) | grep -Fq 'prokron migrate'
+( cd "$legacy" && ./bin/prokron migrate ) | grep -Fq 'Nothing was changed'
+test -f "$legacy/.prokron/TASKS.md"
+( cd "$legacy" && ./bin/prokron migrate --apply ) | grep -Fq 'Authority validates'
+grep -Fq 'T-OLD-01' "$legacy/prokron/TASKS.md"
+grep -Fq 'It ships.' "$legacy/prokron/ACCEPTANCE.md"
+grep -Fq 'Call the vendor' "$legacy/prokron/HANDOFF.md"
+test -f "$legacy/prokron/ADR/ADR-001.md"
+ls -a "$legacy" | grep -q '^\.prokron-v0\.1-backup-'
+( cd "$legacy" && ./bin/prokron validate ) | grep -Fq 'consistent'
+
 # Do not follow links into other projects, including dangling links.
 for path in AGENTS.md CLAUDE.md prokron .prokron commands .agents .claude .opencode; do
   mkdir "$fixture/link-test"

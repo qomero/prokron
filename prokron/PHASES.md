@@ -139,10 +139,17 @@ Exit authority:
 T-P2-14
 
 Status:
-EXIT_PENDING
+ACTIVE
 
 Note:
-Every exit criterion is met and T-P2-14 is DONE. Gate D also blocks P1, which
+Reopened on 2026-09-21. ADR-014 moved authority from `.prokron/` to `prokron/`
+and no migration was written, so updating a real v0.1 project strands its
+chronicle: the records survive but the tool reads the new location and reports
+an empty project. The phase's own exit criteria were met, but shipping a layout
+change without an upgrade path means the work was not done. T-MIGRATE-01 closes
+it.
+
+Every other exit criterion is met and T-P2-14 is DONE. Gate D also blocks P1, which
 has never run its continuity pilot, so the two phases are recorded separately:
 P2's own conditions are satisfied. The phase becomes COMPLETE when the owner
 accepts the exit, which is a decision rather than a computation.

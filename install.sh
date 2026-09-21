@@ -110,7 +110,7 @@ copy_new "$source_dir/.agents/skills/prokron/SKILL.md" \
 # The runtime is code, not a record: replace it on every install so a repository
 # never runs a stale compiler against a current chronicle.
 mkdir -p "$target/.prokron-runtime/prokron" "$target/bin"
-for module in __init__ model parse validate analytics views compile mermaid dashboard cli; do
+for module in __init__ model parse validate analytics views compile migrate mermaid dashboard cli; do
   cp "$source_dir/src/prokron/$module.py" "$target/.prokron-runtime/prokron/$module.py"
 done
 cp "$source_dir/VERSION" "$target/.prokron-runtime/VERSION"
@@ -133,6 +133,12 @@ elif ! grep -Fxq '@AGENTS.md' "$target/CLAUDE.md"; then
 fi
 
 printf 'Prokron installed in %s\n\n' "$target"
+if [ -f "$target/.prokron/TASKS.md" ] && grep -q '^## T-' "$target/.prokron/TASKS.md" 2>/dev/null; then
+  printf 'A v0.1 chronicle was found in .prokron/ and the new layout cannot read it.\n'
+  printf 'Your records are intact. Move them with:\n'
+  printf '  ./bin/prokron migrate           # shows what it would do\n'
+  printf '  ./bin/prokron migrate --apply   # performs it, archiving the originals\n\n'
+fi
 if [ "$retained" -eq 1 ]; then
   printf 'Existing guidance was preserved; reinstall does not upgrade it.\n'
   printf 'Merge updates using README.md in the Prokron source (Updating an installation).\n\n'

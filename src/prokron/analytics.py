@@ -43,7 +43,12 @@ class Report:
 
     def metrics(self) -> dict[str, object]:
         tasks = self.project.tasks
-        counted = [t for t in tasks if not t.phase_independent]
+        # Task completion counts every task. Excluding phase-independent work
+        # made a project of nothing but chores report 0 / 0, which reads as
+        # "nothing here" rather than "none of this belongs to a phase".
+        # The phase split is already carried by phaseCompletion.
+        counted = tasks
+        in_phases = [t for t in tasks if not t.phase_independent]
         criteria = [
             criterion
             for contract in self.project.contracts.values()
@@ -66,6 +71,7 @@ class Report:
             "validationCoverage": Progress(
                 sum(1 for t in counted if t.validation in validated), len(counted)
             ).as_json(),
+            "phaseIndependent": len(tasks) - len(in_phases),
             "gateReadiness": Progress(
                 sum(1 for g in self.project.gates if g.status == "GREEN"),
                 len(self.project.gates),

@@ -18,7 +18,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from prokron import (  # noqa: E402
-    analytics, cli, compile as compiler, dashboard, mermaid, validate, views,
+    analytics, cli, compile as compiler, dashboard, mermaid, migrate, validate,
+    views,
 )
 from prokron.parse import ParseError  # noqa: E402
 
@@ -345,6 +346,14 @@ class TestAnalytics(FixtureCase):
 
     def test_critical_path_follows_dependencies(self) -> None:
         self.assertEqual(self.report.critical_path, ["T-TWO", "T-THREE"])
+
+    def test_phase_independent_work_still_counts_as_tasks(self) -> None:
+        """0 / 0 reads as "nothing here", which is not what P-NONE means."""
+        self.rewrite("TASKS.md", "- Phase: P1\n- Validation: SYNTHETIC", "- Phase: P-NONE\n- Validation: SYNTHETIC")
+        metrics = analytics.report(self.project).metrics()
+        self.assertEqual(metrics["taskCompletion"]["total"], 3)
+        self.assertEqual(metrics["phaseIndependent"], 1)
+        self.assertEqual(metrics["phaseCompletion"]["P1"]["total"], 2)
 
     def test_metrics_are_reported_separately(self) -> None:
         metrics = self.report.metrics()
@@ -831,6 +840,161 @@ class TestThisRepository(unittest.TestCase):
                 second[name] = text.encode()
 
             self.assertEqual(first, second)
+
+
+LEGACY_TASKS = """# Tasks
+
+## T-REAL-01: Ship the thing
+- Status: DONE
+- Validation: SYNTHETIC
+- Dependencies: none
+- Owner: me
+- Acceptance: The thing ships and stays shipped.
+- Evidence: 12 unittest cases passed.
+- Governed by: ADR-001
+
+## T-REAL-02: Ship the next thing
+- Status: TODO
+- Validation: UNTESTED
+- Dependencies: T-REAL-01
+- Owner: me
+- Acceptance: The next thing ships.
+- Evidence: —
+- Governed by: ADR-002
+"""
+
+LEGACY_DECISIONS = """# Decisions
+
+## ADR-001: Do the simple thing
+- Date: 2026-01-01
+- Status: ACCEPTED
+- Supersedes: none
+- Decision: Prefer the simple thing.
+
+## ADR-002: Do the other thing instead
+- Date: 2026-02-01
+- Status: ACCEPTED
+- Supersedes: ADR-001
+- Decision: The simple thing did not survive contact.
+"""
+
+LEGACY_STATE = """# State
+
+## Current
+- Project: Legacy thing
+
+## Risks / uncertainty
+- The vendor API may change without notice.
+
+## Next
+- Call the vendor before building anything else.
+"""
+
+
+class TestMigration(unittest.TestCase):
+    """Upgrading must move a v0.1 chronicle, not strand it."""
+
+    def setUp(self) -> None:
+        self.root = Path(tempfile.mkdtemp(prefix="prokron-legacy-"))
+        self.addCleanup(shutil.rmtree, self.root, True)
+        legacy = self.root / ".prokron"
+        legacy.mkdir()
+        (legacy / "TASKS.md").write_text(LEGACY_TASKS)
+        (legacy / "DECISIONS.md").write_text(LEGACY_DECISIONS)
+        (legacy / "STATE.md").write_text(LEGACY_STATE)
+        (legacy / "TASK_GRAPH.md").write_text("# Task Graph\n\n- T-REAL-01 [DONE]\n")
+        (legacy / "INTENT.md").write_text("# Intent\n\nNo intent.\n")
+        (legacy / "JOURNAL.md").write_text("# Journal\n\n## 2026-01-01\n- Did: things\n")
+        authority = self.root / "prokron"
+        (authority / "ADR").mkdir(parents=True)
+        (authority / "TASKS.md").write_text("# Tasks\n\nNo tasks yet.\n")
+        (authority / "PHASES.md").write_text("# Phases\n\nNo phases yet.\n")
+        (authority / "ACCEPTANCE.md").write_text("# Acceptance\n\n# Contracts\n\nNone yet.\n")
+        (authority / "INTENT.md").write_text("# Intent\n")
+        (authority / "HANDOFF.md").write_text("# Handoff\n")
+        (authority / "JOURNAL.md").write_text("# Journal\n")
+
+    def test_a_legacy_chronicle_is_detected(self) -> None:
+        self.assertTrue(migrate.needs_migration(self.root))
+
+    def test_a_current_chronicle_is_not_touched(self) -> None:
+        (self.root / "prokron" / "TASKS.md").write_text(LEGACY_TASKS)
+        self.assertFalse(migrate.needs_migration(self.root))
+        with self.assertRaises(migrate.MigrationError):
+            migrate.plan(self.root)
+
+    def test_planning_changes_nothing(self) -> None:
+        before = {p: p.read_bytes() for p in self.root.rglob("*") if p.is_file()}
+        plan = migrate.plan(self.root)
+        after = {p: p.read_bytes() for p in self.root.rglob("*") if p.is_file()}
+        self.assertEqual(before, after)
+        self.assertEqual(plan.tasks, 2)
+        self.assertEqual(plan.decisions, 2)
+
+    def test_tasks_and_contracts_survive(self) -> None:
+        migrate.apply(self.root)
+        project = compiler.load(self.root)
+        self.assertEqual([t.id for t in project.tasks], ["T-REAL-01", "T-REAL-02"])
+        contract = project.contracts["AC-T-REAL-01"]
+        self.assertEqual(contract.criteria[0].text, "The thing ships and stays shipped.")
+        self.assertEqual(contract.criteria[0].state, "PASS")
+        self.assertEqual(contract.criteria[0].evidence_class, "TEST")
+        self.assertEqual(project.contracts["AC-T-REAL-02"].criteria[0].state, "NOT_RUN")
+
+    def test_decisions_become_files_with_supersession(self) -> None:
+        migrate.apply(self.root)
+        adr = self.root / "prokron" / "ADR"
+        self.assertTrue((adr / "ADR-001.md").is_file())
+        self.assertIn("Prefer the simple thing", (adr / "ADR-001.md").read_text())
+        self.assertIn("superseded by ADR-002", (adr / "README.md").read_text())
+
+    def test_state_prose_is_rescued_and_task_graph_is_not(self) -> None:
+        migrate.apply(self.root)
+        handoff = (self.root / "prokron" / "HANDOFF.md").read_text()
+        self.assertIn("vendor API may change", handoff)
+        self.assertIn("Call the vendor", handoff)
+        self.assertFalse((self.root / "prokron" / "TASK_GRAPH.md").exists())
+
+    def test_originals_are_archived_not_deleted(self) -> None:
+        plan = migrate.apply(self.root)
+        self.assertTrue(plan.archive.is_dir())
+        self.assertEqual(
+            (plan.archive / "TASKS.md").read_text(), LEGACY_TASKS
+        )
+        self.assertEqual((plan.archive / "TASK_GRAPH.md").read_text().strip().splitlines()[0], "# Task Graph")
+        self.assertFalse((self.root / ".prokron" / "TASKS.md").exists())
+
+    def test_the_result_validates_and_compiles(self) -> None:
+        migrate.apply(self.root)
+        project = compiler.load(self.root)
+        self.assertEqual(validate.errors(validate.check(project)), [])
+        compiler.write(self.root, project)
+        self.assertEqual(analytics.report(project).metrics()["taskCompletion"]["total"], 2)
+
+    def test_a_named_phase_can_be_assigned(self) -> None:
+        (self.root / "prokron" / "PHASES.md").write_text(
+            "# Phases\n\n## P1 — Delivery\n\nOutcome:\nShip.\n\nEntry:\n- none\n\n"
+            "Exit:\n- none\n\nExit authority:\nT-REAL-02\n\nStatus:\nACTIVE\n"
+        )
+        migrate.apply(self.root, phase="P1")
+        project = compiler.load(self.root)
+        self.assertEqual({t.phase for t in project.tasks}, {"P1"})
+
+    def test_cli_reports_then_applies(self) -> None:
+        buffer = io.StringIO()
+        with redirect_stdout(buffer):
+            self.assertEqual(cli.main(["-C", str(self.root), "migrate"]), 0)
+        self.assertIn("Nothing was changed", buffer.getvalue())
+        self.assertTrue(migrate.needs_migration(self.root))
+        with redirect_stdout(io.StringIO()):
+            self.assertEqual(cli.main(["-C", str(self.root), "migrate", "--apply"]), 0)
+        self.assertFalse(migrate.needs_migration(self.root))
+
+    def test_status_says_migration_is_needed(self) -> None:
+        buffer = io.StringIO()
+        with redirect_stdout(buffer):
+            cli.main(["-C", str(self.root), "status"])
+        self.assertIn("prokron migrate", buffer.getvalue())
 
 
 class TestNoNetworkOrDependencies(unittest.TestCase):

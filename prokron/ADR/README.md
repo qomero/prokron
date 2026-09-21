@@ -22,3 +22,5 @@ editing history.
 - [ADR-015](ADR-015.md) — Adopt the Phase 2 execution document set (ACCEPTED)
 - [ADR-016](ADR-016.md) — Implement the Phase 2 compiler with the Python standard library only (ACCEPTED)
 - [ADR-017](ADR-017.md) — Ship the runtime as copied files beside the chronicle (ACCEPTED)
+- [ADR-018](ADR-018.md) — Scope a context packet to its own task (ACCEPTED)
+- [ADR-019](ADR-019.md) — Migrate v0.1 chronicles explicitly, and never in place (ACCEPTED)

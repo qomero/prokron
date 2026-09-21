@@ -4,6 +4,38 @@ Prokron records its own history in `prokron/JOURNAL.md` and its decisions in
 `prokron/ADR/`. This file is the short version, for people arriving from a
 release page.
 
+## 0.2.2 — 2026-09-21
+
+Fixes the upgrade path. 0.2.0 moved authority from `.prokron/` to `prokron/`
+and shipped without a migration, so a real project that updated kept every
+record and reported an empty project. Preserving files is not the same as
+carrying a project forward.
+
+### Added
+
+- **`prokron migrate`.** Moves a v0.1 chronicle into the v0.2 layout: tasks,
+  decisions, intent and journal to `prokron/`, prose acceptance converted into
+  contracts with their original wording, `DECISIONS.md` split into
+  `prokron/ADR/` with a supersession index. It reports by default and changes
+  nothing without `--apply`. Every original file is archived unchanged; nothing
+  is deleted. `--phase` assigns a phase when you have one.
+- Installation and `prokron status` both detect a stranded v0.1 chronicle and
+  name the command to run.
+
+### Fixed
+
+- Task completion counts every task. Excluding phase-independent work made a
+  freshly migrated project report `0 / 0`, which reads as "nothing here" rather
+  than "none of this belongs to a phase yet". Phase-independent work now has its
+  own line, and the phase split stays in phase completion.
+
+### Notes
+
+`TASK_GRAPH.md` is not carried over: it is wholly derivable and the compiler
+regenerates it. `STATE.md` is — its risks and next steps are judgement rather
+than derivation, so that prose moves into `HANDOFF.md`. That is the one thing a
+careless migration would actually have destroyed.
+
 ## 0.2.1 — 2026-09-21
 
 Phase 2 closes. Every task resolves to a contract, every criterion passes, and
