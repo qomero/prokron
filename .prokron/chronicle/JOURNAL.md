@@ -583,3 +583,16 @@
 - Verified: headless Chrome for the hover, the zoom, the tab switch and the
   offline fallback; an independent Python traversal for the chain sizes.
 - Next: open P3 from `docs/Phase 3.md`, authority before implementation.
+
+## 2026-09-22 — T-GRAPHVIEW-02
+
+- Did: a task in a diagram now opens the detail dialog the task tables already
+  open. Same function, same embedded project, so the two routes cannot drift.
+- Watched for: a pan ending on a task and being read as a click. Movement past
+  three pixels marks the gesture a pan and suppresses the click. Tested by
+  driving the pointer sequence a browser would send, not by trusting the
+  handler's shape.
+- Watched for: promising a dialog that does not exist. Gates and phases are
+  nodes too. Only nodes the node map names as tasks get the pointer cursor and
+  the handler; `Gate_A` gets neither.
+- Next: open P3 from `docs/Phase 3.md`, authority before implementation.

@@ -607,6 +607,16 @@ class TestDashboard(FixtureCase):
                     inverted[dependency].add(task)
         self.assertEqual(backward, inverted)
 
+    def test_the_graph_reaches_the_same_dialog_as_the_tables(self) -> None:
+        """A task opens from the drawing and from its table row, and both read
+        the one embedded project. Only tasks are offered: a gate or a phase is
+        a node too, and marking it clickable would promise a dialog that does
+        not exist."""
+        self.assertIn("if (id) showTask(id);", self.html)
+        self.assertIn("NODE_MAP[node.dataset.id]", self.html)
+        self.assertIn("node.classList.toggle('opens', Boolean(NODE_MAP", self.html)
+        self.assertIn("if (panned) return;", self.html)
+
     def test_rendering_twice_gives_the_same_page(self) -> None:
         again = dashboard.render(self.project, self.report, compiler.as_json(self.project))
         self.assertEqual(self.html, again)

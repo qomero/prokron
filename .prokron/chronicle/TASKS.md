@@ -539,3 +539,14 @@
 - AC: AC-T-GRAPHVIEW-01
 - Evidence: Every diagram now opens at a legible scale rather than shrunk to the panel, with zoom, pan, pinch, a percentage readout and Fit. Hovering a task in the task graph marks its transitive dependencies and dependents and dims the rest; the chain is walked over the compiled `deps` and `blocks`, so it agrees with `explain` — 13, 2 and 11 for T-P2-14, T-AUTHOR-01 and T-GRAPHVIEW-01, confirmed against an independent traversal of `project.json`. With the diagram library unreachable the page falls back to diagram source and every number still reports. 118 unit tests and the installer suite pass, and rendering the page twice gives the same bytes.
 - Governed by: ADR-025
+
+## T-GRAPHVIEW-02: Open a task from the graph
+- Status: DONE
+- Phase: P-NONE
+- Validation: SYNTHETIC
+- Dependencies: T-GRAPHVIEW-01
+- Owner: claude/primary
+- Claimed: 2026-09-22
+- AC: AC-T-GRAPHVIEW-02
+- Evidence: Clicking a task in any diagram opens the detail dialog the task tables open, verified in headless Chrome to produce the same heading by both routes. A pan does not count as a click: movement beyond three pixels marks the gesture and suppresses it. Only nodes the node map names as tasks carry a pointer cursor and respond; `Gate_A` on the gate view does neither. 119 unit tests and the installer suite pass.
+- Governed by: ADR-025

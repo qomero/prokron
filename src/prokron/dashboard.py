@@ -121,6 +121,8 @@ code, .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-
 .stage.tracing .flowchart-link { opacity: 0.06; }
 .stage.tracing .flowchart-link.chain { opacity: 1; }
 .stage.tracing g.cluster { opacity: 0.45; }
+/* Only nodes that are tasks open anything, so only those look clickable. */
+.stage g.node.opens { cursor: pointer; }
 .tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
 .tabs button { font: inherit; font-size: 13px; padding: 5px 12px; cursor: pointer;
   background: var(--panel); color: var(--muted); border: 1px solid var(--line);
@@ -207,6 +209,7 @@ const traceNote = document.getElementById('trace-note');
 const view = { k: 1, x: 0, y: 0 };
 let adjusted = false;   // the reader has zoomed or panned; stop re-fitting
 let drag = null;
+let panned = false;
 let traced = null;
 
 function applyView() {
@@ -317,12 +320,18 @@ canvas.addEventListener('wheel', event => {
 
 canvas.addEventListener('pointerdown', event => {
   if (event.button !== 0) return;
-  drag = { x: event.clientX - view.x, y: event.clientY - view.y };
+  drag = { x: event.clientX - view.x, y: event.clientY - view.y,
+           fromX: event.clientX, fromY: event.clientY };
+  panned = false;
   canvas.setPointerCapture(event.pointerId);
   canvas.classList.add('grabbing');
 });
 canvas.addEventListener('pointermove', event => {
   if (!drag) return;
+  // A click carries a little movement with it. Past this the gesture was a
+  // pan, and releasing over a task must not open it.
+  if (Math.abs(event.clientX - drag.fromX) > 3 ||
+      Math.abs(event.clientY - drag.fromY) > 3) panned = true;
   view.x = event.clientX - drag.x;
   view.y = event.clientY - drag.y;
   adjusted = true;
@@ -390,7 +399,7 @@ function clearTrace() {
   traceNote.textContent = HINT;
 }
 
-const HINT = 'Hover a task to trace its chain · drag to pan · ' +
+const HINT = 'Hover a task to trace its chain · click it for detail · drag to pan · ' +
   'pinch or \u2318/Ctrl-scroll to zoom';
 
 canvas.addEventListener('mousemove', event => {
@@ -403,15 +412,30 @@ canvas.addEventListener('mousemove', event => {
 });
 canvas.addEventListener('mouseleave', () => { traced = null; clearTrace(); });
 
+// The drawing is only how the element is found. What opens is the same dialog
+// the task tables open, reading the same compiled project (ADR-025).
+canvas.addEventListener('click', event => {
+  if (panned) return;
+  const node = event.target.closest && event.target.closest('g.node[data-id]');
+  const id = node ? NODE_MAP[node.dataset.id] : null;
+  if (id) showTask(id);
+});
+
+function markOpenable() {
+  stage.querySelectorAll('g.node[data-id]').forEach(node =>
+    node.classList.toggle('opens', Boolean(NODE_MAP[node.dataset.id])));
+}
+
 // --- Rendering ---------------------------------------------------------
 
 function draw() {
   target.removeAttribute('data-processed');
   traced = null;
   clearTrace();
+  const ready = () => { openView(); markOpenable(); };
   const done = window.mermaid.run({ nodes: [target] });
-  if (done && typeof done.then === 'function') done.then(openView, openView);
-  else openView();
+  if (done && typeof done.then === 'function') done.then(ready, ready);
+  else ready();
 }
 
 const tabs = document.querySelectorAll('.tabs button');

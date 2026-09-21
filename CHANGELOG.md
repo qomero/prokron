@@ -4,6 +4,16 @@ Prokron records its own history in `.prokron/chronicle/JOURNAL.md` and its
 decisions in `.prokron/chronicle/ADR/`. This file is the short version, for
 people arriving from a release page.
 
+## 0.3.2 — 2026-09-22
+
+### Added
+
+- **Clicking a task in a diagram opens its detail.** The same dialog the task
+  tables open, reading the same embedded project, so the two routes cannot
+  show different things. Panning does not count as a click, and nodes that are
+  not tasks — gates, phases — are neither offered as clickable nor respond to
+  one.
+
 ## 0.3.1 — 2026-09-22
 
 ### Added

@@ -1078,3 +1078,27 @@ nothing, however correct it is.
     compares the strings; the existing regeneration test still passes; the
     interaction is static script text in the generated file and adds no
     request beyond the diagram library that was already there.
+
+## AC-T-GRAPHVIEW-02 — Open a task from the graph
+
+Hovering says what a task is connected to. The next question is always what
+the task actually is, and the answer already exists: the detail dialog the
+task tables open. The graph should reach it too.
+
+- `AC-T-GRAPHVIEW-02-01` — Clicking a task in the graph opens that task's
+  detail dialog, with the same content its table row opens. `RUNTIME` · `PASS`
+  - Evidence: headless Chrome clicks `T-P2-14` in the drawing and the dialog
+    opens on `T-P2-14 — Prove regeneration and close Phase 2`; clicking the
+    task's table row afterwards produces the same heading. Both call the one
+    function that reads the embedded project, so neither can drift from the
+    other.
+- `AC-T-GRAPHVIEW-02-02` — Panning does not open a dialog. A drag that
+  happens to end on a task leaves the page as it was. `RUNTIME` · `PASS`
+  - Evidence: a pointer press on a task, a 40px move and a release followed
+    by the click the browser would deliver leaves the dialog closed. Movement
+    beyond three pixels marks the gesture a pan.
+- `AC-T-GRAPHVIEW-02-03` — Nodes that are not tasks — gates, phases — are not
+  offered as clickable and do nothing when clicked. `RUNTIME` · `PASS`
+  - Evidence: on the gate view, `Gate_A` carries no `opens` class and no
+    pointer cursor, and clicking it opens nothing. The node map holds tasks
+    only, so a node it does not name is inert.
