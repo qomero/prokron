@@ -286,6 +286,28 @@
 - Evidence: No reference to the previous owner remains in `install.sh` or `README.md`. Anonymous install from `https://raw.githubusercontent.com/qomero/prokron/main/install.sh` completed against a disposable repository. 104 unit tests and the installer suite pass.
 - Governed by: ADR-021
 
+## T-GATEVIEW-01: Repair the gate diagram identifier
+- Status: DONE
+- Phase: P-NONE
+- Validation: SYNTHETIC
+- Dependencies: T-P2-10
+- Owner: claude/primary
+- Claimed: 2026-09-22
+- AC: AC-T-GATEVIEW-01
+- Evidence: `_node` now replaces every character outside `[0-9A-Za-z_]`, so `Gate A` becomes `Gate_A`. The regenerated `gates.mmd` parses and the Gates tab renders six gates and their phase-exit edges in headless Chrome. A regression test asserts every identifier in the gate view, including the `class` line; reverting the fix fails it. Task identifiers are unchanged. 105 unit tests and the installer suite pass.
+- Governed by: ADR-016
+
+## T-DOCS-04: Rewrite the public documentation around project management
+- Status: DONE
+- Phase: P-NONE
+- Validation: SYNTHETIC
+- Dependencies: T-DOCS-03
+- Owner: claude/primary
+- Claimed: 2026-09-22
+- AC: AC-T-DOCS-04
+- Evidence: README rewritten to lead with project management and to show generated output. Four screenshots captured from the compiled dashboard at `.prokron/dashboard.html` with headless Chrome at a 1.5 device scale factor. Every quoted figure comes from `prokron status` and `prokron explain` run against the chronicle as committed. All 28 local links and anchors resolve; 105 unit tests and the installer suite pass.
+- Governed by: ADR-012, ADR-022
+
 ## T-P2-PLAN-01: Plan Phase 2 into the chronicle
 - Status: DONE
 - Phase: P2

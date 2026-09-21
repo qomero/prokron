@@ -4,6 +4,40 @@ Prokron records its own history in `prokron/JOURNAL.md` and its decisions in
 `prokron/ADR/`. This file is the short version, for people arriving from a
 release page.
 
+## 0.2.5 — 2026-09-22
+
+Rewrites the README around what Prokron actually is now: project tracking and
+project management, read by a person in a browser and by an agent as text.
+
+### Fixed
+
+- **The Gates view never rendered.** Gates are identified by their heading, so
+  `Gate A` reached Mermaid with a space in it, and Mermaid ends an identifier
+  at the first space — failing the whole diagram rather than one node. Node
+  identifiers now drop every character outside `[0-9A-Za-z_]`. Task identifiers
+  are unchanged. Found by opening every dashboard tab while capturing the
+  README screenshots, which no test had ever done.
+
+### Changed
+
+- **The README leads with project management.** Phase 2 shipped contracts,
+  phases, gates, obstacles, a critical path and a dashboard, and the previous
+  README still described a six-file Markdown convention for agent continuity.
+  People and AI sharing one record is now presented as the mechanism that makes
+  the state trustworthy, rather than as the headline. ADR-022 records the
+  reframing and what it costs.
+- **It shows the product instead of describing it.** Four screenshots of the
+  generated dashboard: project metrics with phases and gates, the ready and
+  blocked view with the critical path, a task drill-down with its contract and
+  recorded evidence, and the dependency graph.
+- **Every figure is current and real.** The `status` and `explain` blocks are
+  copied from runs against the committed chronicle. The previous README quoted
+  37 of 39 tasks from an earlier release.
+- A new section separates what is verified — the deterministic compiler, 104
+  tests, byte-for-byte regeneration, two agents auditing one contract — from
+  what is not, which is cross-session agent behaviour. This repository's own red
+  gate and unfinished task stay visible in both the text and the screenshots.
+
 ## 0.2.4 — 2026-09-22
 
 Stops installation depending on a GitHub rename redirect.

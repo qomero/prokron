@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import io
 import json
+import re
 import shutil
 import sys
 import tempfile
@@ -494,6 +495,24 @@ class TestRenderers(FixtureCase):
         for task in self.project.tasks:
             self.assertIn(task.id.replace("-", "_"), graph)
         self.assertIn("T_ONE --> T_TWO", graph)
+
+    def test_a_space_in_a_gate_name_never_reaches_a_node_identifier(self) -> None:
+        """Gates are identified by their heading, so `Gate A` arrives with a
+        space. Mermaid ends an identifier at the first space, which breaks the
+        whole diagram rather than only that node."""
+        gates = mermaid.gate_graph(self.project)
+        self.assertIn('Gate_A{"Gate A', gates)
+        for line in gates.splitlines():
+            stripped = line.strip()
+            if not stripped or stripped.startswith(("flowchart", "classDef")):
+                continue
+            if stripped.startswith("class "):
+                names = stripped[len("class "):].rsplit(" ", 1)[0]
+                identifiers = names.split(",")
+            else:
+                identifiers = re.split(r"[{\[(]|-->", stripped, maxsplit=1)[:1]
+            for identifier in identifiers:
+                self.assertRegex(identifier.strip(), r"^[0-9A-Za-z_]+$")
 
     def test_dependency_timeline_claims_no_dates(self) -> None:
         timeline = mermaid.dependency_timeline(self.project, self.report)

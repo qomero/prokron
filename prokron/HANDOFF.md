@@ -5,7 +5,7 @@ the next person or agent needs in order to continue right now. Closed history
 belongs in `JOURNAL.md`.
 
 ## Position
-- Release 0.2.4. P2 is `COMPLETE` as of 2026-09-22, accepted by the owner under
+- Release 0.2.5. P2 is `COMPLETE` as of 2026-09-22, accepted by the owner under
   ADR-020. P0 is `COMPLETE`. P1 is `EXIT_PENDING` behind one red gate.
 - Nothing in flight. Intent is empty.
 - 42 of 43 tasks done. The one open task is T-PILOT-01, deliberately parked.

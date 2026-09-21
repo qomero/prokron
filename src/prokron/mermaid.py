@@ -7,6 +7,8 @@ other expresses dates, and only real metadata produces the second.
 
 from __future__ import annotations
 
+import re
+
 from .analytics import Report
 from .model import Project
 
@@ -19,7 +21,14 @@ _SHAPE = {
 
 
 def _node(task_id: str) -> str:
-    return task_id.replace("-", "_")
+    """A Mermaid node identifier.
+
+    Task IDs only ever contain hyphens, but a gate is identified by its heading,
+    so `Gate A` reaches here with a space in it. Mermaid ends a node identifier
+    at the first space, which makes the whole diagram unparseable rather than
+    only that node wrong.
+    """
+    return re.sub(r"[^0-9A-Za-z_]", "_", task_id)
 
 
 def _label(text: str) -> str:

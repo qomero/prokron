@@ -872,6 +872,64 @@ interoperability, and regeneration each check PASS.
 - `AC-T-REMOTE-01-01` — Origin resolves to https://github.com/qomero/ten-repo.git. `INSPECTION` · `PASS`
   - Evidence: git remote -v confirms the requested URL for both fetch and push.
 
+## AC-T-GATEVIEW-01 — Repair the gate diagram identifier
+
+Found while capturing screenshots for the README: the Gates tab rendered
+`Syntax error in text` instead of a diagram. Gates are identified by their
+heading, so `Gate A` reached the Mermaid renderer with a space in it, and
+Mermaid ends an identifier at the first space. One malformed identifier fails
+the whole diagram, not one node.
+
+- `AC-T-GATEVIEW-01-01` — Every Mermaid node identifier consists only of
+  `[0-9A-Za-z_]`, including identifiers listed on a `class` line.
+  `TEST` · `PASS`
+  - Evidence: the regression test scans every line of the generated gate view
+    and asserts the pattern. Reverting `_node` to its previous form fails it.
+- `AC-T-GATEVIEW-01-02` — The Gates view renders as a diagram in a browser.
+  `RUNTIME` · `PASS`
+  - Evidence: headless Chrome renders six gate nodes and their edges to the
+    phase-exit nodes, with the red gate styled apart from the green ones.
+- `AC-T-GATEVIEW-01-03` — Task identifiers are unchanged, so no other view
+  moves. `INSPECTION` · `PASS`
+  - Evidence: task IDs contain only hyphens, which mapped to `_` before and
+    still do; `task-graph.mmd` is unchanged apart from the tasks added today.
+
+## AC-T-DOCS-04 — Rewrite the public documentation around project management
+
+The README is the only view most readers get. It must lead with what the
+product does for a person, and it must show the generated output rather than
+describe it.
+
+- `AC-T-DOCS-04-01` — The README leads with project tracking and project
+  management, and presents the shared human and AI record as the mechanism that
+  makes the state trustworthy rather than as the headline claim.
+  `INSPECTION` · `PASS`
+  - Evidence: the title, the opening paragraphs and the first section after the
+    dashboard image are about phases, contracts, ready work, blockers and
+    evidence. The shared-record argument appears under "One record, both
+    readers", stated as a property of the system.
+- `AC-T-DOCS-04-02` — The README shows real generated output. Screenshots come
+  from the compiled dashboard, not from a mock-up or an edited image.
+  `RUNTIME` · `PASS`
+  - Evidence: four captures of `.prokron/dashboard.html` taken with headless
+    Chrome. Content is unmodified; only scroll offset and, for the drill-down,
+    the task selection were scripted so the capture is reproducible.
+- `AC-T-DOCS-04-03` — Every project figure quoted in the README matches a
+  compile of the chronicle as committed, and no stale figure survives.
+  `INSPECTION` · `PASS`
+  - Evidence: the `status` and `explain` blocks are copied from runs against
+    this chronicle. The previous README quoted 37 of 39 tasks from an earlier
+    release and described a six-file chronicle that no longer exists.
+- `AC-T-DOCS-04-04` — The README states what is verified and what is not, and
+  does not hide this project's own unfinished work. `INSPECTION` · `PASS`
+  - Evidence: the red gate and the one unfinished task appear in both the
+    quoted `status` output and a screenshot, and a dedicated section separates
+    the tested compiler claims from the unverified agent-behaviour claims.
+- `AC-T-DOCS-04-05` — Every local link and anchor in the README resolves.
+  `TEST` · `PASS`
+  - Evidence: 28 links and anchors checked against the working tree; none
+    missing.
+
 ## AC-T-RENAME-01 — Point installation at the renamed GitHub owner
 
 The owner account was renamed from `qomerovn` to `qomero`. GitHub redirects the

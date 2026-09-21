@@ -4,98 +4,142 @@
 
 # Prokron
 
-**One project. Shared understanding.**
+**Project management that a person and an AI can both read.**
 
-**Prokron is short for Project Chronicle.** It gives people and AI a common
-language for understanding a project: why it exists, which decisions shaped it,
-where it stands, and where it is going.
+**Prokron is short for Project Chronicle.** Your project's phases, tasks,
+dependencies, decisions, and definition of done live as Markdown inside your
+repository. A small deterministic tool compiles those documents into project
+state: what is done, what is ready, what is blocked, which gates pass, what sits
+on the critical path, and what evidence exists for any claim that work is
+finished.
 
-Every project has a story behind its code. An idea became a plan. A constraint
-changed a decision. A promising approach was tried, then replaced. Those reasons
-matter to everyone who builds, reviews, advises on, or inherits the project.
+People read it in a browser. Agents read the same records as text. Neither side
+gets a private version of the truth.
 
-Prokron keeps that story in a living Markdown chronicle inside your repository.
-**The task graph shows where the work is going. The decision history explains
-how it got here.** People and AI can read the same record, question the same
-assumptions, and work from the same understanding—before reading implementation
-code.
-
-[Get started](#get-started) · [See the workflow](#how-it-works) ·
+[Get started](#get-started) · [What you get](#project-management-from-the-files-you-already-write) ·
 [Commands](#commands) · [Specification](docs/SPEC.md)
 
-## Make the project understandable
+<p align="center">
+  <img src="docs/assets/dashboard-state.png" alt="The Prokron dashboard showing progress metrics for task completion, acceptance, validation coverage, gate readiness and critical path, followed by three phases with status badges and five gates marked green." width="900">
+</p>
 
-A founder explaining a change in direction. A teammate joining months later.
-An AI agent proposing the next step. Each needs context that survives the
-conversation where it first appeared.
+<p align="center"><em><code>prokron dashboard</code>, generated from this repository's own chronicle.<br>
+Every figure is computed from the Markdown files in <code>prokron/</code>. No model, no service, no network.</em></p>
 
-| The question | What the chronicle makes visible |
+## Project management from the files you already write
+
+Most project tracking lives somewhere your repository cannot see, and most
+repository documentation cannot answer a project question. Prokron puts the
+tracking in the repository and makes it answerable.
+
+| The project question | Where the answer comes from |
 |---|---|
-| **Why does this project exist?** | Its purpose, intended outcome, and the work chosen to serve it. |
-| **Why did we take this path?** | Decisions, constraints, alternatives, and the reasons earlier choices changed. |
-| **Where are we now?** | Completed work and its evidence, open questions, blockers, and the active task. |
-| **What should happen next?** | A task graph with dependencies, acceptance criteria, and an explicit next action. |
+| **What phase are we in, and what has to be true to leave it?** | `PHASES.md` — outcome, entry, exit criteria, exit authority, gates. |
+| **What is done, and who says so?** | `ACCEPTANCE.md` — a frozen contract per task, with recorded evidence. |
+| **What can I start right now?** | The compiled task graph: dependencies resolved, ready work listed. |
+| **What is blocking the project?** | Obstacles, computed — dependency, acceptance, gate, phase, validation. |
+| **Why did we choose this?** | `ADR/` — append-only decisions, superseded rather than rewritten. |
+| **What was someone in the middle of?** | `INTENT.md` and `HANDOFF.md` — one active task, one exact stopping point. |
 
-The benefit is shared context: a person can review the reasoning, an AI can
-use it to propose work, and the team can challenge either against the same
-record. When understanding changes, the chronicle changes with it.
+Nothing here is a status report someone wrote by hand. It is computed from the
+authored documents, so it cannot drift away from them.
 
-Decisions are recorded as Architecture Decision Records (ADRs). A new decision
-can supersede an earlier one, but the earlier reasoning stays visible. The
-project's evolution remains explainable.
+<p align="center">
+  <img src="docs/assets/dashboard-next.png" alt="Dashboard sections showing nothing in flight, one ready task, two obstacles labelled GATE_BLOCKER and PHASE_BLOCKER, and the critical path." width="900">
+</p>
 
-Six Markdown records, agent instructions, and a small installer. Everything
-lives in your repo, where you can read it, review it, and commit it to Git.
-There is no Prokron service to run or model API to configure.
+<p align="center"><em>What is in flight, what is ready, what blocks the project, and what lies on the critical path.<br>
+This is Prokron reporting honestly on itself: one red gate, one unfinished task, and it says so.</em></p>
 
-## How it works
+## Done is a contract, not an opinion
+
+A task is not done because someone says it is done. It is done when every
+mandatory criterion of its contract holds and its evidence is recorded.
+
+Each criterion is written as Given / When / Then, carries an evidence class
+(`TEST`, `MUTATION`, `INSPECTION`, `RUNTIME`, `MANUAL`), and holds a state. A
+contract freezes the moment its task starts. Changing it afterwards takes an
+Acceptance Change Request, not a quiet edit — and a reviewer's preference is not
+an acceptance criterion.
+
+Completion and confidence stay separate. A task can be `DONE` and still be
+`UNTESTED`; only a named human may record `HUMAN_VERIFIED`, and only against
+manual evidence.
+
+<p align="center">
+  <img src="docs/assets/dashboard-contract.png" alt="A task drill-down showing T-P2-14 with status DONE, dependencies, its four acceptance criteria each marked PASS with an evidence class, inherited invariants, and a paragraph of recorded evidence." width="900">
+</p>
+
+<p align="center"><em>Click any task for its contract, its criteria, and the evidence behind each one.<br>
+The evidence here records two coding agents disagreeing about a criterion, and how that disagreement was settled.</em></p>
+
+That last part matters more than it looks. When two people — or two agents —
+disagree about whether something is finished, the contract makes the
+disagreement **decidable** instead of an argument. Prokron ships an explicit
+arbitration order: product authority, then the contract, then invariants, then
+accepted decisions, then reproducible evidence, then existing convention, and
+only last, reviewer preference.
+
+## One record, both readers
 
 ```mermaid
 flowchart TD
-    P["People: build, review, advise"] <--> C["PROJECT CHRONICLE: shared understanding"]
-    A["AI agents: reason, record, develop"] <--> C
-    C --- H["PAST: purpose and decision history"]
-    C --- S["PRESENT: state, evidence, and active work"]
-    C --- N["FUTURE: task graph and next steps"]
+    P["People: plan, decide, review"] <--> C["PROJECT CHRONICLE: authored Markdown"]
+    A["AI agents: implement, record, report"] <--> C
+    C --> K["prokron compile"]
+    K --> S["Project state: phases, gates, ready work, blockers, critical path"]
+    S --> D["Dashboard, task graph, JSON"]
     classDef participants fill:#192b38,color:#f3f6f7,stroke:#7b919f
     classDef chronicle fill:#203a36,color:#f3f6f7,stroke:#8be0bd
-    classDef perspective fill:#382e24,color:#f3f6f7,stroke:#efb373
+    classDef derived fill:#382e24,color:#f3f6f7,stroke:#efb373
     class P,A participants
-    class C chronicle
-    class H,S,N perspective
+    class C,K chronicle
+    class S,D derived
 ```
 
-People set direction, discuss tradeoffs, and review outcomes. The working agent
-is instructed to record new tasks, material decisions, and progress as the work
-happens. Both can consult and maintain the same files. Human-to-human,
-human-to-AI, and AI-to-AI handoffs draw on that shared history.
+People set direction, decide tradeoffs, and accept or reject completion. Agents
+implement, record what they did, and produce evidence. Both maintain the same
+files, and the compiler turns those files into the same state for everyone.
 
-**Two ways to begin:**
+Because the output is deterministic, two agents reading the same project return
+the same answer, and a person checking their work reads the same figures. That
+is what "same language" means here: not a shared summary, but a shared source
+and a shared way of computing from it.
 
-- **New project:** work from the product specification with the developer to
-  create the initial tasks, graph, decisions, and state.
-- **Existing project:** start with an empty chronicle and record from now on.
-  Earlier history is reconstructed only if explicitly requested; Prokron does
-  not invent it.
+### What it refuses to make up
 
-A populated chronicle is preserved when you initialize again.
+A project tool that invents numbers is worse than no tool. Prokron reports a
+duration only when someone recorded one, a date only when someone set one, and
+`UNKNOWN` the rest of the time. Dependency ordering and calendar scheduling are
+deliberately kept in separate views so one never quietly becomes the other.
 
-### A project story everyone can follow
+Completion is also kept apart from confidence. The validation table counts how
+strongly each finished task is actually backed, which is a different question
+from whether it is done.
 
-Imagine a team building an expense tool for freelancers. Months into the work,
-a new teammate or AI advisor asks why bank synchronization is absent:
+<p align="center">
+  <img src="docs/assets/dashboard-views.png" alt="The phases view showing P0 complete, P1 exit pending and P2 complete as a flowchart, above a schedule note stating that no task carries real schedule metadata and no duration is inferred, and a validation table counting tasks by strength." width="900">
+</p>
+
+<p align="center"><em>Six views of the same state: task graph, critical path, phases, gates, dependency ordering, and calendar Gantt.<br>
+Below them, the schedule line says plainly that this project records no dates — rather than drawing a plausible one.</em></p>
+
+### A project story a newcomer can follow
+
+A team is building an expense tool for freelancers. Months in, a new teammate —
+or an AI advisor — asks why bank synchronization is absent:
 
 | Question | Recorded answer |
 |---|---|
 | Why are we building this? | Help freelancers prepare expense records without maintaining a spreadsheet. |
 | What did we originally choose? | `ADR-002` proposed bank synchronization to reduce manual entry. |
-| Why did the direction change? | `ADR-007` superseded it: launch with CSV import because supported banks did not cover the first users. Revisit when coverage improves. |
+| Why did the direction change? | `ADR-007` superseded it: launch with CSV import, because supported banks did not cover the first users. Revisit when coverage improves. |
 | Where is the project now? | Import is complete; duplicate detection is in progress; validation evidence is linked from the tasks. |
 | What comes next? | Finish duplicate detection before starting monthly summaries. The task graph records that dependency. |
 
 The teammate can explain the tradeoff. The advisor can question whether the
 constraint still holds. The coding agent can choose work consistent with the
-current decision. Everyone has the context to move the discussion forward.
+current decision. Nobody has to reconstruct it from commit messages.
 
 *Illustrative example; these are not claims about a deployed project.*
 
@@ -113,10 +157,10 @@ For a **new project**, replace `existing` with `new` and bring your product spec
 Read the script before you pipe it to a shell, as you should with any installer
 delivered this way.
 
-The installer adds `prokron/`, shared instructions, portable workflows, and
-command files for Codex, Claude Code, and OpenCode. It preserves existing
-records and custom instructions, restores missing files, and prints what to run
-in your agent chat.
+The installer adds `prokron/`, the `bin/prokron` tool, shared instructions,
+portable workflows, and command files for Codex, Claude Code, and OpenCode. It
+preserves existing records and custom instructions, restores missing files, and
+prints what to run next.
 
 <details>
 <summary>Install from a local checkout, or through the GitHub CLI</summary>
@@ -145,66 +189,77 @@ Use `new` for a new project.
 | Claude Code / OpenCode | `/prokron-init existing` | `/prokron-init new` |
 | Other capable coding agents | Read `AGENTS.md`, then follow `commands/prokron-init.md` in existing mode. | Same instruction, in new mode. |
 
+**New project:** the agent works from your product specification with you to
+derive the initial phases, tasks, dependencies, and contracts.
+**Existing project:** the chronicle starts empty and records from now on.
+Earlier history is reconstructed only if you explicitly ask; Prokron does not
+invent it. A populated chronicle is preserved if you initialize again.
+
 ### 3. Work normally
 
-Ask for the work you want done. The installed rules instruct the agent to
-create tasks before implementation, append decisions when they are made, and
-keep progress current. You do not need a slash command for every update.
+Ask for the work you want. The installed rules instruct the agent to create the
+task before implementing, write its contract, append a decision when one is
+made, and keep progress current — without a slash command for every update.
 
-Use the chronicle in discussions and reviews, too: ask why a decision was made,
-what changed, or which work serves the current goal. Record material changes
-so the next person or agent can follow the reasoning.
+Then check it yourself:
 
-At the next session, use `/prokron-resume` or `$prokron resume` to continue from
-the saved chronicle.
-
-## What lives in the chronicle
-
-Two directories, and only one of them is authoritative.
-
-```text
-prokron/     written by people and agents; the only source of truth
-.prokron/    generated views; safe to delete and rebuild
+```sh
+./bin/prokron status
+./bin/prokron dashboard && open .prokron/dashboard.html
 ```
 
-The **decision history** and the **completion contracts** are the core. The rest
-connects purpose and history to what is actually happening.
-
-| File in `prokron/` | What it preserves |
-|---|---|
-| **`ADR/`** | The reasoning: append-only decisions and their supersession chain. |
-| **`ACCEPTANCE.md`** | The bar: what must be demonstrated before work counts as done. |
-| `PHASES.md` | The arc: maturity stages, their exit conditions, and gates. |
-| `TASKS.md` | The work: phase, owners, dependencies, status, and evidence. |
-| `INTENT.md` | The focus: zero or one active task and its exact execution point. |
-| `HANDOFF.md` | The baton: what the next person or agent needs right now. |
-| `JOURNAL.md` | The diary: progress, validation, unfinished work, and handoffs. |
-
-`.prokron/` holds generated views: a state snapshot, the task graph, a
-`project.json`, Mermaid diagrams, and a dashboard. Delete the whole directory
-and `prokron compile` rebuilds it byte for byte.
+Use the chronicle in discussion and review, too: ask why a decision was made,
+what changed, or which work actually serves the current goal.
 
 ## Asking the project questions
 
-The installer ships a small tool — standard-library Python, no dependencies, no
-package to install — that compiles the chronicle and answers from it. Nothing it
-reports involves a model, so two agents reading the same project get the same
-answer.
+The tool is standard-library Python. No dependencies, no package to install, no
+model provider, no network. Output for a given set of documents is identical
+every time, which is what lets two agents and a person agree on the numbers.
 
 ```console
 $ ./bin/prokron status
-Prokron — phase P2
-  tasks        37 / 39
-  acceptance   83 / 88 criteria passing
-  validation   16 / 39 reviewed or verified
-  gates        4 / 6 green
+Prokron — phase P1
+  tasks        45 / 46
+  acceptance   109 / 114 criteria passing
+  validation   19 / 46 reviewed or verified
+  gates        5 / 6 green
   P0           14 / 14 · COMPLETE
-  P1           9 / 9 · EXIT_PENDING
-  P2           14 / 16 · ACTIVE
+  P1           9 / 10 · EXIT_PENDING
+  P2           17 / 17 · COMPLETE
+  no phase     5 tasks
+
   WIP       none
-  Ready     T-P2-13
-  Blocked   T-P2-14
-  Next      T-P2-13 (critical path)
+  Ready     T-PILOT-01
+  Blocked   none
+  Next      T-PILOT-01 (critical path)
+
+  2 obstacles:
+    GATE_BLOCKER         P1 cannot exit while Gate P1-CONTINUITY is red
+    PHASE_BLOCKER        P1 has 1 unfinished task
+```
+
+That is this repository, right now, reporting its own unfinished work.
+
+```console
+$ ./bin/prokron explain T-PILOT-01
+T-PILOT-01 — Run the continuity pilot
+  phase P1 · TODO · UNTESTED
+
+  Dependencies
+    ✓ T-READINESS-01
+
+  Acceptance
+    ✓ AC-T-PILOT-01-01 [RUNTIME] Given a disposable project and a small specification, ...
+    ✓ AC-T-PILOT-01-02 [RUNTIME] Given an ordinary work request carrying no Prokron command, ...
+    ○ AC-T-PILOT-01-03 [RUNTIME] Given a material choice that is later changed, ...
+    ○ AC-T-PILOT-01-04 [RUNTIME] Given work paused partway, ...
+    ○ AC-T-PILOT-01-05 [RUNTIME] Given a fresh agent session with no prior chat, ...
+    ○ AC-T-PILOT-01-06 [RUNTIME] Given a populated chronicle, ...
+    ○ AC-T-PILOT-01-07 [MANUAL] Given a person who did not do the work, ...
+
+  Evidence: none recorded
+  Source:   TASKS.md → T-PILOT-01
 ```
 
 | Command | Answers |
@@ -212,30 +267,49 @@ Prokron — phase P2
 | `prokron status` | Where the project stands, what is ready, what blocks it. |
 | `prokron explain <task>` | Why one task exists, its criteria, blockers, and evidence. |
 | `prokron context <task>` | The minimal packet an agent needs to start that task. |
-| `prokron validate` | Broken dependencies, dangling references, unmet contracts. |
+| `prokron validate` | Broken dependencies, dangling references, authority conflicts. |
 | `prokron compile` | Rebuilds `.prokron/` from the authored documents. |
-| `prokron dashboard` | A local page: phases, gates, obstacles, critical path, drill-down. |
+| `prokron dashboard` | The local page above: phases, gates, obstacles, graph, drill-down. |
 | `prokron migrate` | Moves a v0.1 chronicle into the current layout. |
+
+## What lives in the chronicle
+
+Two directories, and only one of them is authoritative.
+
+```text
+prokron/     written by people and agents; the only source of truth
+.prokron/    compiled; safe to delete and rebuild
+```
+
+| File in `prokron/` | What it holds |
+|---|---|
+| **`ACCEPTANCE.md`** | The bar: what must be demonstrated before work counts as done. |
+| **`ADR/`** | The reasoning: append-only decisions and their supersession chain. |
+| `PHASES.md` | The arc: maturity stages, exit conditions, exit authority, and gates. |
+| `TASKS.md` | The work: phase, owner, dependencies, status, validation, evidence. |
+| `INTENT.md` | The focus: zero or one active task and its exact execution point. |
+| `HANDOFF.md` | The baton: what the next person or agent needs right now. |
+| `JOURNAL.md` | The diary: progress, validation, what was left mid-air, and why. |
+
+`.prokron/` holds the compiled views: a state snapshot, the task graph, a
+`project.json` for other tools, Mermaid diagrams, and the dashboard. Delete the
+whole directory and `prokron compile` rebuilds it byte for byte. Nothing in it
+is authority, and nothing in it decides a question the authored files answer.
+
+Prokron's own records are a live example: its
+[task graph](.prokron/TASK_GRAPH.md), [contracts](prokron/ACCEPTANCE.md),
+[decisions](prokron/ADR/), and [chronicle guide](prokron/README.md).
 
 ### Upgrading from v0.1
 
 v0.2 moved authority from `.prokron/` to `prokron/`. If you installed Prokron
-before that, your records are intact but in the old place, and the tool will
-report an empty project until you move them:
+before that, your records are intact but in the old place, and the tool reports
+an empty project until you move them:
 
 ```sh
 ./bin/prokron migrate           # shows what it would do
-./bin/prokron migrate --apply   # performs it, archiving the originals
+./bin/prokron migrate --apply   # performs it, archiving every original
 ```
-
-A task is not done because someone says it is done. It is done when its frozen
-contract has enough evidence — which is what makes two agents disagreeing about
-it a decidable question instead of an argument.
-
-See the [chronicle guide](prokron/README.md) for the read order, or
-[Prokron's own task graph](.prokron/TASK_GRAPH.md),
-[contracts](prokron/ACCEPTANCE.md), and
-[decision history](prokron/ADR/) for a real example.
 
 ## Commands
 
@@ -253,38 +327,41 @@ All workflows also live in [`commands/`](commands) as portable Markdown prompts.
 
 ## Use the model you prefer
 
-Prokron configures the **agent host** that reads files and does the work.
-GLM, MiniMax, Mistral, Grok, and other models use the same chronicle through a
+Prokron configures the **agent host** that reads files and does the work. GLM,
+MiniMax, Mistral, Grok, and other models use the same chronicle through a
 compatible host; provider setup and model selection stay with that host.
 
 Codex receives a project skill. Claude Code and OpenCode receive project
 commands. Hosts that load [`AGENTS.md`](https://agents.md/) can follow the shared
-rules; for other capable agents, explicitly ask them to read it and follow the
+rules; for other capable agents, ask them explicitly to read it and follow the
 relevant file in `commands/`.
 
 For OpenCode setup, see its [providers](https://opencode.ai/docs/providers),
 [instructions](https://opencode.ai/docs/rules/), and
 [custom commands](https://opencode.ai/docs/commands/) documentation.
-Behavior depends on the host and model following these instructions.
 
-## Checkpoint before context runs out
+## What is verified, and what is not
 
-The rules call for a checkpoint before handoff, compaction, session ending, or
-any known or estimated context, token, time, rate, or quota limit—including
-five-hour and seven-day windows. When the host exposes no meter, the fallback
-is to checkpoint after meaningful milestones and before long-running work.
+The compiler is tested and deterministic: 105 unit tests plus an installer
+regression suite, and `rm -rf .prokron && prokron compile` reproduces every
+generated file byte for byte. Two different coding agents have audited the same
+implementation against the same contract and reached the same verdicts, after a
+real disagreement that the arbitration order settled.
 
-**Prokron is an instruction-based workflow.** It cannot read hidden quota
-counters or guarantee a final write after an abrupt cutoff. Frequent records
-give the next session a recent place to resume; the working agent must maintain
-them.
+Agent behaviour is a different claim, and it is not finished. Prokron's rules
+ask an agent to checkpoint before a handoff, compaction, session end, or any
+known or estimated context, token, time, rate, or quota limit. **Prokron cannot
+read hidden quota counters or guarantee a final write after an abrupt cutoff.**
+Those rules are instructions to a host, and whether hosts follow them across
+real multi-session work is still being measured by the
+[continuity pilot](docs/SPEC.md#handoff-pilot) — which is exactly why this
+repository reports one red gate.
 
-Installation and preservation checks pass. Real-session agent compliance and
-quota-warning behavior still need a [handoff pilot](docs/SPEC.md#handoff-pilot)
-with your chosen host and model. Run the installer checks from this checkout:
+Run the installer checks from a checkout:
 
 ```sh
 sh tests/install.sh
+python3 -m unittest discover -s tests
 ```
 
 ## Releases
@@ -293,26 +370,26 @@ sh tests/install.sh
 what changed. The full history lives in the chronicle itself:
 [decisions](prokron/ADR/) and [journal](prokron/JOURNAL.md).
 
-## Updating an installation
+### Updating an installation
 
-Reinstalling adds missing files; it **does not upgrade existing guidance**.
-It prints a reminder when guidance is retained. From a current Prokron checkout,
-review and merge changes to:
+Reinstalling adds missing files; it **does not upgrade existing guidance**, and
+it prints a reminder when guidance is retained. From a current checkout, review
+and merge changes to:
 
 - `commands/`, `.claude/commands/`, and `.opencode/commands/`;
 - `.agents/skills/prokron/SKILL.md`;
 - `templates/prokron/README.md`, installed as `prokron/README.md`;
 - the Prokron block in `AGENTS.md`, preserving surrounding project rules.
 
-Keep customizations and every chronicle record. Never copy empty templates
-over project history.
+Keep customizations and every chronicle record. Never copy empty templates over
+project history.
 
-## Help improve the workflow
+## Help improve it
 
-Try the [handoff pilot](docs/SPEC.md#handoff-pilot) in a disposable project.
-When reporting a gap, include the host/model, the request, what was recorded,
-and what a person or agent could not understand from it. Remove private project
-details before sharing.
+Try the [continuity pilot](docs/SPEC.md#handoff-pilot) in a disposable project.
+When reporting a gap, include the host and model, the request, what was
+recorded, and what a person or agent could not understand from it. Remove
+private project details before sharing.
 
 Changes should keep Prokron small and readable. The
 [specification](docs/SPEC.md) defines the working agreement and scope.

@@ -25,7 +25,7 @@ flowchart LR
         T_READINESS_01["T-READINESS-01<br/>Close workflow readiness gaps"]
         T_DOCS_02["T-DOCS-02<br/>Make the GitHub introduction clear and compelling"]
         T_DOCS_03["T-DOCS-03<br/>Position Prokron as shared project understanding"]
-        T_PILOT_01(["T-PILOT-01<br/>Run the continuity pilot"])
+        T_PILOT_01("T-PILOT-01<br/>Run the continuity pilot")
     end
     subgraph P2["P2 From acceptance contracts to project management"]
         T_P2_PLAN_01["T-P2-PLAN-01<br/>Plan Phase 2 into the chronicle"]
@@ -49,6 +49,9 @@ flowchart LR
     subgraph P_NONE["Phase-independent"]
         T_REMOTE_01["T-REMOTE-01<br/>Update origin URL"]
         T_GIT_NAME_01["T-GIT-NAME-01<br/>Set global Git username"]
+        T_RENAME_01["T-RENAME-01<br/>Point installation at the renamed GitHub owner"]
+        T_GATEVIEW_01["T-GATEVIEW-01<br/>Repair the gate diagram identifier"]
+        T_DOCS_04["T-DOCS-04<br/>Rewrite the public documentation around project management"]
     end
     T_V01_01 --> T_V01_02
     T_V01_01 --> T_V01_03
@@ -71,6 +74,8 @@ flowchart LR
     T_CONTINUITY_01 --> T_READINESS_01
     T_READINESS_01 --> T_DOCS_02
     T_DOCS_02 --> T_DOCS_03
+    T_P2_10 --> T_GATEVIEW_01
+    T_DOCS_03 --> T_DOCS_04
     T_P2_01 --> T_P2_02
     T_P2_02 --> T_P2_03
     T_P2_03 --> T_P2_04
@@ -91,5 +96,4 @@ flowchart LR
     classDef done fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20;
     classDef wip fill:#fff8e1,stroke:#f9a825,color:#7f6000;
     classDef blocked fill:#ffebee,stroke:#c62828,color:#8e0000;
-    class T_V01_01,T_V01_02,T_V01_03,T_V01_04,T_V01_05,T_V01_06,T_V011_01,T_V011_02,T_V02_01,T_V02_02,T_V02_03,T_V02_04,T_HARNESS_01,T_HARNESS_02,T_WORKFLOW_01,T_DOCS_01,T_INSTALL_01,T_HOSTS_01,T_CLEANUP_01,T_CONTINUITY_01,T_READINESS_01,T_DOCS_02,T_DOCS_03,T_REMOTE_01,T_GIT_NAME_01,T_P2_PLAN_01,T_P2_01,T_P2_02,T_P2_03,T_P2_04,T_P2_05,T_P2_06,T_P2_07,T_P2_08,T_P2_09,T_P2_10,T_P2_11,T_P2_12,T_P2_13,T_P2_14,T_P2_AUDIT_01,T_MIGRATE_01 done;
-    class T_PILOT_01 wip;
+    class T_V01_01,T_V01_02,T_V01_03,T_V01_04,T_V01_05,T_V01_06,T_V011_01,T_V011_02,T_V02_01,T_V02_02,T_V02_03,T_V02_04,T_HARNESS_01,T_HARNESS_02,T_WORKFLOW_01,T_DOCS_01,T_INSTALL_01,T_HOSTS_01,T_CLEANUP_01,T_CONTINUITY_01,T_READINESS_01,T_DOCS_02,T_DOCS_03,T_REMOTE_01,T_GIT_NAME_01,T_RENAME_01,T_GATEVIEW_01,T_DOCS_04,T_P2_PLAN_01,T_P2_01,T_P2_02,T_P2_03,T_P2_04,T_P2_05,T_P2_06,T_P2_07,T_P2_08,T_P2_09,T_P2_10,T_P2_11,T_P2_12,T_P2_13,T_P2_14,T_P2_AUDIT_01,T_MIGRATE_01 done;
