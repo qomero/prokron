@@ -4,43 +4,117 @@
 
 # Prokron
 
-**Project management that a person and an AI can both read.**
+**Prokron keeps people and AI agents working from the same project state.**
 
-**Prokron is short for Project Chronicle.** Your project's phases, tasks,
-dependencies, decisions, and definition of done live as Markdown inside your
-repository. A small deterministic tool compiles those documents into project
-state: what is done, what is ready, what is blocked, which gates pass, what sits
-on the critical path, and what evidence exists for any claim that work is
-finished.
+Project management that a person and an AI can both read. Prokron is short for
+Project Chronicle.
 
-People read it in a browser. Agents read the same records as text. Neither side
-gets a private version of the truth.
+[The problem](#the-problem) · [Get started](#get-started) ·
+[Commands](#asking-the-project-questions) · [Specification](docs/SPEC.md) ·
+[Thesis](docs/PRODUCT-THESIS.md)
 
-[Get started](#get-started) · [What you get](#project-management-from-the-files-you-already-write) ·
-[Commands](#commands) · [Specification](docs/SPEC.md)
+## The problem
+
+A coding session ends. The next one starts somewhere else — a new session, a
+different model, another person, a parallel branch. The code survives. What the
+code meant does not.
+
+The next participant cannot tell from the repository which task was half
+finished, which decision was reversed last month and why, what has to happen
+before this work can start, or what would have to be true for anyone to call it
+done. So they reconstruct it: read the diff, guess the intent, ask someone, or
+quietly redo a decision that was already made.
+
+This is usually described as an AI memory problem. It is not, or not only.
+A single agent remembering its own conversation does not help the person
+reviewing the work, the second agent picking it up, or the teammate who joins in
+March. The useful question is not *what should this agent remember* but **what
+should the project remember** — and the answer has to be readable by everyone
+who touches it.
+
+Prokron's answer: keep that in the repository, as Markdown, and compile it.
+
+## One state, two readers
+
+Your project's phases, tasks, dependencies, decisions and definition of done
+live as Markdown inside your repository. A small deterministic tool compiles
+those documents into project state, and that state is then projected two ways.
+
+A person opens a page:
 
 <p align="center">
   <img src="docs/assets/dashboard-state.png" alt="The Prokron dashboard showing progress metrics for task completion, acceptance, validation coverage, gate readiness and critical path, followed by three phases with status badges and five gates marked green." width="900">
 </p>
 
-<p align="center"><em><code>prokron dashboard</code>, generated from this repository's own chronicle at v0.3.0.<br>
-Every figure is computed from the Markdown files in <code>.prokron/chronicle/</code>. No model, no service, no network.<br>
-The project keeps moving, so run the command for today's numbers rather than trusting this picture.</em></p>
+<p align="center"><em><code>prokron dashboard</code>, generated from this repository's own chronicle.<br>
+Every figure is computed from the Markdown files in <code>.prokron/chronicle/</code>. No model, no service, no network.</em></p>
 
-## Project management from the files you already write
+An agent asks for a packet, and gets the same state as structured text:
 
-Most project tracking lives somewhere your repository cannot see, and most
-repository documentation cannot answer a project question. Prokron puts the
-tracking in the repository and makes it answerable.
+```console
+$ prokron context T-PILOT-01
+{
+  "role": "builder",
+  "packetFor": "T-PILOT-01",
+  "phase": { "id": "P1", "status": "EXIT_PENDING", "outcome": "..." },
+  "task": {
+    "id": "T-PILOT-01",
+    "status": "TODO",
+    "validation": "UNTESTED",
+    "dependencies": [ { "id": "T-READINESS-01", "done": true } ]
+  },
+  "blockers": [],
+  "acceptance": [
+    { "id": "AC-T-PILOT-01-01", "class": "RUNTIME", "state": "PASS",
+      "text": "Given a disposable project and a small specification, When ..." }
+  ],
+  "decisions": [ { "id": "ADR-008", "title": "Make Prokron an agent working convention" } ],
+  "handoff": "..."
+}
+```
 
-| The project question | Where the answer comes from |
+Same project. Different interface. A project meeting and an agent session do not
+need two versions of reality, and neither side has to translate for the other.
+
+That is also the whole of it: **Prokron owns project understanding, not project
+execution.** Claude, Codex, a person in an editor — they do the work. Prokron
+keeps the record that lets each of them know where they are.
+
+### A project story a newcomer can follow
+
+A team is building an expense tool for freelancers. Months in, a new teammate —
+or an AI advisor — asks why bank synchronization is absent:
+
+| Question | Recorded answer |
 |---|---|
-| **What phase are we in, and what has to be true to leave it?** | `PHASES.md` — outcome, entry, exit criteria, exit authority, gates. |
-| **What is done, and who says so?** | `ACCEPTANCE.md` — a frozen contract per task, with recorded evidence. |
-| **What can I start right now?** | The compiled task graph: dependencies resolved, ready work listed. |
-| **What is blocking the project?** | Obstacles, computed — dependency, acceptance, gate, phase, validation. |
-| **Why did we choose this?** | `ADR/` — append-only decisions, superseded rather than rewritten. |
-| **What was someone in the middle of?** | `INTENT.md` and `HANDOFF.md` — one active task, one exact stopping point. |
+| Why are we building this? | Help freelancers prepare expense records without maintaining a spreadsheet. |
+| What did we originally choose? | `ADR-002` proposed bank synchronization to reduce manual entry. |
+| Why did the direction change? | `ADR-007` superseded it: launch with CSV import, because supported banks did not cover the first users. Revisit when coverage improves. |
+| Where is the project now? | Import is complete; duplicate detection is in progress; validation evidence is linked from the tasks. |
+| What comes next? | Finish duplicate detection before starting monthly summaries. The task graph records that dependency. |
+
+The teammate can explain the tradeoff. The advisor can question whether the
+constraint still holds. The coding agent can choose work consistent with the
+current decision. Nobody has to reconstruct it from commit messages.
+
+*Illustrative example; these are not claims about a deployed project.*
+
+## What the project remembers
+
+Each record answers one question a project keeps being asked.
+
+| The question | What answers it | Where it lives |
+|---|---|---|
+| What are we trying to do right now? | **Intent** — zero or one active task, at its exact stopping point | `INTENT.md` |
+| What work exists? | **Tasks** — phase, owner, status, validation, evidence | `TASKS.md` |
+| What has to happen first? | **Dependencies**, resolved into a graph of ready and blocked work | computed from `TASKS.md` |
+| What counts as done? | **Acceptance** — a frozen contract per task, criterion by criterion | `ACCEPTANCE.md` |
+| What phase are we in, and what must be true to leave it? | **Phases** and **gates** — outcome, entry, exit, exit authority | `PHASES.md` |
+| What is stopping progress? | **Obstacles**, computed — dependency, acceptance, gate, phase, validation | computed |
+| Why did we choose this? | **Decisions** — append-only, superseded rather than rewritten | `ADR/` |
+| What happened recently? | **Journal** — progress, what was left mid-air, and why | `JOURNAL.md` |
+| What does the next participant need? | **Handoff** — the baton, overwritten each checkpoint | `HANDOFF.md` |
+| Why do we believe any of this? | **Evidence**, recorded against the criterion it satisfies | `ACCEPTANCE.md` |
 
 Nothing here is a status report someone wrote by hand. It is computed from the
 authored documents, so it cannot drift away from them.
@@ -81,31 +155,10 @@ arbitration order: product authority, then the contract, then invariants, then
 accepted decisions, then reproducible evidence, then existing convention, and
 only last, reviewer preference.
 
-## One record, both readers
-
-```mermaid
-flowchart TD
-    P["People: plan, decide, review"] <--> C["PROJECT CHRONICLE: authored Markdown"]
-    A["AI agents: implement, record, report"] <--> C
-    C --> K["prokron compile"]
-    K --> S["Project state: phases, gates, ready work, blockers, critical path"]
-    S --> D["Dashboard, task graph, JSON"]
-    classDef participants fill:#192b38,color:#f3f6f7,stroke:#7b919f
-    classDef chronicle fill:#203a36,color:#f3f6f7,stroke:#8be0bd
-    classDef derived fill:#382e24,color:#f3f6f7,stroke:#efb373
-    class P,A participants
-    class C,K chronicle
-    class S,D derived
-```
-
-People set direction, decide tradeoffs, and accept or reject completion. Agents
-implement, record what they did, and produce evidence. Both maintain the same
-files, and the compiler turns those files into the same state for everyone.
-
-Because the output is deterministic, two agents reading the same project return
-the same answer, and a person checking their work reads the same figures. That
-is what "same language" means here: not a shared summary, but a shared source
-and a shared way of computing from it.
+Taken together, that is as much governance as Prokron has, and it is deliberately
+small: decisions are explicit and dated, dependencies are visible, completion has
+conditions agreed in advance, conflicting evidence can be surfaced and settled by
+a stated order — and no single participant owns the project's context.
 
 ### What it refuses to make up
 
@@ -124,25 +177,6 @@ from whether it is done.
 
 <p align="center"><em>Six views of the same state: task graph, critical path, phases, gates, dependency ordering, and calendar Gantt.<br>
 Below them, the schedule line says plainly that this project records no dates — rather than drawing a plausible one.</em></p>
-
-### A project story a newcomer can follow
-
-A team is building an expense tool for freelancers. Months in, a new teammate —
-or an AI advisor — asks why bank synchronization is absent:
-
-| Question | Recorded answer |
-|---|---|
-| Why are we building this? | Help freelancers prepare expense records without maintaining a spreadsheet. |
-| What did we originally choose? | `ADR-002` proposed bank synchronization to reduce manual entry. |
-| Why did the direction change? | `ADR-007` superseded it: launch with CSV import, because supported banks did not cover the first users. Revisit when coverage improves. |
-| Where is the project now? | Import is complete; duplicate detection is in progress; validation evidence is linked from the tasks. |
-| What comes next? | Finish duplicate detection before starting monthly summaries. The task graph records that dependency. |
-
-The teammate can explain the tradeoff. The advisor can question whether the
-constraint still holds. The coding agent can choose work consistent with the
-current decision. Nobody has to reconstruct it from commit messages.
-
-*Illustrative example; these are not claims about a deployed project.*
 
 ## Get started
 
@@ -211,6 +245,15 @@ Then check it yourself:
 .prokron/prokron dashboard && open .prokron/compiled/dashboard.html
 ```
 
+A session then looks like this, and the loop is the point:
+
+```text
+you ask for work  →  agent claims a task, writes its contract, implements
+                  →  agent records evidence, decisions, and where it stopped
+                  →  prokron compile          state is recomputed
+                  →  you read the dashboard   the next agent reads the packet
+```
+
 Use the chronicle in discussion and review, too: ask why a decision was made,
 what changed, or which work actually serves the current goal.
 
@@ -221,16 +264,16 @@ model provider, no network. Output for a given set of documents is identical
 every time, which is what lets two agents and a person agree on the numbers.
 
 ```console
-$ .prokron/prokron status
+$ prokron status
 Prokron — phase P1
-  tasks        47 / 48
-  acceptance   119 / 124 criteria passing
-  validation   19 / 48 reviewed or verified
+  tasks        51 / 52
+  acceptance   135 / 140 criteria passing
+  validation   19 / 52 reviewed or verified
   gates        5 / 6 green
   P0           14 / 14 · COMPLETE
   P1           9 / 10 · EXIT_PENDING
   P2           17 / 17 · COMPLETE
-  no phase     7 tasks
+  no phase     11 tasks
 
   WIP       none
   Ready     T-PILOT-01
@@ -242,10 +285,10 @@ Prokron — phase P1
     PHASE_BLOCKER        P1 has 1 unfinished task
 ```
 
-That is this repository at v0.3.0, reporting its own unfinished work.
+That is this repository at v0.3.3, reporting its own unfinished work.
 
 ```console
-$ .prokron/prokron explain T-PILOT-01
+$ prokron explain T-PILOT-01
 T-PILOT-01 — Run the continuity pilot
   phase P1 · TODO · UNTESTED
 
@@ -272,13 +315,41 @@ T-PILOT-01 — Run the continuity pilot
 | `prokron context <task>` | The minimal packet an agent needs to start that task. |
 | `prokron validate` | Broken dependencies, dangling references, authority conflicts. |
 | `prokron compile` | Rebuilds `.prokron/compiled/` from the authored documents. |
+| `prokron graph` | The six Mermaid views of the same state. |
 | `prokron dashboard` | The local page above: phases, gates, obstacles, graph, drill-down. |
 | `prokron migrate` | Moves a chronicle written under an earlier layout into the current one. |
 
-## What lives in the chronicle
+## How it works
 
-Everything Prokron installs is inside one directory, and only one part of it
-is authoritative.
+```mermaid
+flowchart TD
+    P["People: plan, decide, review"] <--> C["PROJECT CHRONICLE: authored Markdown"]
+    A["AI agents: implement, record, report"] <--> C
+    C --> K["prokron compile"]
+    K --> S["Project state: phases, gates, ready work, blockers, critical path"]
+    S --> D["Dashboard: the human projection"]
+    S --> X["Context packet, project.json: the agent projection"]
+    classDef participants fill:#192b38,color:#f3f6f7,stroke:#7b919f
+    classDef chronicle fill:#203a36,color:#f3f6f7,stroke:#8be0bd
+    classDef derived fill:#382e24,color:#f3f6f7,stroke:#efb373
+    class P,A participants
+    class C,K chronicle
+    class S,D,X derived
+```
+
+People set direction, decide tradeoffs, and accept or reject completion. Agents
+implement, record what they did, and produce evidence. Both maintain the same
+files, and the compiler turns those files into the same state for everyone.
+
+Because the compiler is deterministic, two agents reading the same project
+return the same answer, and a person checking their work reads the same figures.
+That is what "same language" means here: not a shared summary, but a shared
+source and a shared way of computing from it.
+
+### What lives where
+
+Everything Prokron installs is inside one directory, and only one part of it is
+authoritative.
 
 ```text
 .prokron/
@@ -299,17 +370,93 @@ is authoritative.
 | `HANDOFF.md` | The baton: what the next person or agent needs right now. |
 | `JOURNAL.md` | The diary: progress, validation, what was left mid-air, and why. |
 
-`.prokron/compiled/` holds the compiled views: a state snapshot, the task
+`.prokron/compiled/` holds the generated views: a state snapshot, the task
 graph, a `project.json` for other tools, Mermaid diagrams, and the dashboard.
-Delete the whole directory and `prokron compile` rebuilds it byte for byte.
-Nothing in it is authority, and nothing in it decides a question the authored
-files answer.
+Delete that directory and `prokron compile` rebuilds it byte for byte. Nothing
+in it is authority, and nothing in it decides a question the authored files
+answer.
 
 Prokron's own records are a live example: its
 [task graph](.prokron/compiled/TASK_GRAPH.md),
 [contracts](.prokron/chronicle/ACCEPTANCE.md),
 [decisions](.prokron/chronicle/ADR/), and
 [chronicle guide](.prokron/chronicle/README.md).
+
+The [specification](docs/SPEC.md) defines the record format, the working
+lifecycle, and the invariants. The [product thesis](docs/PRODUCT-THESIS.md) goes
+into why the model is shaped this way.
+
+## What is verified, and what is not
+
+**Implemented and tested.** The compiler and its eight commands, acceptance
+contracts with evidence, phases, gates, computed obstacles, the critical path,
+the dashboard, and the context packet. 119 unit tests plus an installer
+regression suite, and deleting the compiled directory reproduces every generated
+file byte for byte:
+
+```sh
+rm -rf .prokron/compiled && .prokron/prokron compile && .prokron/prokron graph
+```
+
+Two different coding agents have audited the same implementation against the
+same contract and reached the same verdicts, after a real disagreement that the
+arbitration order settled.
+
+**Not yet proven.** Agent behaviour is a different claim. Prokron's rules ask an
+agent to checkpoint before a handoff, compaction, session end, or any known or
+estimated context, token, time, rate, or quota limit. **Prokron cannot read
+hidden quota counters or guarantee a final write after an abrupt cutoff.** Those
+rules are instructions to a host, and whether hosts follow them across real
+multi-session work is still being measured by the
+[continuity pilot](docs/SPEC.md#handoff-pilot) — which is exactly why this
+repository reports one red gate.
+
+**Designed, not built.** Later phases are specified in internal working
+documents and are not part of this release. Nothing in this README describes
+them, and no command implements them yet.
+
+Run the checks yourself from a checkout:
+
+```sh
+sh tests/install.sh
+python3 -m unittest discover -s tests
+```
+
+## Commands
+
+Use these when you want to invoke a workflow explicitly.
+
+| Purpose | Claude Code / OpenCode | Codex |
+|---|---|---|
+| Initialize | `/prokron-init [new\|existing]` | `$prokron init [new\|existing]` |
+| Start or continue a task | `/prokron-work [task]` | `$prokron work [task]` |
+| Record or supersede a decision | `/prokron-decide [decision]` | `$prokron decide [decision]` |
+| Save a handoff | `/prokron-checkpoint` | `$prokron checkpoint` |
+| Recover current work | `/prokron-resume` | `$prokron resume` |
+
+All workflows also install as portable Markdown prompts in
+`.prokron/commands/`, which any capable agent can follow directly.
+
+### Use the model you prefer
+
+Prokron configures the **agent host** that reads files and does the work. GLM,
+MiniMax, Mistral, Grok, and other models use the same chronicle through a
+compatible host; provider setup and model selection stay with that host.
+
+Codex receives a project skill. Claude Code and OpenCode receive project
+commands. Hosts that load [`AGENTS.md`](https://agents.md/) can follow the shared
+rules; for other capable agents, ask them explicitly to read it and follow the
+relevant file in `.prokron/commands/`.
+
+For OpenCode setup, see its [providers](https://opencode.ai/docs/providers),
+[instructions](https://opencode.ai/docs/rules/), and
+[custom commands](https://opencode.ai/docs/commands/) documentation.
+
+## Releases
+
+`VERSION` holds the current release and [`CHANGELOG.md`](CHANGELOG.md) summarises
+what changed. The full history lives in the chronicle itself:
+[decisions](.prokron/chronicle/ADR/) and [journal](.prokron/chronicle/JOURNAL.md).
 
 ### Upgrading from an earlier layout
 
@@ -328,82 +475,28 @@ nothing is rewritten. Coming from v0.1 it is a rewrite — prose acceptance
 becomes contracts and one decisions file becomes an ADR directory — so the
 originals are archived untouched beside the new ones.
 
-## Commands
-
-Use these when you want to invoke a workflow explicitly.
-
-| Purpose | Claude Code / OpenCode | Codex |
-|---|---|---|
-| Initialize | `/prokron-init [new\|existing]` | `$prokron init [new\|existing]` |
-| Start or continue a task | `/prokron-work [task]` | `$prokron work [task]` |
-| Record or supersede a decision | `/prokron-decide [decision]` | `$prokron decide [decision]` |
-| Save a handoff | `/prokron-checkpoint` | `$prokron checkpoint` |
-| Recover current work | `/prokron-resume` | `$prokron resume` |
-
-All workflows also live in [`commands/`](commands) as portable Markdown prompts.
-
-## Use the model you prefer
-
-Prokron configures the **agent host** that reads files and does the work. GLM,
-MiniMax, Mistral, Grok, and other models use the same chronicle through a
-compatible host; provider setup and model selection stay with that host.
-
-Codex receives a project skill. Claude Code and OpenCode receive project
-commands. Hosts that load [`AGENTS.md`](https://agents.md/) can follow the shared
-rules; for other capable agents, ask them explicitly to read it and follow the
-relevant file in `commands/`.
-
-For OpenCode setup, see its [providers](https://opencode.ai/docs/providers),
-[instructions](https://opencode.ai/docs/rules/), and
-[custom commands](https://opencode.ai/docs/commands/) documentation.
-
-## What is verified, and what is not
-
-The compiler is tested and deterministic: 119 unit tests plus an installer
-regression suite, and deleting the compiled directory reproduces every
-generated file byte for byte:
-
-```sh
-rm -rf .prokron/compiled && .prokron/prokron compile && .prokron/prokron graph
-``` Two different coding agents have audited the same
-implementation against the same contract and reached the same verdicts, after a
-real disagreement that the arbitration order settled.
-
-Agent behaviour is a different claim, and it is not finished. Prokron's rules
-ask an agent to checkpoint before a handoff, compaction, session end, or any
-known or estimated context, token, time, rate, or quota limit. **Prokron cannot
-read hidden quota counters or guarantee a final write after an abrupt cutoff.**
-Those rules are instructions to a host, and whether hosts follow them across
-real multi-session work is still being measured by the
-[continuity pilot](docs/SPEC.md#handoff-pilot) — which is exactly why this
-repository reports one red gate.
-
-Run the installer checks from a checkout:
-
-```sh
-sh tests/install.sh
-python3 -m unittest discover -s tests
-```
-
-## Releases
-
-`VERSION` holds the current release and [`CHANGELOG.md`](CHANGELOG.md) summarises
-what changed. The full history lives in the chronicle itself:
-[decisions](.prokron/chronicle/ADR/) and [journal](.prokron/chronicle/JOURNAL.md).
-
 ### Updating an installation
 
 Reinstalling adds missing files; it **does not upgrade existing guidance**, and
 it prints a reminder when guidance is retained. From a current checkout, review
 and merge changes to:
 
-- `commands/`, `.claude/commands/`, and `.opencode/commands/`;
+- `.prokron/commands/`, `.claude/commands/`, and `.opencode/commands/`;
 - `.agents/skills/prokron/SKILL.md`;
 - `templates/chronicle/README.md`, installed as `.prokron/chronicle/README.md`;
 - the Prokron block in `AGENTS.md`, preserving surrounding project rules.
 
 Keep customizations and every chronicle record. Never copy empty templates over
 project history.
+
+## Documentation
+
+| Document | What it covers |
+|---|---|
+| [`docs/SPEC.md`](docs/SPEC.md) | The record format, working lifecycle, invariants, scope, and the continuity pilot. |
+| [`docs/PRODUCT-THESIS.md`](docs/PRODUCT-THESIS.md) | Why shared project state, and how the model is built. |
+| [`.prokron/chronicle/README.md`](.prokron/chronicle/README.md) | The read order and working rules an agent follows. |
+| [`CHANGELOG.md`](CHANGELOG.md) | What changed in each release. |
 
 ## Help improve it
 
@@ -414,6 +507,11 @@ private project details before sharing.
 
 Changes should keep Prokron small and readable. The
 [specification](docs/SPEC.md) defines the working agreement and scope.
+
+## Qomero
+
+Built by Qomero, and used to run Qomero's own projects. Prokron is the record of
+how we think a human and an AI should share one project.
 
 ## License
 

@@ -1162,6 +1162,51 @@ class TestSingleDirectory(unittest.TestCase):
         self.assertFalse(layout.AUTHORITY_DIR.startswith(layout.COMPILED_DIR))
 
 
+class TestPublishedDocumentation(unittest.TestCase):
+    """The public documents drift silently. A path that moved, a count that
+    grew, a version that shipped — none of it fails anything, and a reader
+    finds it before a maintainer does. Twice now this drift has published an
+    instruction that no longer meant what it said."""
+
+    ROOT = Path(__file__).resolve().parents[1]
+    PUBLISHED = ("README.md", "docs/SPEC.md", "docs/PRODUCT-THESIS.md")
+
+    def documents(self):
+        for name in self.PUBLISHED:
+            path = self.ROOT / name
+            self.assertTrue(path.is_file(), f"{name} is missing")
+            yield path, path.read_text()
+
+    def test_every_relative_link_resolves(self) -> None:
+        for path, text in self.documents():
+            targets = re.findall(r"\[[^\]]*\]\(([^)]+)\)", text)
+            targets += re.findall(r'<img src="([^"]+)"', text)
+            for target in targets:
+                if target.startswith(("http://", "https://", "mailto:", "#")):
+                    continue
+                resolved = (path.parent / target.split("#")[0]).resolve()
+                with self.subTest(document=path.name, link=target):
+                    self.assertTrue(resolved.exists(), f"dead link: {target}")
+
+    def test_no_document_tells_a_reader_to_delete_their_records(self) -> None:
+        """`rm -rf .prokron` was correct until the installation moved into that
+        directory. The instruction survived the move and began telling readers
+        to delete their own chronicle."""
+        for path, text in self.documents():
+            for command in re.findall(r"rm -rf\s+(\S+)", text):
+                with self.subTest(document=path.name, command=command):
+                    self.assertTrue(
+                        command.rstrip("/").endswith("compiled"),
+                        f"{path.name} deletes {command}, which is not compiled output",
+                    )
+
+    def test_the_readme_names_the_release_it_ships_with(self) -> None:
+        version = (self.ROOT / "VERSION").read_text().strip()
+        readme = (self.ROOT / "README.md").read_text()
+        named = set(re.findall(r"v(\d+\.\d+\.\d+)", readme))
+        self.assertIn(version, named, f"README names {named or 'no release'}, not {version}")
+
+
 class TestNoNetworkOrDependencies(unittest.TestCase):
     def test_runtime_imports_only_the_standard_library(self) -> None:
         import sysconfig

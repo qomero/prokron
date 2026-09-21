@@ -4,6 +4,47 @@ Prokron records its own history in `.prokron/chronicle/JOURNAL.md` and its
 decisions in `.prokron/chronicle/ADR/`. This file is the short version, for
 people arriving from a release page.
 
+## 0.3.3 — 2026-09-22
+
+Documentation only. No behaviour changed.
+
+### Fixed
+
+- **A destructive instruction in the README.** It told readers to run
+  `rm -rf .prokron && prokron compile` to demonstrate that compiled output
+  regenerates. That was accurate until v0.3.0 moved the whole installation into
+  `.prokron/`; afterwards it deleted the chronicle, the runtime and the command.
+  It now names `.prokron/compiled/`.
+- **`docs/SPEC.md` contradicted the product.** §8 listed a CLI and a dashboard
+  as out of scope, both shipped in P2. §4.1 cited `DECISIONS.md`, removed in
+  v0.2. §6 named a directory that moved in v0.3. The compiled-file table was
+  missing `project.json`, the Mermaid views and the dashboard.
+- A dead link to `commands/`, a stale test count, and a stale release number.
+
+### Changed
+
+- **The README leads with the problem.** A session ends and the next
+  participant — another agent, another model, a teammate — loses what the code
+  meant. That comes before any record, command or file is named.
+- **Both projections of project state are shown rather than asserted.** The
+  dashboard for a person, and real `prokron context` output for an agent, from
+  this repository.
+- **What is implemented, what is designed, and what is unproven are separated.**
+  Nothing specified-only is described as available.
+- Phase specifications are internal working documents and are no longer
+  published (ADR-026).
+
+### Added
+
+- [`docs/PRODUCT-THESIS.md`](docs/PRODUCT-THESIS.md) — why shared project state,
+  and how the model is built. Every claim labelled implemented, designed, or
+  thesis.
+- Three tests holding the published documents to their own facts: every
+  relative link resolves, no `rm -rf` names anything but the compiled
+  directory, and the release the README cites matches `VERSION`.
+
+Every existing image is preserved, unmodified and unrenamed.
+
 ## 0.3.2 — 2026-09-22
 
 ### Added

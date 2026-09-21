@@ -18,8 +18,13 @@ people and agents. Session handoff is one use of this shared understanding.
 Prokron consists of authored Markdown records, agent instructions, reusable
 command prompts, and a deterministic compiler over those records. The compiler
 reads `.prokron/chronicle/` and writes only `.prokron/compiled/`; it uses the
-Python standard library and needs no network or model provider. See
-`docs/Phase 2.md`, ADR-013, ADR-016, ADR-017, and ADR-024.
+Python standard library and needs no network or model provider. See ADR-013,
+ADR-016, ADR-017, ADR-024, and `docs/PRODUCT-THESIS.md`.
+
+Phase specifications are internal working documents and are not published
+(ADR-026). Decisions taken against them cite them by name; the record of what
+was decided, what it had to satisfy and what evidence was produced lives in
+this repository's own chronicle.
 
 ## 2. Chronicle
 
@@ -39,8 +44,14 @@ one compiled `compiled/` directory. Only the first is authoritative.
 
 | File in `.prokron/compiled/` | Role |
 |---|---|
+| `project.json` | The whole compiled project, with provenance for every object |
 | `STATE.md` | Short snapshot of the project now |
 | `TASK_GRAPH.md` | Current dependency and eligibility view derived from tasks |
+| `*.mmd` | Mermaid views: task graph, critical path, phases, gates, timelines |
+| `dashboard.html` | The same state as one browsable page |
+
+Every compiled file is disposable. Deleting the directory and compiling again
+reproduces all of them byte for byte.
 
 The product specification records intended behavior. The chronicle records
 current project truth. When they disagree, the agent surfaces and reconciles
@@ -96,7 +107,7 @@ Read, in order:
 1. `STATE.md`;
 2. `TASK_GRAPH.md`;
 3. the active or selected entry in `TASKS.md`;
-4. its governing ADRs in `DECISIONS.md`;
+4. its governing entries in `ADR/`;
 5. `INTENT.md`; and
 6. only the recent journal entries needed for the handoff.
 
@@ -172,8 +183,8 @@ The portable workflows are:
 
 Claude Code and OpenCode expose these as project slash commands. Codex exposes
 the same workflows through `$prokron <mode>`. Every installation provides
-`AGENTS.md` and the portable Markdown files in `commands/`, which any capable
-agent can follow directly. Adapters select workflows, never model providers;
+`AGENTS.md` and the portable Markdown files in `.prokron/commands/`, which any
+capable agent can follow directly. Adapters select workflows, never model providers;
 provider credentials and model selection remain in the agent host.
 
 ## 7. Invariants
@@ -189,11 +200,20 @@ provider credentials and model selection remain in the agent host.
 
 ## 8. Scope
 
-Prokron provides the chronicle format and agent workflow. The working agent does
-the reasoning and file editing, while Git keeps file history. A CLI, service,
-database, dashboard, semantic repository scanner, inference engine, schema
-framework, locking system, model API, and automatic historical migration are
-outside this specification.
+Prokron owns project understanding, not project execution. It provides the
+chronicle format, the agent workflow, and a deterministic compiler and CLI over
+the records, including the generated dashboard. The working agent does the
+reasoning and file editing; Git keeps file history.
+
+Outside this specification: a service, a database, a semantic repository
+scanner, an inference engine, a schema framework, a locking system, a model API,
+and automatic historical migration. Nothing here schedules work, assigns work,
+or decides what happens next.
+
+ADR-008 removed an earlier runtime and made Prokron a workflow convention;
+ADR-013 reinstated a deterministic compiler under the constraint that it reason
+about nothing and invent nothing. A CLI and a dashboard are therefore in scope
+as projections of authored records, and out of scope as sources of fact.
 
 ## 9. Acceptance
 

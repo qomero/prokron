@@ -4,8 +4,8 @@
 
 - Project: Prokron
 - Current phase: P1
-- Tasks: 50 of 52 done
-- Acceptance: 129 of 140 criteria passing
+- Tasks: 51 of 52 done
+- Acceptance: 135 of 140 criteria passing
 - Validation: 19 of 52 reviewed or verified
 - Gates: 5 of 6 green
 
@@ -26,14 +26,13 @@
 
 ## Work
 
-- In flight: T-DOCS-05
+- In flight: none
 - Ready: T-PILOT-01
 - Blocked: none
 - Critical path: T-PILOT-01
 
 ## Obstacles
 
-- ACCEPTANCE_BLOCKER: T-DOCS-05 cannot complete while 6 criteria are unmet
 - GATE_BLOCKER: P1 cannot exit while Gate P1-CONTINUITY is red
 - PHASE_BLOCKER: P1 has 1 unfinished task
 

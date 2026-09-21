@@ -596,3 +596,46 @@
   nodes too. Only nodes the node map names as tasks get the pointer cursor and
   the handler; `Gate_A` gets neither.
 - Next: open P3 from `docs/Phase 3.md`, authority before implementation.
+
+## 2026-09-22 — T-SAFETY-01 and T-DOCS-05
+
+- Did: restructured the public documentation so the problem comes before the
+  mechanism, corrected `docs/SPEC.md` where it contradicted the product, and
+  added `docs/PRODUCT-THESIS.md`.
+- Found first, fixed first: the README told readers to run
+  `rm -rf .prokron && prokron compile`. True until v0.3.0, when `.prokron/`
+  stopped being the compiled directory and became the installation. The
+  sentence did not change when the layout did, so the published instruction
+  deleted a reader's chronicle, runtime and command. Shipped that correction
+  on its own, ahead of the rest, because it was live.
+- Learned: a path that changes meaning is worse than a path that moves. A moved
+  path breaks loudly. `.prokron/` has meant three different things across three
+  releases and every reference to it kept working — including the one that was
+  now destructive.
+- Found: the README argued "one record, both readers" and then showed the human
+  reader four times and the agent reader zero times. `prokron context` had one
+  table row and no example, despite being the half of the thesis that is
+  harder to believe. Showing real packet output was the largest improvement
+  available and needed no new code.
+- Found: `docs/SPEC.md` §8 listed a CLI and a dashboard as outside the
+  specification. Both shipped in P2. §4.1 still pointed at `DECISIONS.md`,
+  removed in v0.2. Specifications drift exactly like READMEs and nothing was
+  checking.
+- Did: three tests now hold the published documents to their own facts — every
+  relative link resolves, no `rm -rf` names anything but the compiled
+  directory, and the release the README cites matches `VERSION`. The last one
+  failed on its first run, which is the point.
+- Decided: phase specifications leave the repository (ADR-026). Only one of the
+  four described anything built. A specification written as an instruction to
+  an agent reads like a description of a shipped feature, which is the wrong
+  thing to hand a first-time reader.
+- Cost, recorded: ADR-013, ADR-014, ADR-015 and the P2 record cite
+  `docs/Phase 2.md` as governing authority and it is no longer in the
+  repository. Citations left as written; an outside reader can now check P2's
+  exit only against the evidence in the chronicle, not against the document
+  that set the bar. ADR-026 says so rather than leaving a dead reference.
+- Held the line on: the two entry modes. The four-mode ingress, the evidence
+  ladder and repository adoption are specified, not built, and are named that
+  way. Writing them as capability would have been the easiest way to make the
+  documentation sound better and the product less true.
+- Next: open P3, authority before implementation.

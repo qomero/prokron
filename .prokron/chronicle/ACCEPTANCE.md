@@ -1131,24 +1131,46 @@ human projection of project state four times while showing the agent
 projection — the other half of its own thesis — not at all.
 
 - `AC-T-DOCS-05-01` — The README states the problem Prokron exists for before
-  it describes any mechanism. `INSPECTION` · `NOT_RUN`
-  - Evidence: —
+  it describes any mechanism. `INSPECTION` · `PASS`
+  - Evidence: the first section after the title is `The problem`, which
+    describes a session ending and the next participant losing what the code
+    meant, before any file, command or record is named. The word "session"
+    previously appeared once in the README, in the caveats near the bottom.
 - `AC-T-DOCS-05-02` — Both projections of project state are shown, not
   asserted: the dashboard for a person and real `prokron context` output for
-  an agent. `INSPECTION` · `NOT_RUN`
-  - Evidence: —
+  an agent. `INSPECTION` · `PASS`
+  - Evidence: `One state, two readers` places the dashboard screenshot and an
+    abridged `prokron context T-PILOT-01` packet side by side, both taken from
+    this repository. The compiled `project.json` and the context packet are
+    added to the architecture diagram as the agent projection. Previously the
+    human projection appeared four times and the agent projection not at all,
+    despite being half the stated thesis.
 - `AC-T-DOCS-05-03` — Every existing image is preserved, unmodified and
-  unrenamed, and each one carries text that earns it. `INSPECTION` · `NOT_RUN`
-  - Evidence: —
+  unrenamed, and each one carries text that earns it. `INSPECTION` · `PASS`
+  - Evidence: all five assets are referenced exactly once and `git status`
+    reports no change under `docs/assets/`. A test asserts every `img src` in
+    the published documents resolves.
 - `AC-T-DOCS-05-04` — Implemented behaviour, specified design and unproven
   claims are distinguishable by a reader, and nothing specified-only is
-  described as available. `INSPECTION` · `NOT_RUN`
-  - Evidence: —
+  described as available. `INSPECTION` · `PASS`
+  - Evidence: `What is verified, and what is not` separates implemented and
+    tested, not yet proven, and designed but not built. The thesis labels
+    every claim `Implemented`, `Designed` or `Thesis` against a stated key.
+    The two entry modes are described as two; the four-mode ingress, the
+    evidence ladder and repository adoption are named as designed only.
 - `AC-T-DOCS-05-05` — Every relative link in the published documentation
   resolves, and every command, path, count and version named in it is current.
-  `TEST` · `NOT_RUN`
-  - Evidence: —
+  `TEST` · `PASS`
+  - Evidence: three tests over `README.md`, `docs/SPEC.md` and
+    `docs/PRODUCT-THESIS.md` assert that every relative link and image
+    resolves, that no `rm -rf` names anything but the compiled directory, and
+    that the release the README cites matches `VERSION`. The last one caught a
+    real mismatch on its first run.
 - `AC-T-DOCS-05-06` — A technical reader can still reach the compiler's
   behaviour, the invariants, the CLI and the specification; depth is moved,
-  not removed. `INSPECTION` · `NOT_RUN`
-  - Evidence: —
+  not removed. `INSPECTION` · `PASS`
+  - Evidence: `Done is a contract`, `What it refuses to make up`, the CLI
+    table, the directory layout and the chronicle file table all survive; the
+    specification keeps the invariants and gains corrections; the thesis adds
+    a second layer on the compiler, the acceptance freeze, the arbitration
+    order and the evidence model. Nothing was deleted to make room.

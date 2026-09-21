@@ -563,12 +563,12 @@
 - Governed by: ADR-024
 
 ## T-DOCS-05: Lead the public documentation with the problem
-- Status: WIP
+- Status: DONE
 - Phase: P-NONE
-- Validation: UNTESTED
+- Validation: SYNTHETIC
 - Dependencies: T-SAFETY-01
 - Owner: claude/primary
 - Claimed: 2026-09-22
 - AC: AC-T-DOCS-05
-- Evidence: —
+- Evidence: The README now opens with the problem — a session ends and the next participant loses what the code meant — before naming any record, and shows both projections of project state instead of asserting them: the dashboard for a person, an abridged `prokron context` packet for an agent. Implemented, designed and unproven claims are separated in the README and labelled per claim in a new `docs/PRODUCT-THESIS.md`. `docs/SPEC.md` was corrected where it contradicted the shipped product: it listed the CLI and dashboard as out of scope, cited a v0.1 file, and named a moved directory. All five images are preserved, unmodified and unrenamed. Three new tests hold the documentation to its own facts; 122 unit tests and the installer suite pass.
 - Governed by: ADR-026
