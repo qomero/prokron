@@ -89,8 +89,38 @@ ul.plain li { padding: 9px 0; border-bottom: 1px solid var(--line); }
 ul.plain li:last-child { border-bottom: 0; }
 code, .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; }
 .diagram { background: var(--panel); border: 1px solid var(--line);
-           border-radius: var(--radius); padding: 16px; overflow: auto; }
+           border-radius: var(--radius); position: relative; overflow: hidden; }
 .diagram pre { margin: 0; white-space: pre-wrap; color: var(--muted); font-size: 12px; }
+.canvas { position: relative; height: clamp(380px, 64vh, 780px); overflow: hidden;
+          cursor: grab; touch-action: none; }
+.canvas.grabbing { cursor: grabbing; }
+/* Without a rendered diagram the canvas holds diagram source, which is read by
+   scrolling like any other text. */
+.canvas.plain { height: auto; overflow: auto; padding: 16px; cursor: auto; }
+.canvas.plain .stage { position: static; transform: none !important; }
+.canvas.plain .zoom, .canvas.plain .trace { display: none; }
+.stage { position: absolute; top: 0; left: 0; transform-origin: 0 0; }
+.stage svg { max-width: none !important; display: block; }
+.zoom { position: absolute; right: 10px; top: 10px; z-index: 2; display: flex; gap: 2px;
+        align-items: center; background: var(--panel); border: 1px solid var(--line);
+        border-radius: 999px; padding: 3px; }
+.zoom button { font: inherit; font-size: 13px; line-height: 1; width: 26px; height: 24px;
+        cursor: pointer; background: none; border: 0; color: var(--muted); border-radius: 999px; }
+.zoom button.wide { width: auto; padding: 0 10px; font-size: 12px; }
+.zoom button:hover { color: var(--ink); }
+.zoom .level { font-size: 12px; color: var(--muted); min-width: 42px; text-align: center; }
+.trace { position: absolute; left: 12px; bottom: 10px; z-index: 2; font-size: 12px;
+         color: var(--muted); pointer-events: none; max-width: calc(100% - 140px);
+         overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* Tracing dims everything outside the hovered task's chain. Opacity is used
+   rather than colour so a task's status colour still reads. */
+.stage.tracing g.node { opacity: 0.12; }
+.stage.tracing g.node.chain { opacity: 1; }
+.stage.tracing g.node.focus > rect, .stage.tracing g.node.focus > polygon,
+.stage.tracing g.node.focus > path { stroke-width: 3px; }
+.stage.tracing .flowchart-link { opacity: 0.06; }
+.stage.tracing .flowchart-link.chain { opacity: 1; }
+.stage.tracing g.cluster { opacity: 0.45; }
 .tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
 .tabs button { font: inherit; font-size: 13px; padding: 5px 12px; cursor: pointer;
   background: var(--panel); color: var(--muted); border: 1px solid var(--line);
@@ -114,6 +144,9 @@ footer { color: var(--muted); font-size: 12px; margin-top: 48px;
 _SCRIPT = """
 const DATA = JSON.parse(document.getElementById('project-data').textContent);
 const DIAGRAMS = JSON.parse(document.getElementById('diagram-data').textContent);
+const NODE_MAP = JSON.parse(document.getElementById('node-map').textContent);
+const NODE_KEY = Object.fromEntries(
+  Object.entries(NODE_MAP).map(([drawn, taskId]) => [taskId, drawn]));
 const byId = Object.fromEntries(DATA.tasks.map(t => [t.id, t]));
 
 // Authored prose becomes markup here too, so it is escaped here too.
@@ -162,23 +195,244 @@ document.addEventListener('click', event => {
 document.querySelector('#detail .close').addEventListener('click',
   () => document.getElementById('detail').close());
 
+// --- The diagram canvas ------------------------------------------------
+// A 48-task graph drawn to fit a panel is too small to read, so the diagram
+// is given its natural size and the canvas is zoomed and panned instead.
+
+const canvas = document.getElementById('canvas');
+const stage = document.getElementById('stage');
+const target = document.getElementById('diagram');
+const levelText = document.getElementById('zoom-level');
+const traceNote = document.getElementById('trace-note');
+const view = { k: 1, x: 0, y: 0 };
+let adjusted = false;   // the reader has zoomed or panned; stop re-fitting
+let drag = null;
+let traced = null;
+
+function applyView() {
+  stage.style.transform =
+    `translate(${view.x}px, ${view.y}px) scale(${view.k})`;
+  levelText.textContent = Math.round(view.k * 100) + '%';
+}
+
+function naturalSize() {
+  const svg = stage.querySelector('svg');
+  if (!svg) return null;
+  // Mermaid ships the drawing at width:100% with a max-width, which is what
+  // shrinks it. The viewBox carries the size it was actually laid out at.
+  const box = svg.viewBox && svg.viewBox.baseVal;
+  const width = box && box.width ? box.width : svg.getBoundingClientRect().width;
+  const height = box && box.height ? box.height : svg.getBoundingClientRect().height;
+  if (!width || !height) return null;
+  svg.style.maxWidth = 'none';
+  svg.style.width = width + 'px';
+  svg.style.height = height + 'px';
+  return { width, height };
+}
+
+function fitScale(size, box) {
+  return Math.min(box.width / size.width, box.height / size.height, 1);
+}
+
+function fit() {
+  const size = naturalSize();
+  if (!size) return;
+  const box = canvas.getBoundingClientRect();
+  if (!box.width || !box.height) return;
+  view.k = fitScale(size, box);
+  view.x = (box.width - size.width * view.k) / 2;
+  view.y = (box.height - size.height * view.k) / 2;
+  adjusted = false;
+  applyView();
+}
+
+// Fitting a large graph into a panel is what made it unreadable in the first
+// place, so a diagram that only fits below this is opened at a legible scale,
+// centred on the work that matters now, with Fit one click away.
+const LEGIBLE = 0.6;
+
+function openingTask() {
+  // What is in flight, else what can start, else the critical path.
+  const candidates = [...DATA.wip, ...DATA.ready, ...DATA.criticalPath];
+  return candidates.find(id => byId[id]) || null;
+}
+
+function centreOn(taskId) {
+  const node = taskId && stage.querySelector(
+    `g.node[data-id="${NODE_KEY[taskId] || ''}"]`);
+  if (!node) return false;
+  const nodeBox = node.getBoundingClientRect();
+  const canvasBox = canvas.getBoundingClientRect();
+  view.x += canvasBox.left + canvasBox.width / 2 - (nodeBox.left + nodeBox.width / 2);
+  view.y += canvasBox.top + canvasBox.height / 2 - (nodeBox.top + nodeBox.height / 2);
+  applyView();
+  return true;
+}
+
+function openView() {
+  const size = naturalSize();
+  if (!size) return;
+  const box = canvas.getBoundingClientRect();
+  if (!box.width || !box.height) return;
+  const fitted = fitScale(size, box);
+  if (fitted >= LEGIBLE) { fit(); return; }
+  view.k = LEGIBLE;
+  view.x = (box.width - size.width * view.k) / 2;
+  view.y = (box.height - size.height * view.k) / 2;
+  adjusted = false;
+  applyView();
+  centreOn(openingTask());
+}
+
+function zoomAt(factor, cx, cy) {
+  const next = Math.min(8, Math.max(0.05, view.k * factor));
+  const ratio = next / view.k;
+  view.x = cx - (cx - view.x) * ratio;
+  view.y = cy - (cy - view.y) * ratio;
+  view.k = next;
+  adjusted = true;
+  applyView();
+}
+
+function zoomCentre(factor) {
+  const box = canvas.getBoundingClientRect();
+  zoomAt(factor, box.width / 2, box.height / 2);
+}
+
+document.querySelectorAll('.zoom button').forEach(button =>
+  button.addEventListener('click', () => {
+    if (button.dataset.zoom === 'fit') fit();
+    else zoomCentre(button.dataset.zoom === 'in' ? 1.25 : 1 / 1.25);
+  }));
+
+// Plain wheel keeps scrolling the page. A trackpad pinch arrives as
+// ctrl+wheel, so pinch-to-zoom works without claiming ordinary scrolling.
+canvas.addEventListener('wheel', event => {
+  if (!event.ctrlKey && !event.metaKey) return;
+  event.preventDefault();
+  const box = canvas.getBoundingClientRect();
+  zoomAt(Math.exp(-event.deltaY / 240),
+         event.clientX - box.left, event.clientY - box.top);
+}, { passive: false });
+
+canvas.addEventListener('pointerdown', event => {
+  if (event.button !== 0) return;
+  drag = { x: event.clientX - view.x, y: event.clientY - view.y };
+  canvas.setPointerCapture(event.pointerId);
+  canvas.classList.add('grabbing');
+});
+canvas.addEventListener('pointermove', event => {
+  if (!drag) return;
+  view.x = event.clientX - drag.x;
+  view.y = event.clientY - drag.y;
+  adjusted = true;
+  applyView();
+});
+['pointerup', 'pointercancel'].forEach(name =>
+  canvas.addEventListener(name, () => {
+    drag = null;
+    canvas.classList.remove('grabbing');
+  }));
+canvas.addEventListener('dblclick', fit);
+// Re-open rather than re-fit: fitting is what made the graph unreadable,
+// and openView() is the rule for what a fresh view should show.
+addEventListener('resize', () => { if (!adjusted) openView(); });
+
+// --- Tracing a dependency chain ----------------------------------------
+// The chain comes from the compiled dependencies, never from the drawing, so
+// a highlight and `prokron explain` cannot disagree (ADR-025).
+
+function chainOf(id) {
+  const chain = new Set([id]);
+  for (const direction of ['deps', 'blocks']) {
+    const queue = [id];
+    while (queue.length) {
+      const task = byId[queue.pop()];
+      if (!task) continue;
+      for (const next of task[direction]) {
+        if (!chain.has(next)) { chain.add(next); queue.push(next); }
+      }
+    }
+  }
+  return chain;
+}
+
+function edgeEnd(element, prefix) {
+  for (const name of element.classList) {
+    if (name.startsWith(prefix)) return NODE_MAP[name.slice(prefix.length)];
+  }
+  return null;
+}
+
+function trace(id) {
+  const chain = chainOf(id);
+  const task = byId[id];
+  stage.classList.add('tracing');
+  stage.querySelectorAll('g.node[data-id]').forEach(node => {
+    const taskId = NODE_MAP[node.dataset.id];
+    node.classList.toggle('chain', chain.has(taskId));
+    node.classList.toggle('focus', taskId === id);
+  });
+  stage.querySelectorAll('.flowchart-link').forEach(edge => {
+    const from = edgeEnd(edge, 'LS-');
+    const to = edgeEnd(edge, 'LE-');
+    edge.classList.toggle('chain', chain.has(from) && chain.has(to));
+  });
+  const others = chain.size - 1;
+  traceNote.textContent = `${id} — ${task ? task.title : ''} · ` +
+    (others ? `${others} connected task${others === 1 ? '' : 's'}` : 'nothing connected');
+}
+
+function clearTrace() {
+  stage.classList.remove('tracing');
+  stage.querySelectorAll('.chain, .focus').forEach(
+    element => element.classList.remove('chain', 'focus'));
+  traceNote.textContent = HINT;
+}
+
+const HINT = 'Hover a task to trace its chain · drag to pan · ' +
+  'pinch or \u2318/Ctrl-scroll to zoom';
+
+canvas.addEventListener('mousemove', event => {
+  if (drag) return;
+  const node = event.target.closest && event.target.closest('g.node[data-id]');
+  const id = node ? NODE_MAP[node.dataset.id] : null;
+  if (id === traced) return;
+  traced = id;
+  if (id) trace(id); else clearTrace();
+});
+canvas.addEventListener('mouseleave', () => { traced = null; clearTrace(); });
+
+// --- Rendering ---------------------------------------------------------
+
+function draw() {
+  target.removeAttribute('data-processed');
+  traced = null;
+  clearTrace();
+  const done = window.mermaid.run({ nodes: [target] });
+  if (done && typeof done.then === 'function') done.then(openView, openView);
+  else openView();
+}
+
 const tabs = document.querySelectorAll('.tabs button');
 tabs.forEach(button => button.addEventListener('click', () => {
   tabs.forEach(other => other.setAttribute('aria-selected', String(other === button)));
-  const target = document.getElementById('diagram');
-  target.removeAttribute('data-processed');
   target.textContent = DIAGRAMS[button.dataset.diagram];
-  if (window.mermaid) {
-    window.mermaid.run({ nodes: [target] });
-  }
+  if (window.mermaid) draw();
 }));
 
 if (window.mermaid) {
   window.mermaid.initialize({
-    startOnLoad: true,
+    startOnLoad: false,
+    maxTextSize: 200000,
     theme: matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'neutral',
   });
+  traceNote.textContent = HINT;
+  draw();
 } else {
+  // Nothing below depends on a diagram: the page shows the source and every
+  // number on it still reports.
+  canvas.classList.add('plain');
   document.querySelectorAll('.mermaid').forEach(node => {
     const source = document.createElement('pre');
     source.textContent = node.textContent;
@@ -201,6 +455,10 @@ def _metric_card(label: str, progress: dict) -> str:
 def render(project: Project, report: Report, compiled: dict) -> str:
     metrics = compiled["metrics"]
     diagrams = mermaid.render_all(project, report)
+    # The drawing names its nodes by a sanitized identifier. The map back to
+    # task identifiers is built here, from the same function that drew them,
+    # so the page never has to re-derive the rule (ADR-025).
+    node_map = {mermaid.node_id(task.id): task.id for task in project.tasks}
 
     cards = "".join(
         [
@@ -319,7 +577,18 @@ def render(project: Project, report: Report, compiled: dict) -> str:
 
   <h2>Views</h2>
   <div class="tabs">{tabs}</div>
-  <div class="diagram"><div class="mermaid" id="diagram">{esc(diagrams["task-graph.mmd"])}</div></div>
+  <div class="diagram">
+    <div class="canvas" id="canvas">
+      <div class="stage" id="stage"><div class="mermaid" id="diagram">{esc(diagrams["task-graph.mmd"])}</div></div>
+      <div class="zoom">
+        <button type="button" data-zoom="out" aria-label="Zoom out">&minus;</button>
+        <span class="level" id="zoom-level">100%</span>
+        <button type="button" data-zoom="in" aria-label="Zoom in">+</button>
+        <button type="button" class="wide" data-zoom="fit">Fit</button>
+      </div>
+      <div class="trace" id="trace-note"></div>
+    </div>
+  </div>
   <p class="note" id="offline-note" hidden>
     Mermaid could not be loaded, so diagram source is shown instead. The page and
     every number on it work offline.
@@ -351,6 +620,7 @@ def render(project: Project, report: Report, compiled: dict) -> str:
 
 <script type="application/json" id="project-data">{embed(compiled)}</script>
 <script type="application/json" id="diagram-data">{embed(diagrams)}</script>
+<script type="application/json" id="node-map">{embed(node_map)}</script>
 <script src="{MERMAID_CDN}" onerror="window.mermaidFailed=true"></script>
 <script>{_SCRIPT}</script>
 </body>

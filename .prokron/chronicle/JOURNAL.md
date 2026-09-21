@@ -553,3 +553,33 @@
   entries, earlier ADRs, earlier changelog releases, the Phase 2 and Phase 3
   documents. They were accurate when written.
 - Next: open P3 from `docs/Phase 3.md`, authority before implementation.
+
+## 2026-09-22 — T-GRAPHVIEW-01
+
+- Did: made the task graph readable. Every diagram now has zoom, pan, pinch, a
+  percentage readout and Fit, and hovering a task in the task graph marks its
+  transitive dependencies and dependents while dimming everything else.
+- Why: at 49 tasks the graph was drawn to fit its panel, which meant a
+  laid-out width of 5609px squeezed into about 1100 — roughly 19%. The view
+  that exists to answer "what does this depend on" answered nothing.
+- Chose: the chain is walked over the compiled `deps` and `blocks` embedded in
+  the page, never over the drawing's edges, so a highlight and `explain`
+  cannot disagree. ADR-025. Reading it off the SVG would have been shorter and
+  would have made the picture a second source of truth.
+- Chose: the map from a drawn node back to a task is generated in Python from
+  the same function that drew it. Re-implementing the sanitizing rule in
+  JavaScript would have drifted silently the first time the rule changed — and
+  it did change recently, in T-GATEVIEW-01.
+- Learned: Mermaid already labels each node `data-id` and each edge
+  `LS-<from>`/`LE-<to>`, so no identifier parsing was needed. Worth dumping the
+  rendered DOM before designing around a library's output.
+- Fixed, mine: the first version re-fitted on window resize, which silently
+  undid the legible opening scale and put the graph back at 19% — the exact
+  complaint. Caught in a screenshot, not in a test: the probe that reported
+  60% never fired a resize. Resize now re-opens rather than re-fits.
+- Decided: fitting is the wrong default for a large graph. A diagram that only
+  fits below 60% opens at 60% instead, centred on what is in flight, then what
+  is ready, then the critical path. Fit stays one click away.
+- Verified: headless Chrome for the hover, the zoom, the tab switch and the
+  offline fallback; an independent Python traversal for the chain sizes.
+- Next: open P3 from `docs/Phase 3.md`, authority before implementation.

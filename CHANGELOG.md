@@ -4,6 +4,29 @@ Prokron records its own history in `.prokron/chronicle/JOURNAL.md` and its
 decisions in `.prokron/chronicle/ADR/`. This file is the short version, for
 people arriving from a release page.
 
+## 0.3.1 — 2026-09-22
+
+### Added
+
+- **The task graph is legible.** Every diagram opens at a readable scale
+  instead of being shrunk to fit its panel, with zoom, pan, trackpad pinch, a
+  percentage readout and a Fit button. A graph that only fits below 60% opens
+  at 60% centred on what is in flight, then what is ready, then the critical
+  path.
+- **Hovering a task traces its chain.** The hovered task, everything it
+  transitively depends on, and everything that transitively depends on it stay
+  lit; the rest dims. The chain is walked over the compiled dependencies
+  embedded in the page, never over the drawing, so it cannot disagree with
+  `prokron explain`. ADR-025.
+
+### Fixed
+
+- Resizing the window no longer collapses the diagram back to a fit-to-panel
+  scale.
+
+The page remains one deterministic file, and still falls back to diagram
+source with every number intact when the diagram library cannot be loaded.
+
 ## 0.3.0 — 2026-09-22
 
 Installing Prokron used to put five entries at the root of a repository it does

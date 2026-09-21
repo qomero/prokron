@@ -528,3 +528,14 @@
 - AC: AC-T-LAYOUT-01
 - Evidence: Installing now adds one directory Prokron chose, `.prokron/`, holding `chronicle/`, `compiled/`, `commands/`, `runtime/` and the `prokron` command; everything else it writes is a path an agent host reads by fixed address. The installer suite compares the target's whole root listing against that set. `prokron migrate` relocates a v0.2 installation byte for byte, repoints the host command files, and still migrates a v0.1 one. 114 unit tests and the installer suite pass, and this repository tracks itself in the new layout.
 - Governed by: ADR-024
+
+## T-GRAPHVIEW-01: Make the task graph legible
+- Status: DONE
+- Phase: P-NONE
+- Validation: SYNTHETIC
+- Dependencies: T-GATEVIEW-01
+- Owner: claude/primary
+- Claimed: 2026-09-22
+- AC: AC-T-GRAPHVIEW-01
+- Evidence: Every diagram now opens at a legible scale rather than shrunk to the panel, with zoom, pan, pinch, a percentage readout and Fit. Hovering a task in the task graph marks its transitive dependencies and dependents and dims the rest; the chain is walked over the compiled `deps` and `blocks`, so it agrees with `explain` — 13, 2 and 11 for T-P2-14, T-AUTHOR-01 and T-GRAPHVIEW-01, confirmed against an independent traversal of `project.json`. With the diagram library unreachable the page falls back to diagram source and every number still reports. 118 unit tests and the installer suite pass, and rendering the page twice gives the same bytes.
+- Governed by: ADR-025

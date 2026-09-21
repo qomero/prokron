@@ -1032,3 +1032,49 @@ them are Prokron's own business and belong inside the directory it owns.
     rewritten. Records written under the old layout — journal entries, earlier
     ADRs, the changelog's earlier releases — were left as written, because
     they were accurate when written.
+
+## AC-T-GRAPHVIEW-01 — Make the task graph legible
+
+The task graph is the view that answers "what does this depend on". At 48
+tasks it rendered small enough to be unreadable, and nothing on the page said
+which tasks were connected to which. A diagram nobody can read reports
+nothing, however correct it is.
+
+- `AC-T-GRAPHVIEW-01-01` — Every diagram can be zoomed and panned, and the
+  zoom level can be reset to fit the whole diagram. `RUNTIME` · `PASS`
+  - Evidence: the diagram is given the size its own viewBox declares instead
+    of being shrunk to the panel, and a canvas transform carries zoom and pan.
+    Controls are −, +, a percentage readout and Fit; a pointer drag pans, a
+    double click fits, and a trackpad pinch — which arrives as ctrl+wheel —
+    zooms without claiming ordinary page scrolling. Verified in headless
+    Chrome: the rendered SVG reports a natural width of 5609px rather than the
+    panel width, and the readout tracks the applied scale.
+- `AC-T-GRAPHVIEW-01-02` — Hovering a task in the task graph marks that task,
+  everything it transitively depends on, and everything that transitively
+  depends on it, and separates them from the rest. `RUNTIME` · `PASS`
+  - Evidence: headless Chrome dispatches a hover over `T-P2-14` and the page
+    marks 13 nodes and 13 edges, styles the hovered task apart from the rest
+    of its chain, and dims everything else. Switching diagrams clears the
+    marking. A second run over `T-GRAPHVIEW-01` marks its 11.
+- `AC-T-GRAPHVIEW-01-03` — The chain is computed from compiled dependencies,
+  not from the rendered diagram, and matches `explain` for the same task.
+  `TEST` · `PASS`
+  - Evidence: an independent traversal of `project.json` gives 13, 2 and 11
+    for `T-P2-14`, `T-AUTHOR-01` and `T-GRAPHVIEW-01`; the page reports the
+    same three. A test asserts `blocks` is the exact inverse of `deps`, which
+    is what makes that traversal possible from the page, and another asserts
+    the node map is one identifier per task so a mark cannot land on the wrong
+    node.
+- `AC-T-GRAPHVIEW-01-04` — The page still renders, and stays usable, when
+  Mermaid cannot be loaded. `RUNTIME` · `PASS`
+  - Evidence: with the library URL pointed at a path that does not exist,
+    headless Chrome reports the canvas in its plain state, the diagram source
+    shown as text, the offline note visible, and all 51 task rows still
+    present and readable.
+- `AC-T-GRAPHVIEW-01-05` — The dashboard remains deterministic: compiling
+  twice produces byte-identical output, with no model and no network.
+  `TEST` · `PASS`
+  - Evidence: a test renders the page twice from the same project and
+    compares the strings; the existing regeneration test still passes; the
+    interaction is static script text in the generated file and adds no
+    request beyond the diagram library that was already there.

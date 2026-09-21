@@ -581,6 +581,44 @@ class TestDashboard(FixtureCase):
         self.assertIn("Inherited invariants", self.html)
         self.assertIn("Source", self.html)
 
+    def _node_map(self) -> dict[str, str]:
+        start = self.html.index('id="node-map">') + len('id="node-map">')
+        return json.loads(self.html[start : self.html.index("</script>", start)])
+
+    def test_the_drawing_can_be_mapped_back_to_a_task(self) -> None:
+        """The page marks an element by looking a task up in this map. Two
+        tasks drawn under one identifier would highlight the wrong node, and
+        nothing else in the project would notice."""
+        node_map = self._node_map()
+        self.assertEqual(len(node_map), len(self.project.tasks))
+        for task in self.project.tasks:
+            self.assertEqual(node_map[mermaid.node_id(task.id)], task.id)
+
+    def test_the_chain_is_reachable_from_compiled_dependencies_alone(self) -> None:
+        """Tracing walks `deps` and `blocks` in the embedded project. If those
+        two are not exact inverses, a hover reports a different graph from the
+        one `explain` reports (ADR-025)."""
+        forward = {t["id"]: set(t["deps"]) for t in self.compiled["tasks"]}
+        backward = {t["id"]: set(t["blocks"]) for t in self.compiled["tasks"]}
+        inverted: dict[str, set[str]] = {task: set() for task in forward}
+        for task, dependencies in forward.items():
+            for dependency in dependencies:
+                if dependency in inverted:
+                    inverted[dependency].add(task)
+        self.assertEqual(backward, inverted)
+
+    def test_rendering_twice_gives_the_same_page(self) -> None:
+        again = dashboard.render(self.project, self.report, compiler.as_json(self.project))
+        self.assertEqual(self.html, again)
+
+    def test_the_page_survives_mermaid_being_unreachable(self) -> None:
+        """The diagram library is loaded from a CDN. Every number on the page
+        is computed here, so losing the library may cost the drawing and
+        nothing else."""
+        self.assertIn('onerror="window.mermaidFailed=true"', self.html)
+        self.assertIn("canvas.classList.add('plain')", self.html)
+        self.assertIn('id="offline-note"', self.html)
+
 
 class TestViews(FixtureCase):
     def setUp(self) -> None:

@@ -20,7 +20,7 @@ _SHAPE = {
 }
 
 
-def _node(task_id: str) -> str:
+def node_id(task_id: str) -> str:
     """A Mermaid node identifier.
 
     Task IDs only ever contain hyphens, but a gate is identified by its heading,
@@ -43,26 +43,26 @@ def task_graph(project: Project, report: Report) -> str:
         if not tasks:
             continue
         title = f"{phase.id} {phase.name}" if phase else "Phase-independent"
-        lines.append(f'    subgraph {_node(phase_id)}["{_label(title)}"]')
+        lines.append(f'    subgraph {node_id(phase_id)}["{_label(title)}"]')
         for task in tasks:
             open_bracket, close_bracket = _SHAPE.get(task.status, _SHAPE["TODO"])
             lines.append(
-                f"        {_node(task.id)}{open_bracket}"
+                f"        {node_id(task.id)}{open_bracket}"
                 f'"{_label(task.id)}<br/>{_label(task.title)}"{close_bracket}'
             )
         lines.append("    end")
     for task in project.tasks:
         for dependency in task.dependencies:
             if project.task(dependency):
-                lines.append(f"    {_node(dependency)} --> {_node(task.id)}")
+                lines.append(f"    {node_id(dependency)} --> {node_id(task.id)}")
     lines.append("    classDef done fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20;")
     lines.append("    classDef wip fill:#fff8e1,stroke:#f9a825,color:#7f6000;")
     lines.append("    classDef blocked fill:#ffebee,stroke:#c62828,color:#8e0000;")
     for status, style in (("DONE", "done"), ("WIP", "wip")):
-        members = [_node(t.id) for t in project.tasks if t.status == status]
+        members = [node_id(t.id) for t in project.tasks if t.status == status]
         if members:
             lines.append(f"    class {','.join(members)} {style};")
-    blocked = [_node(task_id) for task_id in report.blocked]
+    blocked = [node_id(task_id) for task_id in report.blocked]
     if blocked:
         lines.append(f"    class {','.join(blocked)} blocked;")
     return "\n".join(lines) + "\n"
@@ -75,9 +75,9 @@ def critical_path(project: Project, report: Report) -> str:
     for task_id in report.critical_path:
         task = project.task(task_id)
         title = _label(task.title) if task else task_id
-        lines.append(f'    {_node(task_id)}["{task_id}<br/>{title}"]')
+        lines.append(f'    {node_id(task_id)}["{task_id}<br/>{title}"]')
     for left, right in zip(report.critical_path, report.critical_path[1:]):
-        lines.append(f"    {_node(left)} --> {_node(right)}")
+        lines.append(f"    {node_id(left)} --> {node_id(right)}")
     return "\n".join(lines) + "\n"
 
 
@@ -86,11 +86,11 @@ def phase_flow(project: Project, report: Report) -> str:
     for phase in project.phases:
         progress = report.phase_progress[phase.id]
         lines.append(
-            f'    {_node(phase.id)}["{phase.id} {_label(phase.name)}<br/>'
+            f'    {node_id(phase.id)}["{phase.id} {_label(phase.name)}<br/>'
             f'{progress} · {phase.status}"]'
         )
     for left, right in zip(project.phases, project.phases[1:]):
-        lines.append(f"    {_node(left.id)} --> {_node(right.id)}")
+        lines.append(f"    {node_id(left.id)} --> {node_id(right.id)}")
     return "\n".join(lines) + "\n"
 
 
@@ -99,18 +99,18 @@ def gate_graph(project: Project) -> str:
     for gate in project.gates:
         mark = "✓" if gate.status == "GREEN" else "✗"
         lines.append(
-            f'    {_node(gate.id)}{{"{_label(gate.id)}<br/>'
+            f'    {node_id(gate.id)}{{"{_label(gate.id)}<br/>'
             f'{_label(gate.name)} {mark}"}}'
         )
     for phase in project.phases:
-        lines.append(f'    {_node(phase.id)}["{phase.id} exit"]')
+        lines.append(f'    {node_id(phase.id)}["{phase.id} exit"]')
         for gate in project.gates:
             if any(entry.split()[:1] == [phase.id] for entry in gate.blocks if entry.split()):
-                lines.append(f"    {_node(gate.id)} --> {_node(phase.id)}")
+                lines.append(f"    {node_id(gate.id)} --> {node_id(phase.id)}")
     lines.append("    classDef green fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20;")
     lines.append("    classDef red fill:#ffebee,stroke:#c62828,color:#8e0000;")
     for status, style in (("GREEN", "green"), ("RED", "red")):
-        members = [_node(g.id) for g in project.gates if g.status == status]
+        members = [node_id(g.id) for g in project.gates if g.status == status]
         if members:
             lines.append(f"    class {','.join(members)} {style};")
     return "\n".join(lines) + "\n"
