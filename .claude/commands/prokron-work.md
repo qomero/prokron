@@ -1,1 +1,1 @@
-Follow `commands/prokron-work.md`. Use `$ARGUMENTS` as the requested task.
+Follow `.prokron/commands/prokron-work.md`. Use `$ARGUMENTS` as the requested task.

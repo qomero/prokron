@@ -1,8 +1,39 @@
 # Changelog
 
-Prokron records its own history in `prokron/JOURNAL.md` and its decisions in
-`prokron/ADR/`. This file is the short version, for people arriving from a
-release page.
+Prokron records its own history in `.prokron/chronicle/JOURNAL.md` and its
+decisions in `.prokron/chronicle/ADR/`. This file is the short version, for
+people arriving from a release page.
+
+## 0.3.0 — 2026-09-22
+
+Installing Prokron used to put five entries at the root of a repository it does
+not own. It now puts one.
+
+### Changed
+
+- **One directory.** Everything Prokron installs lives under `.prokron/`:
+  `chronicle/` for the authored records, `compiled/` for generated state,
+  `runtime/` for the tool's code, `commands/` for the workflows, and `prokron`
+  as the command. The separation between authored authority and compiled output
+  is unchanged — it is two subdirectories now instead of two root directories,
+  and the compiler still writes only into `compiled/`. ADR-024.
+- **Outside that directory, only fixed addresses.** `AGENTS.md`, `CLAUDE.md`,
+  `.claude/commands/`, `.opencode/commands/` and `.agents/skills/prokron/` are
+  read by agent hosts at paths Prokron does not choose. Nothing else is written.
+- **The command moved** from `./bin/prokron` to `.prokron/prokron`.
+
+### Added
+
+- **`prokron migrate` relocates a v0.2 installation.** Coming from v0.2 the
+  records move byte for byte and nothing is archived, because nothing is
+  transformed. Coming from v0.1 it still rewrites and archives as before. Host
+  command files are repointed at the workflows' new location.
+
+### Removed
+
+- `templates/.prokron/README.md`, a template nothing installed. The compiled
+  directory's README is generated, and the unused copy had already drifted from
+  what the compiler writes.
 
 ## 0.2.5 — 2026-09-22
 

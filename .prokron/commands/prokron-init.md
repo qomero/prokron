@@ -1,11 +1,11 @@
 # /prokron-init
 
-Create `prokron/` with `README.md`, `PHASES.md`, `TASKS.md`, `ACCEPTANCE.md`,
-`ADR/`, `INTENT.md`, `HANDOFF.md`, and `JOURNAL.md` if absent, and `.prokron/`
+Create `.prokron/chronicle/` with `README.md`, `PHASES.md`, `TASKS.md`, `ACCEPTANCE.md`,
+`ADR/`, `INTENT.md`, `HANDOFF.md`, and `JOURNAL.md` if absent, and `.prokron/compiled/`
 for compiled views.
 
 If the chronicle already contains tasks, decisions, intent, or journal entries,
-preserve them all and follow `commands/prokron-resume.md`. Neither `new` nor
+preserve them all and follow `.prokron/commands/prokron-resume.md`. Neither `new` nor
 `existing` resets a chronicle. Add only missing files; never replace populated
 records with empty templates. The entry modes below apply only to a fresh,
 empty chronicle.

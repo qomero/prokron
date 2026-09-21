@@ -1,11 +1,12 @@
 # /prokron-work
 
-Run `./bin/prokron status` for the current position, or read
-`prokron/README.md` and the compiled views if the tool is unavailable.
-Select the requested task, or one ready task if none was named. Use
-`./bin/prokron explain <task>` rather than re-deriving its state by hand. If the requested
-work has no task yet, create it before implementation without waiting for a
-Prokron command, give it a phase, and write its acceptance contract. Read that
+Run `.prokron/prokron status` for the current position, or read
+`.prokron/chronicle/README.md` and the compiled views if the tool is
+unavailable. Select the requested task, or one ready task if none was named.
+Use `.prokron/prokron explain <task>` rather than re-deriving its state by
+hand. If the requested work has no task yet, create it before implementation
+without waiting for a Prokron command, give it a phase, and write its
+acceptance contract. Read that
 task, its contract, and its governing ADRs, then inspect only the specification
 and code needed for the task.
 

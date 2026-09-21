@@ -511,3 +511,45 @@
   local only and can be deleted once the rewritten history has been seen to be
   correct.
 - Next: Open P3 from `docs/Phase 3.md`, authority before implementation.
+
+## 2026-09-22 — T-LAYOUT-01
+
+- Did: moved everything Prokron installs into one directory. `.prokron/` now
+  holds `chronicle/` (authored), `compiled/` (generated), `commands/`,
+  `runtime/` and the `prokron` command. Installing used to add five entries to
+  the root of a repository Prokron does not own; it now adds one, and the
+  installer suite compares the target's entire root listing against the
+  expected set so a sixth entry fails a test rather than going unnoticed.
+- Why: a tool that claims to reduce a project's confusion should not start by
+  scattering itself across that project's root. ADR-024.
+- Kept: the authored/compiled separation from ADR-014. It is two
+  subdirectories now rather than two root directories, and the compiler still
+  writes only into `compiled/`.
+- Learned: `.prokron/` means three different things across three releases —
+  v0.1 authority, v0.2 compiled output, v0.3 the whole installation. Migration
+  detection could not hang off one constant, so `layout.py` names each old
+  layout separately and the tool tests for them in order. A single
+  `COMPILED_DIR` reused for the v0.1 archive path would have written the backup
+  to `.prokron/compiled-v0.1-backup-…`, inside the directory being migrated.
+- Learned: the v0.2 upgrade is a move, not a rewrite, so it archives nothing.
+  Archiving would have duplicated a whole chronicle to protect against a
+  transformation that does not happen. The test asserts the absence of an
+  archive rather than its presence, which is the part that could regress
+  quietly.
+- Noticed: `.claude/commands/prokron-*.md` and their OpenCode equivalents name
+  the workflow document by path, so moving the workflows silently breaks them
+  on upgrade. Relocation repoints them, and both the unit test and the
+  installer suite check that the named document exists afterwards.
+- Removed: `templates/.prokron/README.md`. Nothing installed it — the compiler
+  generates that file — and the unused copy had already drifted from what the
+  compiler writes. A template that nothing reads is a trap for whoever edits it
+  next.
+- Cost: the command's path is longer, `.prokron/prokron` rather than
+  `./bin/prokron`, and the chronicle now sits in a directory a file browser
+  hides by default. The chronicle is written to be read by people, so that is a
+  real loss; it was accepted because the reading surfaces are `status`, the
+  dashboard and the files themselves, all reached by path or command.
+- Left: unchanged paths in records written under the old layout — journal
+  entries, earlier ADRs, earlier changelog releases, the Phase 2 and Phase 3
+  documents. They were accurate when written.
+- Next: open P3 from `docs/Phase 3.md`, authority before implementation.

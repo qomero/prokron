@@ -4,8 +4,8 @@ Prepare the chronicle for another person or agent:
 
 1. Update task status, validation strength, criterion state and evidence in
    `ACCEPTANCE.md`, and governing ADRs.
-2. Run `./bin/prokron validate`, fix anything it reports, then
-   `./bin/prokron compile` to refresh the views in `.prokron/`.
+2. Run `.prokron/prokron validate`, fix anything it reports, then
+   `.prokron/prokron compile` to refresh the views in `.prokron/compiled/`.
 3. Update `INTENT.md` with the exact stopping point and next action, or clear it
    when the task is complete.
 4. Rewrite `HANDOFF.md` with the current position, what is true now, what is not

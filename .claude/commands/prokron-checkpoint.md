@@ -1,1 +1,1 @@
-Follow `commands/prokron-checkpoint.md`.
+Follow `.prokron/commands/prokron-checkpoint.md`.

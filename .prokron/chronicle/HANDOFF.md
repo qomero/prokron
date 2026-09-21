@@ -5,10 +5,13 @@ the next person or agent needs in order to continue right now. Closed history
 belongs in `JOURNAL.md`.
 
 ## Position
-- Release 0.2.5. P2 is `COMPLETE` as of 2026-09-22, accepted by the owner under
+- Release 0.3.0. P2 is `COMPLETE` as of 2026-09-22, accepted by the owner under
   ADR-020. P0 is `COMPLETE`. P1 is `EXIT_PENDING` behind one red gate.
 - Nothing in flight. Intent is empty.
-- 42 of 43 tasks done. The one open task is T-PILOT-01, deliberately parked.
+- 47 of 48 tasks done. The one open task is T-PILOT-01, deliberately parked.
+- Everything Prokron installs now lives in `.prokron/` (ADR-024). This
+  repository's own chronicle moved to `.prokron/chronicle/` and its compiled
+  views to `.prokron/compiled/`; the command is `.prokron/prokron`.
 
 ## What is true now
 - Gates A, B, C, D and E are green on recorded evidence. Gate E is green because
@@ -30,10 +33,15 @@ belongs in `JOURNAL.md`.
 - The accepted risk: P3 is built on a workflow whose cross-session agent
   compliance is unverified. A pilot failure at that audit lands against P3 work
   already written. Stated rather than hidden.
-- The README banner and Mermaid diagram still depict the six-file chronicle.
-- `.prokron/` is committed so the README can link to it as a live example. That
-  puts a large dashboard and JSON in every diff touching authority. Nobody has
-  decided whether to keep it that way.
+- `.prokron/compiled/` is committed so the README can link to it as a live
+  example. That puts a large dashboard and JSON in every diff touching
+  authority. Nobody has decided whether to keep it that way.
+- The chronicle now sits in a directory a file browser hides by default, and
+  it is written to be read by people. ADR-024 accepted that cost; whether it
+  actually costs anything is worth watching.
+- Records written under the older layouts still name the old paths. That is
+  deliberate — they were accurate when written — but it means a reader of the
+  journal or the earlier ADRs will see `prokron/` and `./bin/prokron`.
 
 ## Repository identity
 - Commits are authored as `qomero`, with an address verified on that account,

@@ -10,81 +10,92 @@ printf '# Keep Claude rules\n' > "$fixture/CLAUDE.md"
 "$root/install.sh" existing "$fixture" > "$fixture/output"
 
 for file in README PHASES TASKS ACCEPTANCE INTENT HANDOFF JOURNAL; do
-  test -f "$fixture/prokron/$file.md"
+  test -f "$fixture/.prokron/chronicle/$file.md"
 done
-test -f "$fixture/prokron/ADR/README.md"
+test -f "$fixture/.prokron/chronicle/ADR/README.md"
 # Authority never lands in the compiled directory.
 for file in PHASES TASKS ACCEPTANCE INTENT HANDOFF JOURNAL DECISIONS; do
-  test ! -e "$fixture/.prokron/$file.md"
+  test ! -e "$fixture/.prokron/compiled/$file.md"
 done
-test ! -e "$fixture/prokron/DECISIONS.md"
+test ! -e "$fixture/.prokron/chronicle/DECISIONS.md"
 test -f "$fixture/.agents/skills/prokron/SKILL.md"
 
+# Everything Prokron chooses for itself lives in one directory. What is left
+# outside it is only what an agent host reads by fixed address.
+installed=$(cd "$fixture" && ls -A | LC_ALL=C sort | tr '\n' ' ')
+expected='.agents .claude .opencode .prokron AGENTS.md CLAUDE.md output '
+test "$installed" = "$expected" || {
+  echo "Install placed unexpected entries at the root: $installed" >&2
+  exit 1
+}
+
 # The runtime ships with the chronicle and runs in the installed repository.
-test -x "$fixture/bin/prokron"
-test -f "$fixture/.prokron-runtime/prokron/cli.py"
+test -x "$fixture/.prokron/prokron"
+test -f "$fixture/.prokron/runtime/prokron/cli.py"
 # Every runtime module must be installed, or the tool breaks in the target repo.
 for module in "$root"/src/prokron/*.py; do
-  test -f "$fixture/.prokron-runtime/prokron/$(basename "$module")"
+  test -f "$fixture/.prokron/runtime/prokron/$(basename "$module")"
 done
-"$fixture/bin/prokron" --version | grep -Fq "prokron $(cat "$root/VERSION")"
+"$fixture/.prokron/prokron" --version | grep -Fq "prokron $(cat "$root/VERSION")"
 # The runtime reports its own version, never the tracked project's.
 printf '9.9.9\n' > "$fixture/VERSION"
-"$fixture/bin/prokron" --version | grep -Fvq '9.9.9'
+"$fixture/.prokron/prokron" --version | grep -Fvq '9.9.9'
 rm "$fixture/VERSION"
-(cd "$fixture" && ./bin/prokron validate) | grep -Fq 'consistent'
-(cd "$fixture" && ./bin/prokron compile) >/dev/null
-test -f "$fixture/.prokron/project.json"
-(cd "$fixture" && ./bin/prokron status) | grep -Fq 'tasks'
+(cd "$fixture" && .prokron/prokron validate) | grep -Fq 'consistent'
+(cd "$fixture" && .prokron/prokron compile) >/dev/null
+test -f "$fixture/.prokron/compiled/project.json"
+(cd "$fixture" && .prokron/prokron status) | grep -Fq 'tasks'
 # Compiled state is disposable: deleting it loses nothing.
-cp -R "$fixture/.prokron" "$fixture/first-compile"
-rm -rf "$fixture/.prokron"
-(cd "$fixture" && ./bin/prokron compile) >/dev/null
+cp -R "$fixture/.prokron/compiled" "$fixture/first-compile"
+rm -rf "$fixture/.prokron/compiled"
+(cd "$fixture" && .prokron/prokron compile) >/dev/null
 for file in project.json README.md STATE.md TASK_GRAPH.md; do
-  cmp "$fixture/first-compile/$file" "$fixture/.prokron/$file"
+  cmp "$fixture/first-compile/$file" "$fixture/.prokron/compiled/$file"
 done
 rm -rf "$fixture/first-compile"
 
 for command in init work decide checkpoint resume; do
-  test -f "$fixture/commands/prokron-$command.md"
+  test -f "$fixture/.prokron/commands/prokron-$command.md"
   test -f "$fixture/.claude/commands/prokron-$command.md"
   test -f "$fixture/.opencode/commands/prokron-$command.md"
 done
+# A host command file must name a document that was actually installed.
+grep -Fq '.prokron/commands/prokron-work.md' "$fixture/.claude/commands/prokron-work.md"
 grep -Fq '# Keep agent rules' "$fixture/AGENTS.md"
 grep -Fq '# Keep Claude rules' "$fixture/CLAUDE.md"
 grep -Fq 'do not wait for a Prokron command' "$fixture/AGENTS.md"
 grep -Fq 'context, token, time, session, rate, or quota limit' "$fixture/AGENTS.md"
 grep -Fq 'Record every new work request as a task before implementation' \
-  "$fixture/prokron/README.md"
+  "$fixture/.prokron/chronicle/README.md"
 grep -Fq 'Append an ADR as soon as a material choice is made' \
-  "$fixture/prokron/README.md"
-grep -Fq 'Do not edit' "$fixture/.prokron/README.md"
-grep -Fq 'Given <precondition>' "$fixture/prokron/ACCEPTANCE.md"
-grep -Fq 'ACCEPTANCE_FAILURE' "$fixture/prokron/ACCEPTANCE.md"
-grep -Fq 'Exit authority' "$fixture/prokron/PHASES.md"
+  "$fixture/.prokron/chronicle/README.md"
+grep -Fq 'Do not edit' "$fixture/.prokron/compiled/README.md"
+grep -Fq 'Given <precondition>' "$fixture/.prokron/chronicle/ACCEPTANCE.md"
+grep -Fq 'ACCEPTANCE_FAILURE' "$fixture/.prokron/chronicle/ACCEPTANCE.md"
+grep -Fq 'Exit authority' "$fixture/.prokron/chronicle/PHASES.md"
 grep -Fq '$prokron init existing' "$fixture/output"
 grep -Fq '/prokron-init existing' "$fixture/output"
-grep -Fq 'commands/prokron-init.md in existing mode' "$fixture/output"
+grep -Fq '.prokron/commands/prokron-init.md in existing mode' "$fixture/output"
 
 grep -Fq '$ARGUMENTS' "$fixture/.opencode/commands/prokron-decide.md"
 
 # Both entry modes must preserve every record and customized instruction.
 for file in README PHASES TASKS ACCEPTANCE INTENT HANDOFF JOURNAL; do
-  printf '\nKEEP %s\n' "$file" >> "$fixture/prokron/$file.md"
+  printf '\nKEEP %s\n' "$file" >> "$fixture/.prokron/chronicle/$file.md"
 done
-printf '\nKEEP ADR\n' >> "$fixture/prokron/ADR/README.md"
-printf '\nCUSTOM\n' >> "$fixture/commands/prokron-work.md"
-cp -R "$fixture/prokron" "$fixture/saved"
-cp "$fixture/commands/prokron-work.md" "$fixture/saved-work"
+printf '\nKEEP ADR\n' >> "$fixture/.prokron/chronicle/ADR/README.md"
+printf '\nCUSTOM\n' >> "$fixture/.prokron/commands/prokron-work.md"
+cp -R "$fixture/.prokron/chronicle" "$fixture/saved"
+cp "$fixture/.prokron/commands/prokron-work.md" "$fixture/saved-work"
 cp "$fixture/AGENTS.md" "$fixture/saved-agents"
 cp "$fixture/CLAUDE.md" "$fixture/saved-claude"
 for mode in existing new; do
   "$root/install.sh" "$mode" "$fixture" > "$fixture/output"
   for file in README PHASES TASKS ACCEPTANCE INTENT HANDOFF JOURNAL; do
-    cmp "$fixture/saved/$file.md" "$fixture/prokron/$file.md"
+    cmp "$fixture/saved/$file.md" "$fixture/.prokron/chronicle/$file.md"
   done
-  cmp "$fixture/saved/ADR/README.md" "$fixture/prokron/ADR/README.md"
-  cmp "$fixture/saved-work" "$fixture/commands/prokron-work.md"
+  cmp "$fixture/saved/ADR/README.md" "$fixture/.prokron/chronicle/ADR/README.md"
+  cmp "$fixture/saved-work" "$fixture/.prokron/commands/prokron-work.md"
   cmp "$fixture/saved-agents" "$fixture/AGENTS.md"
   cmp "$fixture/saved-claude" "$fixture/CLAUDE.md"
   grep -Fq 'reinstall does not upgrade' "$fixture/output"
@@ -98,15 +109,53 @@ mkdir "$fixture/new project"
 grep -Fq '$prokron init new' "$fixture/output-new"
 
 # An interrupted installation can be repaired without resetting existing tasks.
-mkdir -p "$fixture/partial/prokron"
-cp "$fixture/saved/TASKS.md" "$fixture/partial/prokron/TASKS.md"
+mkdir -p "$fixture/partial/.prokron/chronicle"
+cp "$fixture/saved/TASKS.md" "$fixture/partial/.prokron/chronicle/TASKS.md"
 "$root/install.sh" existing "$fixture/partial" >/dev/null
-cmp "$fixture/saved/TASKS.md" "$fixture/partial/prokron/TASKS.md"
+cmp "$fixture/saved/TASKS.md" "$fixture/partial/.prokron/chronicle/TASKS.md"
 for file in README PHASES ACCEPTANCE INTENT HANDOFF JOURNAL; do
-  cmp "$root/templates/prokron/$file.md" "$fixture/partial/prokron/$file.md"
+  cmp "$root/templates/chronicle/$file.md" "$fixture/partial/.prokron/chronicle/$file.md"
 done
-cmp "$root/templates/prokron/ADR/README.md" "$fixture/partial/prokron/ADR/README.md"
-test ! -d "$fixture/partial/.prokron"  # compiled state appears only after compiling
+cmp "$root/templates/chronicle/ADR/README.md" \
+  "$fixture/partial/.prokron/chronicle/ADR/README.md"
+# compiled state appears only after compiling
+test ! -d "$fixture/partial/.prokron/compiled"
+
+# Upgrading a v0.2 project must relocate its chronicle without rewriting it.
+legacy2="$fixture/v02"
+mkdir -p "$legacy2/prokron/ADR" "$legacy2/.prokron" "$legacy2/commands" "$legacy2/bin"
+mkdir -p "$legacy2/.prokron-runtime/prokron" "$legacy2/.claude/commands"
+cp "$root"/templates/chronicle/*.md "$legacy2/prokron/"
+cp "$root/templates/chronicle/ADR/README.md" "$legacy2/prokron/ADR/README.md"
+printf '\n## T-V02-01: Carry a record across the move\n- Status: TODO\n- Phase: P-NONE\n- Validation: UNTESTED\n- Dependencies: none\n- AC: AC-T-V02-01\n- Evidence: —\n- Governed by: ADR-001\n' >> "$legacy2/prokron/TASKS.md"
+printf '\n## AC-T-V02-01 — Carry a record across the move\n\n- `AC-T-V02-01-01` — It survived. `INSPECTION` · `NOT_RUN`\n  - Evidence: —\n' >> "$legacy2/prokron/ACCEPTANCE.md"
+printf '# ADR-001: Keep it\n- Date: 2026-01-01\n- Status: ACCEPTED\n- Decision: Keep it.\n' > "$legacy2/prokron/ADR/ADR-001.md"
+printf 'stale\n' > "$legacy2/.prokron/STATE.md"
+printf 'stale\n' > "$legacy2/.prokron/task-graph.mmd"
+printf 'Follow `commands/prokron-work.md`.\n' > "$legacy2/.claude/commands/prokron-work.md"
+printf 'CUSTOM WORK\n' > "$legacy2/commands/prokron-work.md"
+printf 'old\n' > "$legacy2/.prokron-runtime/prokron/cli.py"
+printf 'old\n' > "$legacy2/bin/prokron"
+cp "$legacy2/prokron/TASKS.md" "$fixture/saved-v02-tasks"
+"$root/install.sh" existing "$legacy2" > "$legacy2/output"
+grep -Fq 'A v0.2 chronicle was found' "$legacy2/output"
+( cd "$legacy2" && .prokron/prokron status ) | grep -Fq 'Run `prokron migrate`'
+( cd "$legacy2" && .prokron/prokron migrate ) | grep -Fq 'Nothing was changed'
+test -f "$legacy2/prokron/TASKS.md"
+( cd "$legacy2" && .prokron/prokron migrate --apply ) | grep -Fq 'Relocated'
+# A relocation moves records; it never rewrites them.
+cmp "$fixture/saved-v02-tasks" "$legacy2/.prokron/chronicle/TASKS.md"
+test -f "$legacy2/.prokron/chronicle/ADR/ADR-001.md"
+grep -Fq 'CUSTOM WORK' "$legacy2/.prokron/commands/prokron-work.md"
+grep -Fq '.prokron/commands/prokron-work.md' "$legacy2/.claude/commands/prokron-work.md"
+test ! -e "$legacy2/prokron"
+test ! -e "$legacy2/commands"
+test ! -e "$legacy2/bin"
+test ! -e "$legacy2/.prokron-runtime"
+test ! -e "$legacy2/.prokron/STATE.md"
+test ! -e "$legacy2/.prokron/task-graph.mmd"
+( cd "$legacy2" && .prokron/prokron validate ) | grep -Fq 'consistent'
+( cd "$legacy2" && .prokron/prokron explain T-V02-01 ) | grep -Fq 'Carry a record'
 
 # Upgrading a v0.1 project must not strand its chronicle.
 legacy="$fixture/legacy"
@@ -117,19 +166,19 @@ printf '# Decisions\n\n## ADR-001: Do it\n- Date: 2026-01-01\n- Status: ACCEPTED
 printf '# State\n\n## Next\n- Call the vendor.\n' > "$legacy/.prokron/STATE.md"
 "$root/install.sh" existing "$legacy" > "$legacy/output"
 grep -Fq 'prokron migrate' "$legacy/output"
-( cd "$legacy" && ./bin/prokron status ) | grep -Fq 'prokron migrate'
-( cd "$legacy" && ./bin/prokron migrate ) | grep -Fq 'Nothing was changed'
+( cd "$legacy" && .prokron/prokron status ) | grep -Fq 'prokron migrate'
+( cd "$legacy" && .prokron/prokron migrate ) | grep -Fq 'Nothing was changed'
 test -f "$legacy/.prokron/TASKS.md"
-( cd "$legacy" && ./bin/prokron migrate --apply ) | grep -Fq 'Authority validates'
-grep -Fq 'T-OLD-01' "$legacy/prokron/TASKS.md"
-grep -Fq 'It ships.' "$legacy/prokron/ACCEPTANCE.md"
-grep -Fq 'Call the vendor' "$legacy/prokron/HANDOFF.md"
-test -f "$legacy/prokron/ADR/ADR-001.md"
+( cd "$legacy" && .prokron/prokron migrate --apply ) | grep -Fq 'Authority validates'
+grep -Fq 'T-OLD-01' "$legacy/.prokron/chronicle/TASKS.md"
+grep -Fq 'It ships.' "$legacy/.prokron/chronicle/ACCEPTANCE.md"
+grep -Fq 'Call the vendor' "$legacy/.prokron/chronicle/HANDOFF.md"
+test -f "$legacy/.prokron/chronicle/ADR/ADR-001.md"
 ls -a "$legacy" | grep -q '^\.prokron-v0\.1-backup-'
-( cd "$legacy" && ./bin/prokron validate ) | grep -Fq 'consistent'
+( cd "$legacy" && .prokron/prokron validate ) | grep -Fq 'consistent'
 
 # Do not follow links into other projects, including dangling links.
-for path in AGENTS.md CLAUDE.md prokron .prokron commands .agents .claude .opencode; do
+for path in AGENTS.md CLAUDE.md .prokron .agents .claude .opencode; do
   mkdir "$fixture/link-test"
   ln -s "$fixture/missing" "$fixture/link-test/$path"
   if "$root/install.sh" existing "$fixture/link-test" >/dev/null 2>&1; then

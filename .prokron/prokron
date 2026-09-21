@@ -5,7 +5,9 @@ import sys
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-for candidate in (HERE.parent / "src", HERE.parent / ".prokron-runtime"):
+# Installed, the runtime is copied in beside this script. In a source checkout
+# there is no copy, and `src/` one level up is the runtime being developed.
+for candidate in (HERE / "runtime", HERE.parent / "src"):
     if (candidate / "prokron" / "cli.py").is_file():
         sys.path.insert(0, str(candidate))
         break

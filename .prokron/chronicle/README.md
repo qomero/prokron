@@ -11,19 +11,19 @@ review, advice, and continuity between people as well as agents.
 ## Authored and compiled
 
 ```text
-prokron/     authored by people and agents; the only source of truth
-.prokron/    compiled by Prokron; safe to delete and regenerate
+.prokron/chronicle/   authored by people and agents; the only source of truth
+.prokron/compiled/    compiled by Prokron; safe to delete and regenerate
 ```
 
-Nothing in `.prokron/` is authoritative. Delete it and recompile and no project
-fact is lost. Never hand-edit it, and never let a generated view decide a
+Nothing in `.prokron/compiled/` is authoritative. Delete it and recompile and
+no project fact is lost. Never hand-edit it, and never let a generated view decide a
 question that an authored document answers.
 
 ## Read order
 
-1. `.prokron/STATE.md` for the current position.
+1. `.prokron/compiled/STATE.md` for the current position.
 2. `PHASES.md` for the active phase, its exit conditions, and gate status.
-3. `.prokron/TASK_GRAPH.md` for in-flight, ready, and blocked work.
+3. `.prokron/compiled/TASK_GRAPH.md` for in-flight, ready, and blocked work.
 4. The selected entry in `TASKS.md`.
 5. Its contract in `ACCEPTANCE.md`.
 6. Its governing entries in `ADR/`.
@@ -43,8 +43,8 @@ question that an authored document answers.
 - `INTENT.md` is overwritten and holds zero or one current task.
 - `HANDOFF.md` is overwritten and holds current implementation continuity.
 - `JOURNAL.md` is append-only history and holds no authority.
-- `.prokron/STATE.md` and `.prokron/TASK_GRAPH.md` are views. They report
-  authority and never override it.
+- `.prokron/compiled/STATE.md` and `.prokron/compiled/TASK_GRAPH.md` are
+  views. They report authority and never override it.
 
 ## Working rules
 

@@ -19,8 +19,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from prokron import (  # noqa: E402
-    analytics, cli, compile as compiler, dashboard, mermaid, migrate, validate,
-    views,
+    analytics, cli, compile as compiler, dashboard, layout, mermaid, migrate,
+    validate, views,
 )
 from prokron.parse import ParseError  # noqa: E402
 
@@ -138,8 +138,8 @@ ADR = """# ADR-001: Do the simple thing
 """
 
 
-def build_fixture(root: Path) -> Path:
-    authority = root / "prokron"
+def build_fixture(root: Path, authority: str = layout.AUTHORITY_DIR) -> Path:
+    authority = root / authority
     (authority / "ADR").mkdir(parents=True)
     (authority / "PHASES.md").write_text(PHASES)
     (authority / "TASKS.md").write_text(TASKS)
@@ -158,7 +158,7 @@ class FixtureCase(unittest.TestCase):
         self.project = compiler.load(self.root)
 
     def rewrite(self, name: str, old: str, new: str) -> None:
-        path = self.root / "prokron" / name
+        path = self.root / layout.AUTHORITY_DIR / name
         text = path.read_text()
         self.assertIn(old, text)
         path.write_text(text.replace(old, new, 1))
@@ -214,7 +214,7 @@ class TestParsing(FixtureCase):
         self.assertEqual(self.project.milestones[0].task, "T-ONE")
 
     def test_malformed_task_heading_names_the_file(self) -> None:
-        (self.root / "prokron" / "TASKS.md").write_text("# Tasks\n\n## nonsense\n")
+        (self.root / layout.AUTHORITY_DIR / "TASKS.md").write_text("# Tasks\n\n## nonsense\n")
         with self.assertRaises(ParseError) as caught:
             compiler.load(self.root)
         self.assertEqual(caught.exception.file, "TASKS.md")
@@ -226,7 +226,7 @@ class TestParsing(FixtureCase):
         self.assertIn("missing required field", str(caught.exception))
 
     def rewrite_raw(self, name: str, old: str, new: str) -> None:
-        path = self.root / "prokron" / name
+        path = self.root / layout.AUTHORITY_DIR / name
         path.write_text(path.read_text().replace(old, new, 1))
 
 
@@ -239,7 +239,7 @@ class TestValidation(FixtureCase):
         self.assertIn("unknown-dependency", self.codes())
 
     def test_duplicate_task(self) -> None:
-        path = self.root / "prokron" / "TASKS.md"
+        path = self.root / layout.AUTHORITY_DIR / "TASKS.md"
         path.write_text(path.read_text() + TASKS.split("# Tasks\n")[1].split("## T-TWO")[0])
         self.project = compiler.load(self.root)
         self.assertIn("duplicate-task", self.codes())
@@ -311,7 +311,7 @@ class TestValidation(FixtureCase):
         self.assertEqual(validate.errors(findings), [])
 
     def test_two_active_phases_are_an_error(self) -> None:
-        path = self.root / "prokron" / "PHASES.md"
+        path = self.root / layout.AUTHORITY_DIR / "PHASES.md"
         path.write_text(
             path.read_text().replace(
                 "---\n\n# Gates",
@@ -384,8 +384,8 @@ class TestAnalytics(FixtureCase):
 
     def test_a_packet_omits_narrative_about_other_work(self) -> None:
         """A cold agent cannot tell which of two contradicting statements to believe."""
-        (self.root / "prokron" / "INTENT.md").write_text("# Intent\n\nTask: T-ONE, in flight.\n")
-        (self.root / "prokron" / "HANDOFF.md").write_text("# Handoff\n\nT-ONE is half built.\n")
+        (self.root / layout.AUTHORITY_DIR / "INTENT.md").write_text("# Intent\n\nTask: T-ONE, in flight.\n")
+        (self.root / layout.AUTHORITY_DIR / "HANDOFF.md").write_text("# Handoff\n\nT-ONE is half built.\n")
         project = compiler.load(self.root)
         about_other = analytics.context(project, "T-TWO")
         self.assertIsNone(about_other["intent"])
@@ -453,12 +453,12 @@ class TestCompile(FixtureCase):
 
     def test_deleting_compiled_state_loses_nothing(self) -> None:
         before = compiler.write(self.root, self.project).read_bytes()
-        shutil.rmtree(self.root / ".prokron")
+        shutil.rmtree(self.root / layout.COMPILED_DIR)
         after = compiler.write(self.root, compiler.load(self.root)).read_bytes()
         self.assertEqual(before, after)
 
     def test_compiler_writes_nothing_outside_the_compiled_directory(self) -> None:
-        authority = self.root / "prokron"
+        authority = self.root / layout.AUTHORITY_DIR
         before = {p: p.read_bytes() for p in authority.rglob("*") if p.is_file()}
         compiler.write(self.root, self.project)
         after = {p: p.read_bytes() for p in authority.rglob("*") if p.is_file()}
@@ -590,7 +590,7 @@ class TestViews(FixtureCase):
 
     def test_compiled_directory_is_entirely_generated(self) -> None:
         compiler.write(self.root, self.project)
-        written = sorted(p.name for p in (self.root / ".prokron").iterdir())
+        written = sorted(p.name for p in (self.root / layout.COMPILED_DIR).iterdir())
         self.assertEqual(
             written, ["README.md", "STATE.md", "TASK_GRAPH.md", "project.json"]
         )
@@ -660,7 +660,7 @@ class TestContractIntegrity(FixtureCase):
         self.assertEqual(caught.exception.anchor, "AC-T-TWO-01")
 
     def test_a_broken_criterion_does_not_swallow_the_next_one(self) -> None:
-        path = self.root / "prokron" / "ACCEPTANCE.md"
+        path = self.root / layout.AUTHORITY_DIR / "ACCEPTANCE.md"
         path.write_text(
             "# Acceptance\n\n# Contracts\n\n## AC-T-ONE — One\n\n"
             "- `AC-T-ONE-01` — Given a bullet, When its class is missing, Then it is caught.\n"
@@ -697,7 +697,7 @@ class TestDegenerateProject(unittest.TestCase):
     def setUp(self) -> None:
         self.root = Path(tempfile.mkdtemp(prefix="prokron-empty-"))
         self.addCleanup(shutil.rmtree, self.root, True)
-        authority = self.root / "prokron"
+        authority = self.root / layout.AUTHORITY_DIR
         (authority / "ADR").mkdir(parents=True)
         (authority / "PHASES.md").write_text("# Phases\n\nNo phases yet.\n")
         (authority / "TASKS.md").write_text("# Tasks\n\nNo tasks yet.\n")
@@ -760,7 +760,7 @@ class TestCli(FixtureCase):
         self.rewrite("TASKS.md", "- Dependencies: T-ONE", "- Dependencies: T-GHOST")
         code, _ = self.run_cli("compile")
         self.assertEqual(code, 1)
-        self.assertFalse((self.root / ".prokron" / "project.json").exists())
+        self.assertFalse((self.root / layout.COMPILED_DIR / "project.json").exists())
         self.assertEqual(self.run_cli("compile", "--force")[0], 0)
 
     def test_status_reports_position(self) -> None:
@@ -772,7 +772,7 @@ class TestCli(FixtureCase):
     def test_graph_and_dashboard_write_only_compiled_files(self) -> None:
         self.assertEqual(self.run_cli("graph")[0], 0)
         self.assertEqual(self.run_cli("dashboard")[0], 0)
-        written = {p.name for p in (self.root / ".prokron").iterdir()}
+        written = {p.name for p in (self.root / layout.COMPILED_DIR).iterdir()}
         self.assertIn("dashboard.html", written)
         self.assertIn("task-graph.mmd", written)
 
@@ -789,7 +789,7 @@ class TestCli(FixtureCase):
             self.assertEqual(cli.main(["-C", empty, "status"]), 1)
 
     def test_parse_error_is_reported_not_raised(self) -> None:
-        (self.root / "prokron" / "TASKS.md").write_text("# Tasks\n\n## broken\n")
+        (self.root / layout.AUTHORITY_DIR / "TASKS.md").write_text("# Tasks\n\n## broken\n")
         self.assertEqual(cli.main(["-C", str(self.root), "status"]), 1)
 
 
@@ -839,7 +839,7 @@ class TestThisRepository(unittest.TestCase):
         with tempfile.TemporaryDirectory() as workspace:
             copy = Path(workspace) / "repo"
             shutil.copytree(
-                self.root / "prokron", copy / "prokron", dirs_exist_ok=False
+                self.root / layout.AUTHORITY_DIR, copy / layout.AUTHORITY_DIR, dirs_exist_ok=False
             )
             project = compiler.load(copy)
             report = analytics.report(project)
@@ -849,7 +849,7 @@ class TestThisRepository(unittest.TestCase):
             for name, text in views.render_all(project, report).items():
                 first[name] = text.encode()
 
-            shutil.rmtree(copy / ".prokron")
+            shutil.rmtree(copy / layout.COMPILED_DIR)
             rebuilt = compiler.load(copy)
             rebuilt_report = analytics.report(rebuilt)
             second = {"project.json": compiler.write(copy, rebuilt).read_bytes()}
@@ -916,7 +916,7 @@ class TestMigration(unittest.TestCase):
     def setUp(self) -> None:
         self.root = Path(tempfile.mkdtemp(prefix="prokron-legacy-"))
         self.addCleanup(shutil.rmtree, self.root, True)
-        legacy = self.root / ".prokron"
+        legacy = self.root / layout.V01_AUTHORITY_DIR
         legacy.mkdir()
         (legacy / "TASKS.md").write_text(LEGACY_TASKS)
         (legacy / "DECISIONS.md").write_text(LEGACY_DECISIONS)
@@ -924,7 +924,7 @@ class TestMigration(unittest.TestCase):
         (legacy / "TASK_GRAPH.md").write_text("# Task Graph\n\n- T-REAL-01 [DONE]\n")
         (legacy / "INTENT.md").write_text("# Intent\n\nNo intent.\n")
         (legacy / "JOURNAL.md").write_text("# Journal\n\n## 2026-01-01\n- Did: things\n")
-        authority = self.root / "prokron"
+        authority = self.root / layout.AUTHORITY_DIR
         (authority / "ADR").mkdir(parents=True)
         (authority / "TASKS.md").write_text("# Tasks\n\nNo tasks yet.\n")
         (authority / "PHASES.md").write_text("# Phases\n\nNo phases yet.\n")
@@ -937,7 +937,7 @@ class TestMigration(unittest.TestCase):
         self.assertTrue(migrate.needs_migration(self.root))
 
     def test_a_current_chronicle_is_not_touched(self) -> None:
-        (self.root / "prokron" / "TASKS.md").write_text(LEGACY_TASKS)
+        (self.root / layout.AUTHORITY_DIR / "TASKS.md").write_text(LEGACY_TASKS)
         self.assertFalse(migrate.needs_migration(self.root))
         with self.assertRaises(migrate.MigrationError):
             migrate.plan(self.root)
@@ -962,17 +962,17 @@ class TestMigration(unittest.TestCase):
 
     def test_decisions_become_files_with_supersession(self) -> None:
         migrate.apply(self.root)
-        adr = self.root / "prokron" / "ADR"
+        adr = self.root / layout.AUTHORITY_DIR / "ADR"
         self.assertTrue((adr / "ADR-001.md").is_file())
         self.assertIn("Prefer the simple thing", (adr / "ADR-001.md").read_text())
         self.assertIn("superseded by ADR-002", (adr / "README.md").read_text())
 
     def test_state_prose_is_rescued_and_task_graph_is_not(self) -> None:
         migrate.apply(self.root)
-        handoff = (self.root / "prokron" / "HANDOFF.md").read_text()
+        handoff = (self.root / layout.AUTHORITY_DIR / "HANDOFF.md").read_text()
         self.assertIn("vendor API may change", handoff)
         self.assertIn("Call the vendor", handoff)
-        self.assertFalse((self.root / "prokron" / "TASK_GRAPH.md").exists())
+        self.assertFalse((self.root / layout.AUTHORITY_DIR / "TASK_GRAPH.md").exists())
 
     def test_originals_are_archived_not_deleted(self) -> None:
         plan = migrate.apply(self.root)
@@ -981,7 +981,7 @@ class TestMigration(unittest.TestCase):
             (plan.archive / "TASKS.md").read_text(), LEGACY_TASKS
         )
         self.assertEqual((plan.archive / "TASK_GRAPH.md").read_text().strip().splitlines()[0], "# Task Graph")
-        self.assertFalse((self.root / ".prokron" / "TASKS.md").exists())
+        self.assertFalse((self.root / layout.COMPILED_DIR / "TASKS.md").exists())
 
     def test_the_result_validates_and_compiles(self) -> None:
         migrate.apply(self.root)
@@ -991,7 +991,7 @@ class TestMigration(unittest.TestCase):
         self.assertEqual(analytics.report(project).metrics()["taskCompletion"]["total"], 2)
 
     def test_a_named_phase_can_be_assigned(self) -> None:
-        (self.root / "prokron" / "PHASES.md").write_text(
+        (self.root / layout.AUTHORITY_DIR / "PHASES.md").write_text(
             "# Phases\n\n## P1 — Delivery\n\nOutcome:\nShip.\n\nEntry:\n- none\n\n"
             "Exit:\n- none\n\nExit authority:\nT-REAL-02\n\nStatus:\nACTIVE\n"
         )
@@ -1014,6 +1014,104 @@ class TestMigration(unittest.TestCase):
         with redirect_stdout(buffer):
             cli.main(["-C", str(self.root), "status"])
         self.assertIn("prokron migrate", buffer.getvalue())
+
+
+class TestRelocation(unittest.TestCase):
+    """A v0.2 chronicle sits at the repository root. ADR-024 moves it inside
+    `.prokron/`, and that move must not rewrite a single record."""
+
+    def setUp(self) -> None:
+        self.root = Path(tempfile.mkdtemp(prefix="prokron-v02-"))
+        self.addCleanup(shutil.rmtree, self.root, True)
+        build_fixture(self.root, authority=layout.V02_AUTHORITY_DIR)
+        self.source = self.root / layout.V02_AUTHORITY_DIR
+        self.before = {
+            path.relative_to(self.source): path.read_bytes()
+            for path in sorted(self.source.rglob("*"))
+            if path.is_file()
+        }
+        # Compiled output from the old layout, and a stale host pointer.
+        compiled = self.root / layout.V02_COMPILED_DIR
+        compiled.mkdir(parents=True, exist_ok=True)
+        (compiled / "STATE.md").write_text("stale\n")
+        (compiled / "task-graph.mmd").write_text("stale\n")
+        pointer = self.root / ".claude" / "commands"
+        pointer.mkdir(parents=True)
+        (pointer / "prokron-work.md").write_text(
+            "Follow `commands/prokron-work.md`. Use `$ARGUMENTS` as the task.\n"
+        )
+        commands = self.root / layout.V02_COMMANDS_DIR
+        commands.mkdir()
+        (commands / "prokron-work.md").write_text("# /prokron-work\n\nCUSTOM\n")
+
+    def test_it_is_detected_and_the_v01_migration_is_not(self) -> None:
+        self.assertTrue(migrate.needs_relocation(self.root))
+        self.assertFalse(migrate.needs_migration(self.root))
+
+    def test_every_record_moves_byte_for_byte(self) -> None:
+        migrate.relocate(self.root)
+        authority = self.root / layout.AUTHORITY_DIR
+        after = {
+            path.relative_to(authority): path.read_bytes()
+            for path in sorted(authority.rglob("*"))
+            if path.is_file()
+        }
+        self.assertEqual(after, self.before)
+        self.assertFalse(self.source.exists())
+
+    def test_nothing_is_archived_because_nothing_is_transformed(self) -> None:
+        plan = migrate.relocate(self.root)
+        self.assertIsNone(plan.archive)
+        self.assertEqual(plan.tasks, 3)
+
+    def test_stale_compiled_output_is_discarded_not_carried_over(self) -> None:
+        migrate.relocate(self.root)
+        compiled = self.root / layout.V02_COMPILED_DIR
+        self.assertFalse((compiled / "STATE.md").exists())
+        self.assertFalse((compiled / "task-graph.mmd").exists())
+
+    def test_a_host_pointer_names_the_document_that_actually_exists(self) -> None:
+        migrate.relocate(self.root)
+        pointer = (self.root / ".claude" / "commands" / "prokron-work.md").read_text()
+        named = pointer.split("`")[1]
+        self.assertEqual(named, f"{layout.COMMANDS_DIR}/prokron-work.md")
+        self.assertTrue((self.root / named).is_file())
+        self.assertIn("CUSTOM", (self.root / named).read_text())
+
+    def test_the_result_validates_and_compiles(self) -> None:
+        migrate.relocate(self.root)
+        project = compiler.load(self.root)
+        self.assertEqual(validate.errors(validate.check(project)), [])
+        compiler.write(self.root, project)
+        self.assertTrue(
+            (self.root / layout.COMPILED_DIR / "project.json").is_file()
+        )
+
+    def test_relocating_twice_refuses_rather_than_half_moving(self) -> None:
+        migrate.relocate(self.root)
+        with self.assertRaises(migrate.MigrationError):
+            migrate.relocate(self.root)
+
+
+class TestSingleDirectory(unittest.TestCase):
+    """Everything Prokron owns is addressed inside one directory (ADR-024)."""
+
+    def test_every_path_prokron_chooses_lives_under_one_directory(self) -> None:
+        chosen = (
+            layout.AUTHORITY_DIR,
+            layout.COMPILED_DIR,
+            layout.COMMANDS_DIR,
+            layout.RUNTIME_DIR,
+            layout.ENTRY_POINT,
+        )
+        for path in chosen:
+            with self.subTest(path=path):
+                self.assertTrue(path.startswith(f"{layout.HOME_DIR}/"))
+
+    def test_authored_and_compiled_stay_separate(self) -> None:
+        self.assertNotEqual(layout.AUTHORITY_DIR, layout.COMPILED_DIR)
+        self.assertFalse(layout.COMPILED_DIR.startswith(layout.AUTHORITY_DIR))
+        self.assertFalse(layout.AUTHORITY_DIR.startswith(layout.COMPILED_DIR))
 
 
 class TestNoNetworkOrDependencies(unittest.TestCase):

@@ -23,8 +23,8 @@ gets a private version of the truth.
   <img src="docs/assets/dashboard-state.png" alt="The Prokron dashboard showing progress metrics for task completion, acceptance, validation coverage, gate readiness and critical path, followed by three phases with status badges and five gates marked green." width="900">
 </p>
 
-<p align="center"><em><code>prokron dashboard</code>, generated from this repository's own chronicle at v0.2.5.<br>
-Every figure is computed from the Markdown files in <code>prokron/</code>. No model, no service, no network.<br>
+<p align="center"><em><code>prokron dashboard</code>, generated from this repository's own chronicle at v0.3.0.<br>
+Every figure is computed from the Markdown files in <code>.prokron/chronicle/</code>. No model, no service, no network.<br>
 The project keeps moving, so run the command for today's numbers rather than trusting this picture.</em></p>
 
 ## Project management from the files you already write
@@ -158,8 +158,10 @@ For a **new project**, replace `existing` with `new` and bring your product spec
 Read the script before you pipe it to a shell, as you should with any installer
 delivered this way.
 
-The installer adds `prokron/`, the `bin/prokron` tool, shared instructions,
-portable workflows, and command files for Codex, Claude Code, and OpenCode. It
+The installer adds one directory, `.prokron/`, holding the chronicle, the
+compiled views, the tool itself and the portable workflows. Outside it, it
+writes only what an agent host reads by fixed address: `AGENTS.md`,
+`CLAUDE.md`, and the command files for Codex, Claude Code, and OpenCode. It
 preserves existing records and custom instructions, restores missing files, and
 prints what to run next.
 
@@ -188,7 +190,7 @@ Use `new` for a new project.
 |---|---|---|
 | Codex | `$prokron init existing` | `$prokron init new` |
 | Claude Code / OpenCode | `/prokron-init existing` | `/prokron-init new` |
-| Other capable coding agents | Read `AGENTS.md`, then follow `commands/prokron-init.md` in existing mode. | Same instruction, in new mode. |
+| Other capable coding agents | Read `AGENTS.md`, then follow `.prokron/commands/prokron-init.md` in existing mode. | Same instruction, in new mode. |
 
 **New project:** the agent works from your product specification with you to
 derive the initial phases, tasks, dependencies, and contracts.
@@ -205,8 +207,8 @@ made, and keep progress current — without a slash command for every update.
 Then check it yourself:
 
 ```sh
-./bin/prokron status
-./bin/prokron dashboard && open .prokron/dashboard.html
+.prokron/prokron status
+.prokron/prokron dashboard && open .prokron/compiled/dashboard.html
 ```
 
 Use the chronicle in discussion and review, too: ask why a decision was made,
@@ -219,16 +221,16 @@ model provider, no network. Output for a given set of documents is identical
 every time, which is what lets two agents and a person agree on the numbers.
 
 ```console
-$ ./bin/prokron status
+$ .prokron/prokron status
 Prokron — phase P1
-  tasks        46 / 47
-  acceptance   113 / 118 criteria passing
-  validation   19 / 47 reviewed or verified
+  tasks        47 / 48
+  acceptance   119 / 124 criteria passing
+  validation   19 / 48 reviewed or verified
   gates        5 / 6 green
   P0           14 / 14 · COMPLETE
   P1           9 / 10 · EXIT_PENDING
   P2           17 / 17 · COMPLETE
-  no phase     6 tasks
+  no phase     7 tasks
 
   WIP       none
   Ready     T-PILOT-01
@@ -240,10 +242,10 @@ Prokron — phase P1
     PHASE_BLOCKER        P1 has 1 unfinished task
 ```
 
-That is this repository at v0.2.5, reporting its own unfinished work.
+That is this repository at v0.3.0, reporting its own unfinished work.
 
 ```console
-$ ./bin/prokron explain T-PILOT-01
+$ .prokron/prokron explain T-PILOT-01
 T-PILOT-01 — Run the continuity pilot
   phase P1 · TODO · UNTESTED
 
@@ -251,13 +253,13 @@ T-PILOT-01 — Run the continuity pilot
     ✓ T-READINESS-01
 
   Acceptance
-    ✓ AC-T-PILOT-01-01 [RUNTIME] Given a disposable project and a small specification, ...
-    ✓ AC-T-PILOT-01-02 [RUNTIME] Given an ordinary work request carrying no Prokron command, ...
-    ○ AC-T-PILOT-01-03 [RUNTIME] Given a material choice that is later changed, ...
-    ○ AC-T-PILOT-01-04 [RUNTIME] Given work paused partway, ...
-    ○ AC-T-PILOT-01-05 [RUNTIME] Given a fresh agent session with no prior chat, ...
-    ○ AC-T-PILOT-01-06 [RUNTIME] Given a populated chronicle, ...
-    ○ AC-T-PILOT-01-07 [MANUAL] Given a person who did not do the work, ...
+    ✓ AC-T-PILOT-01-01 [RUNTIME] Given a disposable project and a small specification, When Prokron is installed in `new` m
+    ✓ AC-T-PILOT-01-02 [RUNTIME] Given an ordinary work request carrying no Prokron command, When an agent acts on it, Then
+    ○ AC-T-PILOT-01-03 [RUNTIME] Given a material choice that is later changed, When the agent records it without `/prokron
+    ○ AC-T-PILOT-01-04 [RUNTIME] Given work paused partway, When the chronicle is read, Then state, intent, and journal car
+    ○ AC-T-PILOT-01-05 [RUNTIME] Given a fresh agent session with no prior chat, When it is asked to resume, Then it states
+    ○ AC-T-PILOT-01-06 [RUNTIME] Given a populated chronicle, When initialization runs again, Then tasks, ADRs, and journal
+    ○ AC-T-PILOT-01-07 [MANUAL] Given a person who did not do the work, When they read the same chronicle, Then they can e
 
   Evidence: none recorded
   Source:   TASKS.md → T-PILOT-01
@@ -269,20 +271,25 @@ T-PILOT-01 — Run the continuity pilot
 | `prokron explain <task>` | Why one task exists, its criteria, blockers, and evidence. |
 | `prokron context <task>` | The minimal packet an agent needs to start that task. |
 | `prokron validate` | Broken dependencies, dangling references, authority conflicts. |
-| `prokron compile` | Rebuilds `.prokron/` from the authored documents. |
+| `prokron compile` | Rebuilds `.prokron/compiled/` from the authored documents. |
 | `prokron dashboard` | The local page above: phases, gates, obstacles, graph, drill-down. |
-| `prokron migrate` | Moves a v0.1 chronicle into the current layout. |
+| `prokron migrate` | Moves a chronicle written under an earlier layout into the current one. |
 
 ## What lives in the chronicle
 
-Two directories, and only one of them is authoritative.
+Everything Prokron installs is inside one directory, and only one part of it
+is authoritative.
 
 ```text
-prokron/     written by people and agents; the only source of truth
-.prokron/    compiled; safe to delete and rebuild
+.prokron/
+├── chronicle/   written by people and agents; the only source of truth
+├── compiled/    generated; safe to delete and rebuild
+├── commands/    the workflows an agent follows
+├── runtime/     the tool's own code
+└── prokron      the command
 ```
 
-| File in `prokron/` | What it holds |
+| File in `.prokron/chronicle/` | What it holds |
 |---|---|
 | **`ACCEPTANCE.md`** | The bar: what must be demonstrated before work counts as done. |
 | **`ADR/`** | The reasoning: append-only decisions and their supersession chain. |
@@ -292,25 +299,34 @@ prokron/     written by people and agents; the only source of truth
 | `HANDOFF.md` | The baton: what the next person or agent needs right now. |
 | `JOURNAL.md` | The diary: progress, validation, what was left mid-air, and why. |
 
-`.prokron/` holds the compiled views: a state snapshot, the task graph, a
-`project.json` for other tools, Mermaid diagrams, and the dashboard. Delete the
-whole directory and `prokron compile` rebuilds it byte for byte. Nothing in it
-is authority, and nothing in it decides a question the authored files answer.
+`.prokron/compiled/` holds the compiled views: a state snapshot, the task
+graph, a `project.json` for other tools, Mermaid diagrams, and the dashboard.
+Delete the whole directory and `prokron compile` rebuilds it byte for byte.
+Nothing in it is authority, and nothing in it decides a question the authored
+files answer.
 
 Prokron's own records are a live example: its
-[task graph](.prokron/TASK_GRAPH.md), [contracts](prokron/ACCEPTANCE.md),
-[decisions](prokron/ADR/), and [chronicle guide](prokron/README.md).
+[task graph](.prokron/compiled/TASK_GRAPH.md),
+[contracts](.prokron/chronicle/ACCEPTANCE.md),
+[decisions](.prokron/chronicle/ADR/), and
+[chronicle guide](.prokron/chronicle/README.md).
 
-### Upgrading from v0.1
+### Upgrading from an earlier layout
 
-v0.2 moved authority from `.prokron/` to `prokron/`. If you installed Prokron
-before that, your records are intact but in the old place, and the tool reports
-an empty project until you move them:
+v0.2 moved authority out of `.prokron/` and into `prokron/` at the repository
+root. v0.3 moved everything Prokron owns back inside `.prokron/`, as
+`chronicle/` and `compiled/`. Either way your records are intact but in the old
+place, and the tool reports an empty project until you move them:
 
 ```sh
-./bin/prokron migrate           # shows what it would do
-./bin/prokron migrate --apply   # performs it, archiving every original
+.prokron/prokron migrate           # shows what it would do
+.prokron/prokron migrate --apply   # performs it
 ```
+
+Coming from v0.2 this is a relocation: every record moves byte for byte and
+nothing is rewritten. Coming from v0.1 it is a rewrite — prose acceptance
+becomes contracts and one decisions file becomes an ADR directory — so the
+originals are archived untouched beside the new ones.
 
 ## Commands
 
@@ -369,7 +385,7 @@ python3 -m unittest discover -s tests
 
 `VERSION` holds the current release and [`CHANGELOG.md`](CHANGELOG.md) summarises
 what changed. The full history lives in the chronicle itself:
-[decisions](prokron/ADR/) and [journal](prokron/JOURNAL.md).
+[decisions](.prokron/chronicle/ADR/) and [journal](.prokron/chronicle/JOURNAL.md).
 
 ### Updating an installation
 
@@ -379,7 +395,7 @@ and merge changes to:
 
 - `commands/`, `.claude/commands/`, and `.opencode/commands/`;
 - `.agents/skills/prokron/SKILL.md`;
-- `templates/prokron/README.md`, installed as `prokron/README.md`;
+- `templates/chronicle/README.md`, installed as `.prokron/chronicle/README.md`;
 - the Prokron block in `AGENTS.md`, preserving surrounding project rules.
 
 Keep customizations and every chronicle record. Never copy empty templates over

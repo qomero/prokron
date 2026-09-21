@@ -1,4 +1,4 @@
-"""Parsers for the authored documents under prokron/.
+"""Parsers for the authored documents in the chronicle.
 
 Every parser is total: it either returns typed objects or raises ParseError
 naming the file and the anchor at fault. Parsers never repair input and never

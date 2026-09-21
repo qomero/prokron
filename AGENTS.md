@@ -2,39 +2,40 @@
 
 # Prokron
 
-This repository uses `prokron/` as its project chronicle. Read
-`prokron/README.md` before substantial work and follow its read order.
-`.prokron/` is compiled output: read it for convenience, never edit it, and
-never treat it as authority.
+Everything Prokron owns is inside `.prokron/`. `.prokron/chronicle/` is this
+repository's project chronicle: read `.prokron/chronicle/README.md` before
+substantial work and follow its read order. `.prokron/compiled/` is compiled
+output: read it for convenience, never edit it, and never treat it as
+authority.
 
 The repository ships a deterministic tool. Use it rather than re-deriving state
 by reading files:
 
 ```sh
-./bin/prokron status          # phase, progress, ready, blocked, gates, next
-./bin/prokron explain T-123   # one task: deps, criteria, blockers, evidence
-./bin/prokron context T-123   # the minimal packet needed to start that task
-./bin/prokron validate        # check authority before and after editing it
-./bin/prokron compile         # refresh .prokron/ after changing prokron/
-./bin/prokron dashboard       # a browsable page of the same state
+.prokron/prokron status          # phase, progress, ready, blocked, gates, next
+.prokron/prokron explain T-123   # one task: deps, criteria, blockers, evidence
+.prokron/prokron context T-123   # the minimal packet needed to start that task
+.prokron/prokron validate        # check authority before and after editing it
+.prokron/prokron compile         # refresh compiled/ after changing chronicle/
+.prokron/prokron dashboard       # a browsable page of the same state
 ```
 
 Run `validate` after editing authority and `compile` before finishing. The tool
-never edits `prokron/`; it only reads it.
+never edits `.prokron/chronicle/`; it only reads it.
 
 Recognize these workflows:
 
-- `/prokron-init [new|existing]` → `commands/prokron-init.md`
-- `/prokron-work [task]` → `commands/prokron-work.md`
-- `/prokron-decide` → `commands/prokron-decide.md`
-- `/prokron-checkpoint` → `commands/prokron-checkpoint.md`
-- `/prokron-resume` → `commands/prokron-resume.md`
+- `/prokron-init [new|existing]` → `.prokron/commands/prokron-init.md`
+- `/prokron-work [task]` → `.prokron/commands/prokron-work.md`
+- `/prokron-decide` → `.prokron/commands/prokron-decide.md`
+- `/prokron-checkpoint` → `.prokron/commands/prokron-checkpoint.md`
+- `/prokron-resume` → `.prokron/commands/prokron-resume.md`
 
 Maintain the chronicle automatically; do not wait for a Prokron command. Before
 starting newly requested work, create or claim its task, give it a phase from
 `PHASES.md` or mark it `P-NONE`, write its acceptance contract in
 `ACCEPTANCE.md`, and set the single `INTENT.md` entry. When a material project
-choice is made, accepted, or acted on, append its ADR to `prokron/ADR/`
+choice is made, accepted, or acted on, append its ADR to `.prokron/chronicle/ADR/`
 immediately and link affected tasks. Supersede decisions instead of overwriting
 them. Keep the compiled views synchronized.
 
@@ -78,7 +79,7 @@ first:
 1. Product and domain authority
 2. The explicit acceptance contract
 3. Invariants
-4. Accepted decisions in prokron/ADR/
+4. Accepted decisions in .prokron/chronicle/ADR/
 5. Reproducible tests and evidence
 6. Existing code convention
 7. Reviewer preference

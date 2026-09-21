@@ -1,8 +1,8 @@
 """Compile authored documents into one normalized project.
 
-The compiler reads only `prokron/` and writes only `.prokron/`. It never
-modifies authority, and its output is disposable: deleting the compiled
-directory and running again reproduces it exactly.
+The compiler reads only the chronicle and writes only the compiled directory.
+It never modifies authority, and its output is disposable: deleting the
+compiled directory and running again reproduces it exactly.
 """
 
 from __future__ import annotations
@@ -11,6 +11,7 @@ import json
 from pathlib import Path
 
 from . import analytics, views
+from .layout import AUTHORITY_DIR, COMPILED_DIR
 from .model import Project
 from .parse import (
     ParseError,
@@ -20,9 +21,6 @@ from .parse import (
     parse_tasks,
     read_text,
 )
-
-AUTHORITY_DIR = "prokron"
-COMPILED_DIR = ".prokron"
 
 
 class LayoutError(Exception):
@@ -220,7 +218,7 @@ def as_json(project: Project) -> dict[str, object]:
 def write(root: Path, project: Project) -> Path:
     """Write project.json and the Markdown views. Nothing else touches them."""
     compiled = root / COMPILED_DIR
-    compiled.mkdir(exist_ok=True)
+    compiled.mkdir(parents=True, exist_ok=True)
     target = compiled / "project.json"
     target.write_text(json.dumps(as_json(project), indent=2, sort_keys=False) + "\n")
     for name, text in views.render_all(project, analytics.report(project)).items():
@@ -228,4 +226,13 @@ def write(root: Path, project: Project) -> Path:
     return target
 
 
-__all__ = ["LayoutError", "ParseError", "as_json", "load", "locate", "write"]
+__all__ = [
+    "AUTHORITY_DIR",
+    "COMPILED_DIR",
+    "LayoutError",
+    "ParseError",
+    "as_json",
+    "load",
+    "locate",
+    "write",
+]

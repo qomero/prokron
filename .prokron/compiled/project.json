@@ -3,7 +3,7 @@
     "name": "Prokron",
     "currentPhase": "P1",
     "generator": "prokron compile",
-    "authority": "prokron"
+    "authority": ".prokron/chronicle"
   },
   "phases": [
     {
@@ -1328,7 +1328,9 @@
       "deps": [
         "T-P2-01"
       ],
-      "blocks": [],
+      "blocks": [
+        "T-LAYOUT-01"
+      ],
       "ac": "AC-T-MIGRATE-01",
       "owner": "claude/primary",
       "claimed": "2026-09-21",
@@ -1343,6 +1345,31 @@
       "source": {
         "file": "TASKS.md",
         "anchor": "T-MIGRATE-01"
+      }
+    },
+    {
+      "id": "T-LAYOUT-01",
+      "title": "Install into one directory",
+      "phase": "P-NONE",
+      "status": "DONE",
+      "validation": "SYNTHETIC",
+      "deps": [
+        "T-MIGRATE-01"
+      ],
+      "blocks": [],
+      "ac": "AC-T-LAYOUT-01",
+      "owner": "claude/primary",
+      "claimed": "2026-09-22",
+      "evidence": "Installing now adds one directory Prokron chose, `.prokron/`, holding `chronicle/`, `compiled/`, `commands/`, `runtime/` and the `prokron` command; everything else it writes is a path an agent host reads by fixed address. The installer suite compares the target's whole root listing against that set. `prokron migrate` relocates a v0.2 installation byte for byte, repoints the host command files, and still migrates a v0.1 one. 114 unit tests and the installer suite pass, and this repository tracks itself in the new layout.",
+      "decisions": [
+        "ADR-024"
+      ],
+      "schedule": null,
+      "ready": false,
+      "blocked": false,
+      "source": {
+        "file": "TASKS.md",
+        "anchor": "T-LAYOUT-01"
       }
     }
   ],
@@ -3197,6 +3224,83 @@
         "file": "ACCEPTANCE.md",
         "anchor": "AC-T-GIT-NAME-01"
       }
+    },
+    "AC-T-LAYOUT-01": {
+      "title": "Install into one directory",
+      "inherits": [],
+      "evidence": null,
+      "criteria": [
+        {
+          "id": "AC-T-LAYOUT-01-01",
+          "text": "A fresh install adds exactly one directory that Prokron chooses, `.prokron/`, and no other file or directory outside the paths a host reads by fixed address: `AGENTS.md`, `CLAUDE.md`, `.claude/commands/`, `.opencode/commands/` and `.agents/skills/prokron/`.",
+          "evidenceClass": "TEST",
+          "state": "PASS",
+          "evidence": "the installer suite lists the target's root after a fresh",
+          "source": {
+            "file": "ACCEPTANCE.md",
+            "anchor": "AC-T-LAYOUT-01-01"
+          }
+        },
+        {
+          "id": "AC-T-LAYOUT-01-02",
+          "text": "Authored authority and compiled output remain separate, and the compiler writes only inside `.prokron/compiled/`.",
+          "evidenceClass": "TEST",
+          "state": "PASS",
+          "evidence": "`TestSingleDirectory` asserts neither directory is inside the",
+          "source": {
+            "file": "ACCEPTANCE.md",
+            "anchor": "AC-T-LAYOUT-01-02"
+          }
+        },
+        {
+          "id": "AC-T-LAYOUT-01-03",
+          "text": "The entry point, runtime and procedure documents all resolve from inside `.prokron/`, and every subcommand works from an installed project with no source checkout present.",
+          "evidenceClass": "TEST",
+          "state": "PASS",
+          "evidence": "the installer suite runs `validate`, `compile`, `status`,",
+          "source": {
+            "file": "ACCEPTANCE.md",
+            "anchor": "AC-T-LAYOUT-01-03"
+          }
+        },
+        {
+          "id": "AC-T-LAYOUT-01-04",
+          "text": "`prokron migrate` relocates a v0.2 installation without losing a record, and still recognizes and migrates a v0.1 one.",
+          "evidenceClass": "TEST",
+          "state": "PASS",
+          "evidence": "`TestRelocation` compares every authored file before and after",
+          "source": {
+            "file": "ACCEPTANCE.md",
+            "anchor": "AC-T-LAYOUT-01-04"
+          }
+        },
+        {
+          "id": "AC-T-LAYOUT-01-05",
+          "text": "Compiled output is still reproducible: deleting `.prokron/compiled/` and recompiling gives byte-identical files.",
+          "evidenceClass": "TEST",
+          "state": "PASS",
+          "evidence": "the existing regeneration tests pass unchanged against the new",
+          "source": {
+            "file": "ACCEPTANCE.md",
+            "anchor": "AC-T-LAYOUT-01-05"
+          }
+        },
+        {
+          "id": "AC-T-LAYOUT-01-06",
+          "text": "This repository tracks itself in the new layout, and every path in the public documentation, the command documents and the templates names it.",
+          "evidenceClass": "INSPECTION",
+          "state": "PASS",
+          "evidence": "this chronicle is at `.prokron/chronicle/` and compiles to",
+          "source": {
+            "file": "ACCEPTANCE.md",
+            "anchor": "AC-T-LAYOUT-01-06"
+          }
+        }
+      ],
+      "source": {
+        "file": "ACCEPTANCE.md",
+        "anchor": "AC-T-LAYOUT-01"
+      }
     }
   },
   "invariants": [
@@ -3789,6 +3893,19 @@
         "file": "ADR/ADR-023.md",
         "anchor": "ADR-023"
       }
+    },
+    {
+      "id": "ADR-024",
+      "title": "Everything Prokron installs lives in one directory",
+      "status": "ACCEPTED",
+      "supersedes": [],
+      "affects": [
+        "T-LAYOUT-01"
+      ],
+      "source": {
+        "file": "ADR/ADR-024.md",
+        "anchor": "ADR-024"
+      }
     }
   ],
   "obstacles": [
@@ -3820,9 +3937,9 @@
   },
   "metrics": {
     "taskCompletion": {
-      "done": 46,
-      "total": 47,
-      "fraction": 0.9787
+      "done": 47,
+      "total": 48,
+      "fraction": 0.9792
     },
     "phaseCompletion": {
       "P0": {
@@ -3848,27 +3965,27 @@
     },
     "validationCoverage": {
       "done": 19,
-      "total": 47,
-      "fraction": 0.4043
+      "total": 48,
+      "fraction": 0.3958
     },
-    "phaseIndependent": 6,
+    "phaseIndependent": 7,
     "gateReadiness": {
       "done": 5,
       "total": 6,
       "fraction": 0.8333
     },
     "acceptanceCompletion": {
-      "done": 113,
-      "total": 118,
-      "fraction": 0.9576
+      "done": 119,
+      "total": 124,
+      "fraction": 0.9597
     },
     "validationBreakdown": {
-      "SYNTHETIC": 27,
+      "SYNTHETIC": 28,
       "AI_REVIEWED": 19,
       "UNTESTED": 1
     },
     "statusBreakdown": {
-      "DONE": 46,
+      "DONE": 47,
       "TODO": 1
     }
   },
@@ -3878,11 +3995,11 @@
   "blocked": [],
   "wip": [],
   "handoff": {
-    "intent": "# Intent\n\nNo task in progress.\n\nPhase 2 closed on 2026-09-22 under ADR-020. The continuity pilot, T-PILOT-01, is\nparked at step 3 of 7 and is not in flight; it resumes at the Phase 3 exit audit.\n\nNext: open P3 from `docs/Phase 3.md` \u2014 an ADR accepting it as governing\nauthority, its phase record and gates in `PHASES.md`, its tasks in `TASKS.md`,\nand their contracts in `ACCEPTANCE.md`, before any implementation starts.",
-    "handoff": "# Handoff\n\nCurrent implementation continuity. Overwritten, never appended. It holds what\nthe next person or agent needs in order to continue right now. Closed history\nbelongs in `JOURNAL.md`.\n\n## Position\n- Release 0.2.5. P2 is `COMPLETE` as of 2026-09-22, accepted by the owner under\n  ADR-020. P0 is `COMPLETE`. P1 is `EXIT_PENDING` behind one red gate.\n- Nothing in flight. Intent is empty.\n- 42 of 43 tasks done. The one open task is T-PILOT-01, deliberately parked.\n\n## What is true now\n- Gates A, B, C, D and E are green on recorded evidence. Gate E is green because\n  Codex and Claude audited the same implementation against the same reviewer\n  packet, disagreed on one criterion, and the disagreement was settled at level\n  5 of the arbitration hierarchy by rendering both Gantt variants in a browser.\n  The defect Codex found was real.\n- A cold agent starts from a packet alone, verified against Codex with no\n  repository access. The first, failed attempt is kept as the control.\n- `prokron migrate` gives v0.1 chronicles an upgrade path, which is what\n  reopened and then closed P2.\n\n## Carried debt\n- **Gate P1-CONTINUITY is RED.** The continuity pilot in `docs/SPEC.md` is two\n  steps into seven. Steps 1 and 2 pass, recorded in `docs/pilot-2026-09-21.md`.\n  ADR-020 parks the rest and names the payoff: the P3 exit audit runs the\n  procedure against the Phase 3 build itself, in this repository, across the\n  real multi-session work. Deferred is not passing. P1 stays `EXIT_PENDING`.\n- The accepted risk: P3 is built on a workflow whose cross-session agent\n  compliance is unverified. A pilot failure at that audit lands against P3 work\n  already written. Stated rather than hidden.\n- The README banner and Mermaid diagram still depict the six-file chronicle.\n- `.prokron/` is committed so the README can link to it as a live example. That\n  puts a large dashboard and JSON in every diff touching authority. Nobody has\n  decided whether to keep it that way.\n\n## Repository identity\n- Commits are authored as `qomero`, with an address verified on that account,\n  set repository-locally under ADR-023. `git config --local user.email` shows it. The whole history was rewritten to match on 2026-09-22 and\n  force-pushed, so every hash before that date is dead. `backup-pre-author-rewrite`\n  holds the pre-rewrite tip locally and is safe to delete.\n\n## Next action\nOpen P3 from `docs/Phase 3.md`, authority first and in this order: an ADR\naccepting the specification as governing, the P3 phase record and its gates in\n`PHASES.md`, its tasks in `TASKS.md`, their contracts in `ACCEPTANCE.md`, then\n`validate` and `compile`. Only then claim the first task. Phase 3 \u00a725 requires a\nplanning task that inspects the existing architecture before any code changes,\nwhich is what T-P2-PLAN-01 was for P2."
+    "intent": "# Intent\n\nNo task in progress.\n\nT-LAYOUT-01 closed on 2026-09-22 under ADR-024: everything Prokron installs now\nlives in one directory. Phase 2 closed on 2026-09-22 under ADR-020, and the\ncontinuity pilot, T-PILOT-01, is parked at step 3 of 7; it resumes at the Phase 3\nexit audit.\n\nNext: open P3 from `docs/Phase 3.md` \u2014 an ADR accepting it as governing\nauthority, its phase record and gates in `PHASES.md`, its tasks in `TASKS.md`,\nand their contracts in `ACCEPTANCE.md`, before any implementation starts.",
+    "handoff": "# Handoff\n\nCurrent implementation continuity. Overwritten, never appended. It holds what\nthe next person or agent needs in order to continue right now. Closed history\nbelongs in `JOURNAL.md`.\n\n## Position\n- Release 0.3.0. P2 is `COMPLETE` as of 2026-09-22, accepted by the owner under\n  ADR-020. P0 is `COMPLETE`. P1 is `EXIT_PENDING` behind one red gate.\n- Nothing in flight. Intent is empty.\n- 47 of 48 tasks done. The one open task is T-PILOT-01, deliberately parked.\n- Everything Prokron installs now lives in `.prokron/` (ADR-024). This\n  repository's own chronicle moved to `.prokron/chronicle/` and its compiled\n  views to `.prokron/compiled/`; the command is `.prokron/prokron`.\n\n## What is true now\n- Gates A, B, C, D and E are green on recorded evidence. Gate E is green because\n  Codex and Claude audited the same implementation against the same reviewer\n  packet, disagreed on one criterion, and the disagreement was settled at level\n  5 of the arbitration hierarchy by rendering both Gantt variants in a browser.\n  The defect Codex found was real.\n- A cold agent starts from a packet alone, verified against Codex with no\n  repository access. The first, failed attempt is kept as the control.\n- `prokron migrate` gives v0.1 chronicles an upgrade path, which is what\n  reopened and then closed P2.\n\n## Carried debt\n- **Gate P1-CONTINUITY is RED.** The continuity pilot in `docs/SPEC.md` is two\n  steps into seven. Steps 1 and 2 pass, recorded in `docs/pilot-2026-09-21.md`.\n  ADR-020 parks the rest and names the payoff: the P3 exit audit runs the\n  procedure against the Phase 3 build itself, in this repository, across the\n  real multi-session work. Deferred is not passing. P1 stays `EXIT_PENDING`.\n- The accepted risk: P3 is built on a workflow whose cross-session agent\n  compliance is unverified. A pilot failure at that audit lands against P3 work\n  already written. Stated rather than hidden.\n- `.prokron/compiled/` is committed so the README can link to it as a live\n  example. That puts a large dashboard and JSON in every diff touching\n  authority. Nobody has decided whether to keep it that way.\n- The chronicle now sits in a directory a file browser hides by default, and\n  it is written to be read by people. ADR-024 accepted that cost; whether it\n  actually costs anything is worth watching.\n- Records written under the older layouts still name the old paths. That is\n  deliberate \u2014 they were accurate when written \u2014 but it means a reader of the\n  journal or the earlier ADRs will see `prokron/` and `./bin/prokron`.\n\n## Repository identity\n- Commits are authored as `qomero`, with an address verified on that account,\n  set repository-locally under ADR-023. `git config --local user.email` shows it. The whole history was rewritten to match on 2026-09-22 and\n  force-pushed, so every hash before that date is dead. `backup-pre-author-rewrite`\n  holds the pre-rewrite tip locally and is safe to delete.\n\n## Next action\nOpen P3 from `docs/Phase 3.md`, authority first and in this order: an ADR\naccepting the specification as governing, the P3 phase record and its gates in\n`PHASES.md`, its tasks in `TASKS.md`, their contracts in `ACCEPTANCE.md`, then\n`validate` and `compile`. Only then claim the first task. Phase 3 \u00a725 requires a\nplanning task that inspects the existing architecture before any code changes,\nwhich is what T-P2-PLAN-01 was for P2."
   },
   "sources": {
-    "authority": "prokron",
+    "authority": ".prokron/chronicle",
     "documents": [
       "PHASES.md",
       "TASKS.md",

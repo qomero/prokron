@@ -981,3 +981,54 @@ redirect.
 
 - `AC-T-GIT-NAME-01-01` — Global user.name is qomero. `INSPECTION` · `PASS`
   - Evidence: git config --global --get user.name returned qomero.
+
+## AC-T-LAYOUT-01 — Install into one directory
+
+Installing into an existing repository added five entries to its root. Four of
+them are Prokron's own business and belong inside the directory it owns.
+
+- `AC-T-LAYOUT-01-01` — A fresh install adds exactly one directory that
+  Prokron chooses, `.prokron/`, and no other file or directory outside the
+  paths a host reads by fixed address: `AGENTS.md`, `CLAUDE.md`,
+  `.claude/commands/`, `.opencode/commands/` and `.agents/skills/prokron/`.
+  `TEST` · `PASS`
+  - Evidence: the installer suite lists the target's root after a fresh
+    install and compares the whole listing against that set, so an entry
+    added later fails the test rather than going unnoticed.
+- `AC-T-LAYOUT-01-02` — Authored authority and compiled output remain
+  separate, and the compiler writes only inside `.prokron/compiled/`.
+  `TEST` · `PASS`
+  - Evidence: `TestSingleDirectory` asserts neither directory is inside the
+    other; the existing test that the compiler leaves every authored byte
+    untouched still passes, and the installer suite checks that no authority
+    document appears in the compiled directory.
+- `AC-T-LAYOUT-01-03` — The entry point, runtime and procedure documents all
+  resolve from inside `.prokron/`, and every subcommand works from an
+  installed project with no source checkout present. `TEST` · `PASS`
+  - Evidence: the installer suite runs `validate`, `compile`, `status`,
+    `explain` and `--version` through `.prokron/prokron` in a fixture that has
+    no `src/`, and checks that every runtime module was copied. The version
+    reported is the runtime's own, not the tracked project's.
+- `AC-T-LAYOUT-01-04` — `prokron migrate` relocates a v0.2 installation
+  without losing a record, and still recognizes and migrates a v0.1 one.
+  `TEST` · `PASS`
+  - Evidence: `TestRelocation` compares every authored file before and after
+    the move byte for byte and asserts nothing is archived, because nothing is
+    transformed. The installer suite relocates a populated v0.2 fixture and
+    then migrates a v0.1 one in the same run. Detection is exclusive: a v0.2
+    chronicle does not read as a v0.1 one.
+- `AC-T-LAYOUT-01-05` — Compiled output is still reproducible: deleting
+  `.prokron/compiled/` and recompiling gives byte-identical files.
+  `TEST` · `PASS`
+  - Evidence: the existing regeneration tests pass unchanged against the new
+    paths, and the installer suite deletes the compiled directory and compares
+    `project.json`, `README.md`, `STATE.md` and `TASK_GRAPH.md` byte for byte.
+- `AC-T-LAYOUT-01-06` — This repository tracks itself in the new layout, and
+  every path in the public documentation, the command documents and the
+  templates names it. `INSPECTION` · `PASS`
+  - Evidence: this chronicle is at `.prokron/chronicle/` and compiles to
+    `.prokron/compiled/`. The README, `AGENTS.md`, `docs/SPEC.md`, the five
+    command documents, the host command files and the chronicle template were
+    rewritten. Records written under the old layout — journal entries, earlier
+    ADRs, the changelog's earlier releases — were left as written, because
+    they were accurate when written.

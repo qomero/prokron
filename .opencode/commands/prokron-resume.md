@@ -2,4 +2,4 @@
 description: Resume work from the Prokron chronicle
 ---
 
-Follow `commands/prokron-resume.md`.
+Follow `.prokron/commands/prokron-resume.md`.

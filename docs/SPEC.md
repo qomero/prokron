@@ -17,16 +17,17 @@ people and agents. Session handoff is one use of this shared understanding.
 
 Prokron consists of authored Markdown records, agent instructions, reusable
 command prompts, and a deterministic compiler over those records. The compiler
-reads `prokron/` and writes only `.prokron/`; it uses the Python standard
-library and needs no network or model provider. See `docs/Phase 2.md`, ADR-013,
-ADR-016, and ADR-017.
+reads `.prokron/chronicle/` and writes only `.prokron/compiled/`; it uses the
+Python standard library and needs no network or model provider. See
+`docs/Phase 2.md`, ADR-013, ADR-016, ADR-017, and ADR-024.
 
 ## 2. Chronicle
 
-Every participating repository has one authored `prokron/` directory and one
-compiled `.prokron/` directory. Only the first is authoritative.
+Everything Prokron owns lives in one `.prokron/` directory (ADR-024). Within
+it, every participating repository has one authored `chronicle/` directory and
+one compiled `compiled/` directory. Only the first is authoritative.
 
-| File in `prokron/` | Role |
+| File in `.prokron/chronicle/` | Role |
 |---|---|
 | `PHASES.md` | Phase outcome, entry, exit, exit authority, status, and gates |
 | `TASKS.md` | Canonical tasks, phase, dependencies, ownership, contract reference, and evidence |
@@ -36,7 +37,7 @@ compiled `.prokron/` directory. Only the first is authoritative.
 | `HANDOFF.md` | Current implementation continuity, overwritten each checkpoint |
 | `JOURNAL.md` | Append-only session diary and handoff history |
 
-| File in `.prokron/` | Role |
+| File in `.prokron/compiled/` | Role |
 |---|---|
 | `STATE.md` | Short snapshot of the project now |
 | `TASK_GRAPH.md` | Current dependency and eligibility view derived from tasks |

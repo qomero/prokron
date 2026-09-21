@@ -1,1 +1,1 @@
-Follow `commands/prokron-resume.md`.
+Follow `.prokron/commands/prokron-resume.md`.

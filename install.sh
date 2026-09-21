@@ -5,6 +5,13 @@ mode=${1:-}
 target=${2:-.}
 retained=0
 
+# Everything Prokron installs lives in one directory (ADR-024). The only paths
+# written outside it are the ones an agent host reads by fixed address.
+home=.prokron
+chronicle="$home/chronicle"
+commands="$home/commands"
+runtime="$home/runtime"
+
 case "$mode" in
   new|existing) ;;
   *)
@@ -32,7 +39,7 @@ done
 case $0 in
   */*)
     candidate=$(CDPATH= cd "$(dirname "$0")" && pwd)
-    if [ -f "$candidate/templates/prokron/README.md" ]; then
+    if [ -f "$candidate/templates/chronicle/README.md" ]; then
       source_dir=$candidate
     fi
     ;;
@@ -61,7 +68,7 @@ if [ -z "$source_dir" ]; then
   source_dir=$1
 fi
 
-if [ ! -f "$source_dir/templates/prokron/README.md" ]; then
+if [ ! -f "$source_dir/templates/chronicle/README.md" ]; then
   echo "Downloaded Prokron source is incomplete" >&2
   exit 1
 fi
@@ -80,25 +87,27 @@ copy_new() {
   fi
 }
 
-for path in prokron prokron/ADR .prokron .prokron-runtime .prokron-runtime/prokron bin commands .claude .claude/commands .opencode .opencode/commands .agents .agents/skills .agents/skills/prokron; do
+for path in "$home" "$chronicle" "$chronicle/ADR" "$commands" "$runtime" \
+  "$runtime/prokron" .claude .claude/commands .opencode .opencode/commands \
+  .agents .agents/skills .agents/skills/prokron; do
   if [ -L "$target/$path" ] || { [ -e "$target/$path" ] && [ ! -d "$target/$path" ]; }; then
     echo "Cannot install into linked or non-directory path: $target/$path" >&2
     exit 1
   fi
 done
 had_chronicle=0
-[ ! -d "$target/prokron" ] || had_chronicle=1
+[ ! -d "$target/$chronicle" ] || had_chronicle=1
 for file in README PHASES TASKS ACCEPTANCE INTENT HANDOFF JOURNAL; do
-  copy_new "$source_dir/templates/prokron/$file.md" "$target/prokron/$file.md"
+  copy_new "$source_dir/templates/chronicle/$file.md" "$target/$chronicle/$file.md"
 done
-copy_new "$source_dir/templates/prokron/ADR/README.md" "$target/prokron/ADR/README.md"
+copy_new "$source_dir/templates/chronicle/ADR/README.md" "$target/$chronicle/ADR/README.md"
 # Differences in project records are expected, not an upgrade warning.
 retained=0
-cmp -s "$source_dir/templates/prokron/README.md" "$target/prokron/README.md" || retained=1
+cmp -s "$source_dir/templates/chronicle/README.md" "$target/$chronicle/README.md" || retained=1
 
 for command in init work decide checkpoint resume; do
-  copy_new "$source_dir/commands/prokron-$command.md" \
-    "$target/commands/prokron-$command.md"
+  copy_new "$source_dir/.prokron/commands/prokron-$command.md" \
+    "$target/$commands/prokron-$command.md"
   copy_new "$source_dir/.claude/commands/prokron-$command.md" \
     "$target/.claude/commands/prokron-$command.md"
   copy_new "$source_dir/.opencode/commands/prokron-$command.md" \
@@ -109,13 +118,14 @@ copy_new "$source_dir/.agents/skills/prokron/SKILL.md" \
 
 # The runtime is code, not a record: replace it on every install so a repository
 # never runs a stale compiler against a current chronicle.
-mkdir -p "$target/.prokron-runtime/prokron" "$target/bin"
-for module in __init__ model parse validate analytics views compile migrate mermaid dashboard cli; do
-  cp "$source_dir/src/prokron/$module.py" "$target/.prokron-runtime/prokron/$module.py"
+mkdir -p "$target/$runtime/prokron"
+for module in __init__ layout model parse validate analytics views compile migrate \
+  mermaid dashboard cli; do
+  cp "$source_dir/src/prokron/$module.py" "$target/$runtime/prokron/$module.py"
 done
-cp "$source_dir/VERSION" "$target/.prokron-runtime/VERSION"
-cp "$source_dir/bin/prokron" "$target/bin/prokron"
-chmod +x "$target/bin/prokron"
+cp "$source_dir/VERSION" "$target/$runtime/VERSION"
+cp "$source_dir/.prokron/prokron" "$target/$home/prokron"
+chmod +x "$target/$home/prokron"
 
 if [ ! -f "$target/AGENTS.md" ]; then
   cp "$source_dir/AGENTS.md" "$target/AGENTS.md"
@@ -133,11 +143,16 @@ elif ! grep -Fxq '@AGENTS.md' "$target/CLAUDE.md"; then
 fi
 
 printf 'Prokron installed in %s\n\n' "$target"
-if [ -f "$target/.prokron/TASKS.md" ] && grep -q '^## T-' "$target/.prokron/TASKS.md" 2>/dev/null; then
-  printf 'A v0.1 chronicle was found in .prokron/ and the new layout cannot read it.\n'
+if grep -q '^## T-' "$target/prokron/TASKS.md" 2>/dev/null; then
+  printf 'A v0.2 chronicle was found at prokron/ and the new layout reads %s/.\n' "$chronicle"
   printf 'Your records are intact. Move them with:\n'
-  printf '  ./bin/prokron migrate           # shows what it would do\n'
-  printf '  ./bin/prokron migrate --apply   # performs it, archiving the originals\n\n'
+  printf '  %s/prokron migrate           # shows what it would do\n' "$home"
+  printf '  %s/prokron migrate --apply   # performs it\n\n' "$home"
+elif grep -q '^## T-' "$target/$home/TASKS.md" 2>/dev/null; then
+  printf 'A v0.1 chronicle was found in %s/ and the new layout cannot read it.\n' "$home"
+  printf 'Your records are intact. Move them with:\n'
+  printf '  %s/prokron migrate           # shows what it would do\n' "$home"
+  printf '  %s/prokron migrate --apply   # performs it, archiving the originals\n\n' "$home"
 fi
 if [ "$retained" -eq 1 ]; then
   printf 'Existing guidance was preserved; reinstall does not upgrade it.\n'
@@ -147,11 +162,12 @@ if [ "$had_chronicle" -eq 1 ]; then
   printf 'Existing chronicle preserved. Resume in your agent chat:\n'
   printf '  Codex:       $prokron resume\n'
   printf '  Claude Code / OpenCode: /prokron-resume\n'
-  printf '  Other:       Read AGENTS.md, then follow commands/prokron-resume.md.\n'
+  printf '  Other:       Read AGENTS.md, then follow %s/prokron-resume.md.\n' "$commands"
   exit 0
 fi
 printf 'Start in your agent chat:\n'
 printf '  Codex:       $prokron init %s\n' "$mode"
 printf '  Claude Code: /prokron-init %s\n' "$mode"
 printf '  OpenCode:    /prokron-init %s\n' "$mode"
-printf '  Other:       Read AGENTS.md, then follow commands/prokron-init.md in %s mode.\n' "$mode"
+printf '  Other:       Read AGENTS.md, then follow %s/prokron-init.md in %s mode.\n' \
+  "$commands" "$mode"

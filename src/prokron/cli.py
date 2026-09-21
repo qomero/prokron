@@ -1,7 +1,7 @@
 """The prokron command.
 
-Every subcommand reads `prokron/` and writes, at most, inside `.prokron/`.
-Nothing here needs a network or a model provider.
+Every subcommand reads `.prokron/chronicle/` and writes, at most, inside
+`.prokron/compiled/`. Nothing here needs a network or a model provider.
 """
 
 from __future__ import annotations
@@ -21,9 +21,10 @@ FALLBACK_VERSION = "0.2.0"
 def _version() -> str:
     """Read the VERSION shipped with the runtime, never the host project's own.
 
-    Installed, the runtime sits in `.prokron-runtime/prokron/`, so its VERSION is
-    one level up. In a source checkout it is at the repository root. A `VERSION`
-    belonging to the project being tracked is deliberately out of reach.
+    Installed, the runtime sits in `.prokron/runtime/prokron/`, so its VERSION
+    is one level up. In a source checkout it is at the repository root. A
+    `VERSION` belonging to the project being tracked is deliberately out of
+    reach.
     """
     here = Path(__file__).resolve()
     for candidate in (here.parents[1] / "VERSION", here.parents[2] / "VERSION"):
@@ -82,7 +83,7 @@ def cmd_graph(root: Path, args: argparse.Namespace) -> int:
     project = _load(root)
     report = analytics.report(project)
     compiled = root / compiler.COMPILED_DIR
-    compiled.mkdir(exist_ok=True)
+    compiled.mkdir(parents=True, exist_ok=True)
     for name, text in mermaid.render_all(project, report).items():
         (compiled / name).write_text(text)
         print(f"Wrote {compiler.COMPILED_DIR}/{name}")
@@ -110,7 +111,12 @@ def cmd_status(root: Path, args: argparse.Namespace) -> int:
     metrics = report.metrics()
 
     print(f"{project.name} — phase {project.current_phase or 'none'}")
-    if migrate.needs_migration(root):
+    if migrate.needs_relocation(root):
+        print(
+            f"\n  A chronicle is still at {migrate.layout.V02_AUTHORITY_DIR}/ and "
+            "unread. Run `prokron migrate`.\n"
+        )
+    elif migrate.needs_migration(root):
         print(
             "\n  A v0.1 chronicle is present and unread. Run `prokron migrate`.\n"
         )
@@ -194,15 +200,27 @@ def cmd_context(root: Path, args: argparse.Namespace) -> int:
 
 
 def cmd_migrate(root: Path, args: argparse.Namespace) -> int:
+    # A v0.2 chronicle at the repository root is only in the wrong place, so it
+    # is relocated before a v0.1 one is rewritten. A project needing both is
+    # handled by running this twice, which is clearer than one compound move.
+    relocating = migrate.needs_relocation(root)
     try:
-        result = migrate.apply(root, args.phase) if args.apply else migrate.plan(root, args.phase)
+        if relocating:
+            result = migrate.relocate(root) if args.apply else migrate.relocate_plan(root)
+        elif args.apply:
+            result = migrate.apply(root, args.phase)
+        else:
+            result = migrate.plan(root, args.phase)
     except migrate.MigrationError as error:
         return _fail(str(error))
     print(result.render())
     if not args.apply:
         print("\nNothing was changed. Re-run with --apply to perform it.")
         return 0
-    print(f"\nMigrated. Originals archived in {result.archive.name}/")
+    if result.archive is None:
+        print("\nRelocated. Every record moved unchanged.")
+    else:
+        print(f"\nMigrated. Originals archived in {result.archive.name}/")
     findings = validate.errors(validate.check(_load(root)))
     if findings:
         print(f"\n{len(findings)} validation errors remain:", file=sys.stderr)
@@ -227,7 +245,9 @@ def build_parser() -> argparse.ArgumentParser:
     check.add_argument("--quiet", action="store_true", help="errors only")
     check.set_defaults(handler=cmd_validate)
 
-    build = subparsers.add_parser("compile", help="write .prokron/project.json")
+    build = subparsers.add_parser(
+        "compile", help=f"write {compiler.COMPILED_DIR}/project.json"
+    )
     build.add_argument("--force", action="store_true", help="compile despite errors")
     build.set_defaults(handler=cmd_compile)
 
@@ -248,7 +268,7 @@ def build_parser() -> argparse.ArgumentParser:
     why.set_defaults(handler=cmd_explain)
 
     move = subparsers.add_parser(
-        "migrate", help="move a v0.1 chronicle into the v0.2 layout"
+        "migrate", help="move a chronicle written under an earlier layout"
     )
     move.add_argument("--apply", action="store_true", help="perform it; otherwise report only")
     move.add_argument("--phase", default="P-NONE", help="phase to assign migrated tasks")

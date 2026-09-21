@@ -517,3 +517,14 @@
 - AC: AC-T-MIGRATE-01
 - Evidence: `prokron migrate` reports by default and applies only with --apply, archiving every original unchanged. Moves tasks, decisions, intent and journal to prokron/, converts prose acceptance into contracts with original wording, splits DECISIONS.md into prokron/ADR/ with a supersession index, rescues STATE.md prose into HANDOFF.md, and drops the derivable TASK_GRAPH.md. The installer and `prokron status` both detect a stranded v0.1 chronicle and name the command. Task completion now counts phase-independent work, which had made a migrated project report 0 / 0. 104 unit tests and the installer suite pass.
 - Governed by: ADR-014, ADR-015
+
+## T-LAYOUT-01: Install into one directory
+- Status: DONE
+- Phase: P-NONE
+- Validation: SYNTHETIC
+- Dependencies: T-MIGRATE-01
+- Owner: claude/primary
+- Claimed: 2026-09-22
+- AC: AC-T-LAYOUT-01
+- Evidence: Installing now adds one directory Prokron chose, `.prokron/`, holding `chronicle/`, `compiled/`, `commands/`, `runtime/` and the `prokron` command; everything else it writes is a path an agent host reads by fixed address. The installer suite compares the target's whole root listing against that set. `prokron migrate` relocates a v0.2 installation byte for byte, repoints the host command files, and still migrates a v0.1 one. 114 unit tests and the installer suite pass, and this repository tracks itself in the new layout.
+- Governed by: ADR-024
