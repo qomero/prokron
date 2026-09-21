@@ -450,3 +450,14 @@
 - AC: AC-T-P2-AUDIT-01
 - Evidence: Seven defects found and fixed with regression tests: JSON island broken by `</script>`, unescaped authored text in generated markup and in the drill-down, raw inline Mermaid injection, substring phase matching in gate blockers, a criterion missing its evidence class swallowing later criteria, a DONE task passing on an empty contract, and WIP double-reported as ready. Headless Chrome re-verified rendering. 80 unit tests and the installer suite pass.
 - Governed by: ADR-013, ADR-016
+
+## T-PILOT-01: Run the continuity pilot
+- Status: WIP
+- Phase: P1
+- Validation: UNTESTED
+- Dependencies: T-READINESS-01
+- Owner: claude/primary
+- Claimed: 2026-09-21
+- AC: AC-T-PILOT-01
+- Evidence: —
+- Governed by: ADR-008, ADR-011

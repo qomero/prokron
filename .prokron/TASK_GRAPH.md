@@ -4,6 +4,7 @@
 
 ## Summary
 
+- WIP: T-PILOT-01
 - DONE: T-V01-01, T-V01-02, T-V01-03, T-V01-04, T-V01-05, T-V01-06, T-V011-01, T-V011-02, T-V02-01, T-V02-02, T-V02-03, T-V02-04, T-HARNESS-01, T-HARNESS-02, T-WORKFLOW-01, T-DOCS-01, T-INSTALL-01, T-HOSTS-01, T-CLEANUP-01, T-CONTINUITY-01, T-READINESS-01, T-DOCS-02, T-DOCS-03, T-REMOTE-01, T-GIT-NAME-01, T-P2-PLAN-01, T-P2-01, T-P2-02, T-P2-03, T-P2-04, T-P2-05, T-P2-06, T-P2-07, T-P2-08, T-P2-09, T-P2-10, T-P2-11, T-P2-12, T-P2-13, T-P2-14, T-P2-AUDIT-01
 - Eligible now: none
 - Waiting: none
@@ -113,7 +114,7 @@
 - T-READINESS-01 [DONE] Close workflow readiness gaps
   - phase: P1
   - depends on: T-CONTINUITY-01
-  - unlocks: T-DOCS-02
+  - unlocks: T-DOCS-02, T-PILOT-01
   - eligible: no
 - T-DOCS-02 [DONE] Make the GitHub introduction clear and compelling
   - phase: P1
@@ -213,5 +214,10 @@
 - T-P2-AUDIT-01 [DONE] Audit the Phase 2 runtime before release
   - phase: P2
   - depends on: T-P2-12
+  - unlocks: none
+  - eligible: no
+- T-PILOT-01 [WIP] Run the continuity pilot
+  - phase: P1
+  - depends on: T-READINESS-01
   - unlocks: none
   - eligible: no

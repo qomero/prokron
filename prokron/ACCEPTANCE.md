@@ -194,6 +194,59 @@ is edited in place with its request identifier noted.
 
 # Contracts
 
+## AC-T-PILOT-01 — Run the continuity pilot
+
+The gate behind P1's exit. Each criterion is one step of the procedure in
+`docs/SPEC.md`, run against a real agent host in a disposable project.
+
+- `AC-T-PILOT-01-01` — Given a disposable project and a small specification,
+  When Prokron is installed in `new` mode, Then the first tasks and
+  dependencies reflect that specification; and When installed in `existing`
+  mode, Then no history is invented. `RUNTIME` · `PASS`
+- `AC-T-PILOT-01-02` — Given an ordinary work request carrying no Prokron
+  command, When an agent acts on it, Then a task and a single intent exist
+  before implementation and the graph stays in sync. `RUNTIME` · `PASS`
+- `AC-T-PILOT-01-03` — Given a material choice that is later changed, When the
+  agent records it without `/prokron-decide`, Then both ADRs remain and the
+  newer supersedes the earlier. `RUNTIME` · `NOT_RUN`
+- `AC-T-PILOT-01-04` — Given work paused partway, When the chronicle is read,
+  Then state, intent, and journal carry the exact stopping point and next
+  action. Any limit warning that was simulated is recorded as simulated and is
+  not treated as proof of quota detection. `RUNTIME` · `NOT_RUN`
+- `AC-T-PILOT-01-05` — Given a fresh agent session with no prior chat, When it
+  is asked to resume, Then it states the project goal, active task, governing
+  decisions, and next action before reading code, and its account matches the
+  saved handoff. `RUNTIME` · `NOT_RUN`
+- `AC-T-PILOT-01-06` — Given a populated chronicle, When initialization runs
+  again, Then tasks, ADRs, and journal history remain intact.
+  `RUNTIME` · `NOT_RUN`
+- `AC-T-PILOT-01-07` — Given a person who did not do the work, When they read
+  the same chronicle, Then they can explain the project's purpose, a changed
+  decision and its reason, the current state, and the next priority, and their
+  account is compared with the agent's. Only that person may record this.
+  `MANUAL` · `NOT_RUN`
+
+
+Evidence, 2026-09-21, in progress. Host: Codex CLI 0.155.0 via `codex exec`,
+Prokron 0.2.1 installed by `install.sh`, disposable Tea Timer repository.
+Observations are recorded in `docs/pilot-2026-09-21.md`.
+
+Step 1 PASS. In `new` mode the agent derived six product tasks from a
+five-requirement specification, plus a phase-exit task, with 20 criteria, four
+ADRs for choices the specification left open, one phase with a gate, and a real
+dependency chain. In `existing` mode the chronicle stayed empty and the
+pre-existing code was untouched. A first attempt under a read-only sandbox is
+kept as an observation rather than discarded: blocked from writing, the agent
+drafted the work, then stated that nothing had been written and what the next
+action was. It did not fabricate.
+
+Step 2 PASS. An ordinary request with no Prokron command, for work absent from
+the task list, produced a new task T-007 with its own contract before
+implementation, and a cleared intent carrying the next action afterwards.
+
+Steps 3 to 6 are not yet run. Step 7 requires a person and cannot be run by an
+agent.
+
 ## AC-T-P2-PLAN-01 — Plan Phase 2 into the chronicle
 
 - `AC-T-P2-PLAN-01-01` — Given `docs/Phase 2.md`, When it conflicts with an

@@ -46,8 +46,8 @@
       "status": "EXIT_PENDING",
       "progress": {
         "done": 9,
-        "total": 9,
-        "fraction": 1.0
+        "total": 10,
+        "fraction": 0.9
       },
       "source": {
         "file": "PHASES.md",
@@ -634,7 +634,8 @@
         "T-CONTINUITY-01"
       ],
       "blocks": [
-        "T-DOCS-02"
+        "T-DOCS-02",
+        "T-PILOT-01"
       ],
       "ac": "AC-T-READINESS-01",
       "owner": "codex/primary",
@@ -1185,9 +1186,123 @@
         "file": "TASKS.md",
         "anchor": "T-P2-AUDIT-01"
       }
+    },
+    {
+      "id": "T-PILOT-01",
+      "title": "Run the continuity pilot",
+      "phase": "P1",
+      "status": "WIP",
+      "validation": "UNTESTED",
+      "deps": [
+        "T-READINESS-01"
+      ],
+      "blocks": [],
+      "ac": "AC-T-PILOT-01",
+      "owner": "claude/primary",
+      "claimed": "2026-09-21",
+      "evidence": null,
+      "decisions": [
+        "ADR-008",
+        "ADR-011"
+      ],
+      "schedule": null,
+      "ready": false,
+      "blocked": false,
+      "source": {
+        "file": "TASKS.md",
+        "anchor": "T-PILOT-01"
+      }
     }
   ],
   "acceptance": {
+    "AC-T-PILOT-01": {
+      "title": "Run the continuity pilot",
+      "inherits": [],
+      "evidence": "Codex CLI 0.155.0 via `codex exec`, Prokron 0.2.1 installed by `install.sh`, disposable Tea Timer repository. Observations are recorded in `docs/pilot-2026-09-21.md`.",
+      "criteria": [
+        {
+          "id": "AC-T-PILOT-01-01",
+          "text": "Given a disposable project and a small specification, When Prokron is installed in `new` mode, Then the first tasks and dependencies reflect that specification; and When installed in `existing` mode, Then no history is invented.",
+          "evidenceClass": "RUNTIME",
+          "state": "PASS",
+          "evidence": null,
+          "source": {
+            "file": "ACCEPTANCE.md",
+            "anchor": "AC-T-PILOT-01-01"
+          }
+        },
+        {
+          "id": "AC-T-PILOT-01-02",
+          "text": "Given an ordinary work request carrying no Prokron command, When an agent acts on it, Then a task and a single intent exist before implementation and the graph stays in sync.",
+          "evidenceClass": "RUNTIME",
+          "state": "PASS",
+          "evidence": null,
+          "source": {
+            "file": "ACCEPTANCE.md",
+            "anchor": "AC-T-PILOT-01-02"
+          }
+        },
+        {
+          "id": "AC-T-PILOT-01-03",
+          "text": "Given a material choice that is later changed, When the agent records it without `/prokron-decide`, Then both ADRs remain and the newer supersedes the earlier.",
+          "evidenceClass": "RUNTIME",
+          "state": "NOT_RUN",
+          "evidence": null,
+          "source": {
+            "file": "ACCEPTANCE.md",
+            "anchor": "AC-T-PILOT-01-03"
+          }
+        },
+        {
+          "id": "AC-T-PILOT-01-04",
+          "text": "Given work paused partway, When the chronicle is read, Then state, intent, and journal carry the exact stopping point and next action. Any limit warning that was simulated is recorded as simulated and is not treated as proof of quota detection.",
+          "evidenceClass": "RUNTIME",
+          "state": "NOT_RUN",
+          "evidence": null,
+          "source": {
+            "file": "ACCEPTANCE.md",
+            "anchor": "AC-T-PILOT-01-04"
+          }
+        },
+        {
+          "id": "AC-T-PILOT-01-05",
+          "text": "Given a fresh agent session with no prior chat, When it is asked to resume, Then it states the project goal, active task, governing decisions, and next action before reading code, and its account matches the saved handoff.",
+          "evidenceClass": "RUNTIME",
+          "state": "NOT_RUN",
+          "evidence": null,
+          "source": {
+            "file": "ACCEPTANCE.md",
+            "anchor": "AC-T-PILOT-01-05"
+          }
+        },
+        {
+          "id": "AC-T-PILOT-01-06",
+          "text": "Given a populated chronicle, When initialization runs again, Then tasks, ADRs, and journal history remain intact.",
+          "evidenceClass": "RUNTIME",
+          "state": "NOT_RUN",
+          "evidence": null,
+          "source": {
+            "file": "ACCEPTANCE.md",
+            "anchor": "AC-T-PILOT-01-06"
+          }
+        },
+        {
+          "id": "AC-T-PILOT-01-07",
+          "text": "Given a person who did not do the work, When they read the same chronicle, Then they can explain the project's purpose, a changed decision and its reason, the current state, and the next priority, and their account is compared with the agent's. Only that person may record this.",
+          "evidenceClass": "MANUAL",
+          "state": "NOT_RUN",
+          "evidence": null,
+          "source": {
+            "file": "ACCEPTANCE.md",
+            "anchor": "AC-T-PILOT-01-07"
+          }
+        }
+      ],
+      "source": {
+        "file": "ACCEPTANCE.md",
+        "anchor": "AC-T-PILOT-01"
+      }
+    },
     "AC-T-P2-PLAN-01": {
       "title": "Plan Phase 2 into the chronicle",
       "inherits": [],
@@ -3167,24 +3282,48 @@
   ],
   "obstacles": [
     {
+      "type": "ACCEPTANCE_BLOCKER",
+      "subject": "T-PILOT-01",
+      "blockers": [
+        "AC-T-PILOT-01-03",
+        "AC-T-PILOT-01-04",
+        "AC-T-PILOT-01-05",
+        "AC-T-PILOT-01-06",
+        "AC-T-PILOT-01-07"
+      ],
+      "detail": "T-PILOT-01 cannot complete while 5 criteria are unmet"
+    },
+    {
       "type": "GATE_BLOCKER",
       "subject": "P1",
       "blockers": [
         "Gate P1-CONTINUITY"
       ],
       "detail": "P1 cannot exit while Gate P1-CONTINUITY is red"
+    },
+    {
+      "type": "PHASE_BLOCKER",
+      "subject": "P1",
+      "blockers": [
+        "T-PILOT-01"
+      ],
+      "detail": "P1 has 1 unfinished task"
     }
   ],
-  "criticalPath": [],
+  "criticalPath": [
+    "T-PILOT-01"
+  ],
   "schedule": {
     "scheduled": [],
-    "unscheduled": []
+    "unscheduled": [
+      "T-PILOT-01"
+    ]
   },
   "metrics": {
     "taskCompletion": {
       "done": 39,
-      "total": 39,
-      "fraction": 1.0
+      "total": 40,
+      "fraction": 0.975
     },
     "phaseCompletion": {
       "P0": {
@@ -3194,8 +3333,8 @@
       },
       "P1": {
         "done": 9,
-        "total": 9,
-        "fraction": 1.0
+        "total": 10,
+        "fraction": 0.9
       },
       "P2": {
         "done": 16,
@@ -3205,13 +3344,13 @@
     },
     "criticalPathCompletion": {
       "done": 0,
-      "total": 0,
+      "total": 1,
       "fraction": 0.0
     },
     "validationCoverage": {
       "done": 18,
-      "total": 39,
-      "fraction": 0.4615
+      "total": 40,
+      "fraction": 0.45
     },
     "gateReadiness": {
       "done": 5,
@@ -3219,23 +3358,27 @@
       "fraction": 0.8333
     },
     "acceptanceCompletion": {
-      "done": 88,
-      "total": 88,
-      "fraction": 1.0
+      "done": 90,
+      "total": 95,
+      "fraction": 0.9474
     },
     "validationBreakdown": {
       "SYNTHETIC": 23,
-      "AI_REVIEWED": 18
+      "AI_REVIEWED": 18,
+      "UNTESTED": 1
     },
     "statusBreakdown": {
-      "DONE": 41
+      "DONE": 41,
+      "WIP": 1
     }
   },
   "ready": [],
   "blocked": [],
-  "wip": [],
+  "wip": [
+    "T-PILOT-01"
+  ],
   "handoff": {
-    "intent": "# Intent\n\nNo active intent.\n\nPhase 2 is complete and awaiting exit acceptance. The only open work in the\nproject is Gate P1-CONTINUITY, which needs a real multi-session pilot.",
+    "intent": "# Intent\n\nTask: T-PILOT-01 \u2014 running the continuity pilot from `docs/SPEC.md`.\n\nPoint: steps 1 and 2 pass, recorded in `docs/pilot-2026-09-21.md`. The\ndisposable project is at /tmp/pilot and is not part of this repository.\n\nNext: step 3 \u2014 make a material choice, then change it, and check that both ADRs\nremain with the newer superseding the earlier, without `/prokron-decide`.",
     "handoff": "# Handoff\n\nCurrent implementation continuity. Overwritten, never appended. It holds what\nthe next person or agent needs in order to continue right now. Closed history\nbelongs in `JOURNAL.md`.\n\n## Position\n- Release 0.2.1. Phase P2 is `EXIT_PENDING`: all 16 tasks done, all its gates\n  green. Accepting the exit is the owner's call, not a computation.\n- Nothing in flight. 39 of 39 tasks done, 88 of 88 criteria passing.\n\n## What is true now\n- Gate E is green on real evidence, not assertion. Codex and Claude audited the\n  same implementation against the same reviewer packet. They disagreed on one\n  criterion; rendering both Gantt variants in a browser settled it at level 5 of\n  the arbitration hierarchy, and the defect Codex found was real.\n- A cold agent starts from a packet alone. Verified against Codex with no\n  repository access, and the first, failed attempt is kept as the control.\n- Gates A, B, C, D, E green. Only Gate P1-CONTINUITY is red.\n\n## What is not done\n- **Gate P1-CONTINUITY.** The pilot in `docs/SPEC.md` has never run. It needs a\n  real multi-session run in a real project, observing whether the chronicle is\n  maintained without explicit commands, whether checkpoints fire before actual\n  limits, and whether a person and an agent reach the same understanding. No\n  test substitutes for it. P1 cannot exit until it does.\n- The README banner and Mermaid diagram still depict the six-file chronicle.\n- `.prokron/` is committed so the README can link to it as a live example. That\n  puts a large dashboard and JSON in every diff touching authority. Nobody has\n  decided whether to keep it that way.\n\n## Next action\nRun the continuity pilot, or accept the P2 exit and open P3. Both are decisions\nfor the owner rather than work an agent should start on its own."
   },
   "sources": {

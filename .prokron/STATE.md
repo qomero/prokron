@@ -4,15 +4,15 @@
 
 - Project: Prokron
 - Current phase: P2
-- Tasks: 39 of 39 done
-- Acceptance: 88 of 88 criteria passing
-- Validation: 18 of 39 reviewed or verified
+- Tasks: 39 of 40 done
+- Acceptance: 90 of 95 criteria passing
+- Validation: 18 of 40 reviewed or verified
 - Gates: 5 of 6 green
 
 ## Phases
 
 - P0 Executable state harness: 14 / 14 tasks, COMPLETE, exit authority T-HARNESS-02
-- P1 Shared chronicle workflow: 9 / 9 tasks, EXIT_PENDING, exit authority T-READINESS-01
+- P1 Shared chronicle workflow: 9 / 10 tasks, EXIT_PENDING, exit authority T-READINESS-01
 - P2 From acceptance contracts to project management: 16 / 16 tasks, EXIT_PENDING, exit authority T-P2-14
 
 ## Gates
@@ -26,13 +26,16 @@
 
 ## Work
 
-- In flight: none
+- In flight: T-PILOT-01
 - Ready: none
 - Blocked: none
+- Critical path: T-PILOT-01
 
 ## Obstacles
 
+- ACCEPTANCE_BLOCKER: T-PILOT-01 cannot complete while 5 criteria are unmet
 - GATE_BLOCKER: P1 cannot exit while Gate P1-CONTINUITY is red
+- PHASE_BLOCKER: P1 has 1 unfinished task
 
 ## Narrative
 
