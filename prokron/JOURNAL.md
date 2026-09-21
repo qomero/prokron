@@ -290,3 +290,57 @@
 - Learned: Shared understanding of purpose, history, current state, and future work is the core benefit. Handoffs between people and agents are one use of that record.
 - Left mid-air: Documentation is complete and ready to publish. Human comprehension and real-session agent behavior still need the pilot.
 - Next: Publish the revised documentation and graphic, then compare a person's and an agent's understanding in a target project.
+
+## 2026-09-17 — origin URL update
+- Task: T-REMOTE-01
+- Owner: codex/primary
+- Did: Changed local origin from https://github.com/qomerovn/prokron.git to https://github.com/qomero/ten-repo.git as requested.
+- Validation: git remote -v confirms both fetch and push URLs.
+- Learned: This updates local Git configuration; remote availability was not checked.
+- Left mid-air: Nothing for this request.
+- Next: None for this request; the existing project pilot remains pending.
+
+## 2026-09-17 — global Git username
+- Task: T-GIT-NAME-01
+- Owner: codex/primary
+- Did: Set global Git user.name to qomero as requested.
+- Validation: Global configuration readback returned qomero.
+- Learned: The requested global username is configured.
+- Left mid-air: Nothing for this request.
+- Next: None for this request; the existing project pilot remains pending.
+
+## 2026-09-21 — Phase 2 planned onto its own branch
+- Task: T-P2-PLAN-01
+- Owner: claude/primary
+- Did: Created the `Phase2` branch, read `docs/Phase 2.md` in full, and resolved its three conflicts with the existing chronicle in favour of the specification. Recorded ADR-013 (Phase 2 governs; a deterministic runtime returns, superseding ADR-008), ADR-014 (authored `prokron/` versus compiled `.prokron/`), ADR-015 (the PHASES, TASKS, ACCEPTANCE, ADR/, INTENT, HANDOFF authority set), and ADR-016 (standard-library-only implementation). Split the specification into fourteen tasks along the requested trunk order: acceptance, phase, compiler, analytics, renderer.
+- Validation: UNTESTED. This is a planning record; no Phase 2 behaviour exists yet.
+- Learned: The specification contradicts itself on `.prokron/`, naming it both generated-and-disposable and the home of authority. ADR-014 resolves this by splitting authored from compiled state, which is the distinction the rest of Phase 2 depends on. Superseding rather than deleting the earlier ADRs keeps the reversal of ADR-008 visible.
+- Left mid-air: Nothing. Planning is complete and uncommitted on the `Phase2` branch, along with two earlier chronicle entries (T-REMOTE-01, T-GIT-NAME-01) that were already pending on `main`.
+- Next: Start T-P2-01. Move authority to `prokron/`, split `DECISIONS.md` into one file per ADR under `prokron/ADR/`, add `HANDOFF.md`, update the installer, templates, workflows, host adapters, `AGENTS.md`, and `README.md`, and reserve `.prokron/` for compiled output.
+
+## 2026-09-21 — acceptance and phase authority built
+- Task: T-P2-01, T-P2-02, T-P2-03, T-P2-04, T-P2-05
+- Owner: claude/primary
+- Did: Split authored authority from compiled state. Moved the chronicle to `prokron/` and reduced `.prokron/` to views. Split `DECISIONS.md` into sixteen ADR files with a supersession index. Wrote `ACCEPTANCE.md`, defining criterion identity, Given/When/Then structure, five evidence classes, three criterion states, four inherited contracts, the reviewer finding taxonomy, and the frozen-contract and change-request rules. Migrated all forty tasks from prose acceptance to contract references in one pass. Wrote `PHASES.md` with P0, P1, and P2, six gates, and four milestones, and gave every task a phase. Put the builder contract, reviewer classification, and arbitration hierarchy into `AGENTS.md`, the workflows, and the skill. Updated the installer, templates, host adapters, README, and specification to the new layout.
+- Validation: AI_REVIEWED. `sh tests/install.sh` passes with new assertions that a fresh install creates authority under `prokron/`, that no authority document lands in `.prokron/`, and that reinstall preserves every record including the ADR directory. A repository scan finds no stale authority path. All local documentation links resolve.
+- Learned: The specification's own contradiction—`.prokron/` as both generated and authoritative—was the load-bearing question. Splitting authored from compiled resolved it and made the rest of Phase 2 straightforward. Migrating historical acceptance verbatim rather than restating it in Given/When/Then form keeps closed evidence attached to what it actually attested to.
+- Left mid-air: Nothing partially written. The work is uncommitted on `Phase2`, together with two earlier chronicle entries pending from `main`. The README banner and Mermaid diagram still depict the six-file chronicle.
+- Next: T-P2-06. Build the standard-library-only `prokron` command with typed parsers, `validate`, and `compile`, writing only inside `.prokron/`.
+
+## 2026-09-21 — the deterministic runtime
+- Task: T-P2-06, T-P2-07, T-P2-08, T-P2-09, T-P2-10, T-P2-11, T-P2-12
+- Owner: claude/primary
+- Did: Built `src/prokron/`, a standard-library-only package: typed model, parsers for every authored document, the `project.json` compiler with per-object provenance, cross-document validation, deterministic analytics, six Mermaid renderers, the Markdown views, a self-contained HTML dashboard, and the `prokron` CLI. Made the compiler own every file in `.prokron/`, including `STATE.md` and `TASK_GRAPH.md`, which were previously hand-maintained. Taught the installer to ship the runtime as copied files under ADR-017. Updated the agent rules, workflows, skill, README, and specification to use the tool instead of re-deriving state by reading files.
+- Validation: AI_REVIEWED. 66 unit tests and the installer suite pass. `rm -rf .prokron && prokron compile` reproduces `project.json` and all three views byte for byte on this repository and in the fixture. Headless Chrome rendered the dashboard from `file://`, opened the drill-down with the task's full contract, and rendered every figure with Mermaid unreachable. Gates A, B, C, and D moved to GREEN on that evidence; Gate E and Gate P1-CONTINUITY stay RED because both need a real session.
+- Learned: Four parser bugs only surfaced against the real chronicle rather than the fixture — nested sections swallowing later content, criterion states wrapped onto a second line, milestone task IDs on continuation lines, and gates writing `Label: value` where phases write the label on its own line. Authored Markdown varies in ways a fixture written by the same author will not reproduce. Also: making the compiler generate the views, rather than seeding them from templates, is what finally made `.prokron/` honestly disposable.
+- Left mid-air: Nothing partially written; everything is uncommitted on `Phase2`. T-P2-13's `MANUAL` criterion and T-P2-14's two-agent audit remain, and both need a live session rather than a test.
+- Next: T-P2-13, then T-P2-14. Hand a `prokron context` packet to a second agent and record where the two disagree and which level of the arbitration hierarchy settles it.
+
+## 2026-09-21 — audit and the 0.2.0 release
+- Task: T-P2-AUDIT-01
+- Owner: claude/primary
+- Did: Audited the Phase 2 runtime before release and fixed seven defects, each with a regression test. The embedded JSON island broke whenever authored text contained `</script>`, which killed the whole dashboard. Task titles, phase outcomes, gate descriptions and obstacle details were interpolated into markup unescaped, both when generating the page and in the client-side drill-down. The inline Mermaid block was injected raw. A gate blocking `P11 exit` also blocked `P1`, because phase matching was a substring test. A criterion missing its evidence class silently swallowed every criterion after it. A DONE task whose contract stated no criteria passed validation. Work in flight was counted as ready as well as WIP. Then cut 0.2.0: added `VERSION` and `CHANGELOG.md`, made the runtime read the version shipped beside it rather than the tracked project's own, and refreshed the README example from real output.
+- Validation: AI_REVIEWED. 80 unit tests, up from 66, and the installer suite pass. Headless Chrome confirmed the escaping fix did not break Mermaid: the diagram still renders to SVG and label line breaks survive, because the browser decodes entities before Mermaid reads the text.
+- Learned: Every defect but one came from treating authored prose as if it were safe markup. A chronicle is written by people, so its text will eventually contain angle brackets, quotes, and the odd closing tag — a generator that assumes otherwise breaks on the first honest sentence. The parser bug was the most dangerous of the seven: a contract that silently loses criteria makes a task look done against a bar nobody agreed to.
+- Left mid-air: Nothing. 0.2.0 is merged to `main`.
+- Next: T-P2-13's `MANUAL` criterion, then T-P2-14 and Gate E — both need a real session with a second agent rather than another test.

@@ -2,8 +2,25 @@
 
 # Prokron
 
-This repository uses `.prokron/` as its project chronicle. Read
-`.prokron/README.md` before substantial work and follow its read order.
+This repository uses `prokron/` as its project chronicle. Read
+`prokron/README.md` before substantial work and follow its read order.
+`.prokron/` is compiled output: read it for convenience, never edit it, and
+never treat it as authority.
+
+The repository ships a deterministic tool. Use it rather than re-deriving state
+by reading files:
+
+```sh
+./bin/prokron status          # phase, progress, ready, blocked, gates, next
+./bin/prokron explain T-123   # one task: deps, criteria, blockers, evidence
+./bin/prokron context T-123   # the minimal packet needed to start that task
+./bin/prokron validate        # check authority before and after editing it
+./bin/prokron compile         # refresh .prokron/ after changing prokron/
+./bin/prokron dashboard       # a browsable page of the same state
+```
+
+Run `validate` after editing authority and `compile` before finishing. The tool
+never edits `prokron/`; it only reads it.
 
 Recognize these workflows:
 
@@ -14,10 +31,62 @@ Recognize these workflows:
 - `/prokron-resume` → `commands/prokron-resume.md`
 
 Maintain the chronicle automatically; do not wait for a Prokron command. Before
-starting newly requested work, create or claim its task and set the single
-`INTENT.md` entry. When a material project choice is made, accepted, or acted
-on, append its ADR immediately and link affected tasks. Supersede decisions
-instead of overwriting them. Keep `TASK_GRAPH.md` and `STATE.md` synchronized.
+starting newly requested work, create or claim its task, give it a phase from
+`PHASES.md` or mark it `P-NONE`, write its acceptance contract in
+`ACCEPTANCE.md`, and set the single `INTENT.md` entry. When a material project
+choice is made, accepted, or acted on, append its ADR to `prokron/ADR/`
+immediately and link affected tasks. Supersede decisions instead of overwriting
+them. Keep the compiled views synchronized.
+
+## Completion
+
+A task is not done because you say it is done. It is done when every mandatory
+criterion of its contract in `ACCEPTANCE.md` holds and its evidence is recorded.
+
+A contract freezes when its task becomes `WIP`. If a criterion is wrong, raise
+an Acceptance Change Request; never weaken, reinterpret, or quietly drop one.
+
+## Builder
+
+You receive intent, phase, task, acceptance contract, inherited invariants,
+governing ADRs, and current handoff. You may implement, test, produce evidence,
+raise an Acceptance Change Request, and update the handoff.
+
+## Reviewer
+
+You receive the same contract plus the implementation and its evidence. Classify
+every finding. These block completion:
+
+```text
+ACCEPTANCE_FAILURE  INVARIANT_VIOLATION  REGRESSION  MISSING_EVIDENCE
+```
+
+These are recorded and do not block completion:
+
+```text
+RISK  MAINTAINABILITY  ARCHITECTURE_PREFERENCE  STYLE  FUTURE_IMPROVEMENT
+```
+
+Your preference is not an acceptance criterion.
+
+## Disagreement
+
+Agents will disagree. Resolve against project authority in this order, highest
+first:
+
+```text
+1. Product and domain authority
+2. The explicit acceptance contract
+3. Invariants
+4. Accepted decisions in prokron/ADR/
+5. Reproducible tests and evidence
+6. Existing code convention
+7. Reviewer preference
+```
+
+The goal is not agreement. The goal is that a disagreement is decidable.
+
+## Checkpoint
 
 Checkpoint early enough to finish writing whenever the agent or host approaches
 any context, token, time, session, rate, or quota limit, including five-hour and

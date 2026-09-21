@@ -2,230 +2,449 @@
 
 ## T-V01-01: Harden typed parsers and integrity validation
 - Status: DONE
+- Phase: P0
 - Validation: SYNTHETIC
 - Dependencies: none
 - Owner: codex/primary
 - Claimed: 2026-09-15
-- Acceptance: Typed task, decision, intent, and journal parsing rejects malformed canonical state and all required integrity tests pass.
+- AC: AC-T-V01-01
 - Evidence: 14 unittest cases and compileall passed on 2026-09-15.
 - Governed by: ADR-001, ADR-002
 
 ## T-V01-02: Complete initialization and adoption
 - Status: DONE
+- Phase: P0
 - Validation: SYNTHETIC
 - Dependencies: T-V01-01
 - Owner: codex/primary
 - Claimed: 2026-09-15
-- Acceptance: Init and adopt safely install templates and managed bootstrap blocks and repeated init is idempotent.
+- AC: AC-T-V01-02
 - Evidence: 15 unittest cases plus live repeated init/adopt checks passed on 2026-09-15.
 - Governed by: ADR-001
 
 ## T-V01-03: Complete deterministic context and checkpoint continuity
 - Status: DONE
+- Phase: P0
 - Validation: SYNTHETIC
 - Dependencies: T-V01-01
 - Owner: codex/primary
 - Claimed: 2026-09-15
-- Acceptance: Context is minimal and checkpoint updates live intent while appending a resumable Journal entry.
+- AC: AC-T-V01-03
 - Evidence: Context and checkpoint integration checks passed in tests/test_cli.py on 2026-09-15.
 - Governed by: ADR-001
 
 ## T-V01-04: Add adapters and realistic example
 - Status: DONE
+- Phase: P0
 - Validation: SYNTHETIC
 - Dependencies: T-V01-02, T-V01-03
 - Owner: codex/primary
 - Claimed: 2026-09-15
-- Acceptance: Thin Claude, Codex, and generic adapters exist and one realistic example passes integration validation.
+- AC: AC-T-V01-04
 - Evidence: Example doctor and 16 unittest cases passed on 2026-09-15.
 - Governed by: ADR-001
 
 ## T-V01-05: Validate and hand off v0.1
 - Status: DONE
+- Phase: P0
 - Validation: SYNTHETIC
 - Dependencies: T-V01-04
 - Owner: codex/primary
 - Claimed: 2026-09-15
-- Acceptance: Tests, build, CLI fixture, Prokron doctor, generated state, and final checkpoint all pass.
+- AC: AC-T-V01-05
 - Evidence: Ruff, strict mypy, 17 unittests, wheel/sdist build, clean-wheel milestone fixture, and example doctor passed on 2026-09-15.
 - Governed by: ADR-001
 
 ## T-V01-06: Publish Prokron identity and project documentation
 - Status: DONE
+- Phase: P0
 - Validation: SYNTHETIC
 - Dependencies: T-V01-05
 - Owner: codex/primary
 - Claimed: 2026-09-15
-- Acceptance: Product identifiers are consistent and GitHub readers can install, use, understand, and verify the project from linked documentation.
+- AC: AC-T-V01-06
 - Evidence: Legacy-name scan is empty; Ruff, strict mypy, 26 unittests, package build, CLI health checks, and documentation link checks pass.
 - Governed by: ADR-001, ADR-003
 
 ## T-V011-01: Correct the governing license for the next release
 - Status: DONE
+- Phase: P0
 - Validation: SYNTHETIC
 - Dependencies: T-V01-06
 - Owner: codex/primary
 - Claimed: 2026-09-15
-- Acceptance: Version 0.1.1 package metadata, repository documentation, and release artifacts consistently use Apache-2.0 while the v0.1 MIT history remains explicit and unchanged.
+- AC: AC-T-V011-01
 - Evidence: Canonical Apache-2.0 text verified; 0.1.1 wheel metadata reports License-Expression Apache-2.0 and includes LICENSE, NOTICE, and TRADEMARKS.md; Ruff, strict mypy, 26 unittests, package build, and Prokron doctor pass.
 - Governed by: ADR-004
 
 ## T-V011-02: Verify the v0.1.1 release artifact
 - Status: DONE
+- Phase: P0
 - Validation: SYNTHETIC
 - Dependencies: T-V011-01
 - Owner: codex/primary
 - Claimed: 2026-09-15
-- Acceptance: A clean isolated installation from the v0.1.1 artifact reports the correct version and passes fresh init, idempotency, core commands, and existing-project adoption without source-checkout dependencies.
+- AC: AC-T-V011-02
 - Evidence: 27 unittests, Ruff, strict mypy, build, and doctor pass; clean wheel and sdist installations report 0.1.1; fresh init, repeat init, status, next, graph, and three-commit adoption smoke tests pass outside the source checkout.
 - Governed by: ADR-004
 
 ## T-V02-01: Establish the adoption boundary
 - Status: DONE
+- Phase: P0
 - Validation: SYNTHETIC
 - Dependencies: T-V011-02
 - Owner: codex/primary
 - Claimed: 2026-09-15
-- Acceptance: Adoption deterministically discovers and classifies current-state evidence, stages an auditable candidate without changing canonical state, preserves uncertainty and provenance, and applies only after explicit approval.
+- AC: AC-T-V02-01
 - Evidence: 29 unittests, Ruff, strict mypy, package build in an isolated output directory, installed-wheel dry-run smoke test, and Prokron doctor pass on 2026-09-15.
 - Governed by: ADR-001
 
 ## T-V02-02: Align adoption semantics with the v2 supplement
 - Status: DONE
+- Phase: P0
 - Validation: SYNTHETIC
 - Dependencies: T-V02-01
 - Owner: codex/primary
 - Claimed: 2026-09-15
-- Acceptance: Adoption uses explicit evidence-backed domain assessments and contextual prompts, covers conditional and optional domains correctly, materializes confirmed operational state, and reports discovery separately from inspected content.
+- AC: AC-T-V02-02
 - Evidence: 33 unittests, Ruff, strict mypy, isolated wheel/sdist build, installed-wheel dry-run smoke test, Git diff check, and Prokron doctor pass on 2026-09-15.
 - Governed by: ADR-001
 
 ## T-V02-03: Add the interactive adoption interview
 - Status: DONE
+- Phase: P0
 - Validation: SYNTHETIC
 - Dependencies: T-V02-02
 - Owner: codex/primary
 - Claimed: 2026-09-16
-- Acceptance: Adoption provides a guided resumable interview, provider-neutral structured question and answer primitives, evidence-backed human confirmation, and guarded materialization without weakening non-interactive adoption.
+- AC: AC-T-V02-03
 - Evidence: Ruff, strict mypy, 49 unittests, wheel/sdist build, installed-wheel non-interactive and interactive adoption, apply and doctor smoke tests, K-Ledger six-question dogfood, and Git diff check passed; commit cb65c19 was pushed to origin/main on 2026-09-16.
 - Governed by: ADR-001, ADR-005
 
 ## T-V02-04: Consolidate the current-state adoption review
 - Status: DONE
+- Phase: P0
 - Validation: SYNTHETIC
 - Dependencies: T-V02-03
 - Owner: codex/primary
 - Claimed: 2026-09-16
-- Acceptance: A six-blocker adoption presents one default-preserving current-state proposal, supports selective correction, keeps agent adapters conversational and thin, and preserves structured Core validation, provenance, resume, and apply behavior.
+- AC: AC-T-V02-04
 - Evidence: Ruff, strict mypy, 51 unittests, wheel/sdist build, installed-wheel K-Ledger grouped-confirmation and apply smoke tests, Prokron doctor, and Git diff check passed on 2026-09-16.
 - Governed by: ADR-005
 
 ## T-HARNESS-01: Extract the deterministic state harness
 - Status: DONE
+- Phase: P0
 - Validation: SYNTHETIC
 - Dependencies: none
 - Owner: codex/primary
 - Claimed: 2026-09-16
-- Acceptance: Agent-authored brownfield candidates validate and require digest-bound human confirmation before publication; fresh-process resume preserves current state; stale next actions are rejected; Core contains no semantic inference engine.
+- AC: AC-T-HARNESS-01
 - Evidence: Deterministic adoption, integrity, fresh-process resume, and stale-state regressions pass; the semantic fallback was removed under ADR-007.
 - Governed by: ADR-006
 
 ## T-HARNESS-02: Clean up the deterministic adoption implementation
 - Status: DONE
+- Phase: P0
 - Validation: SYNTHETIC
 - Dependencies: T-HARNESS-01
 - Owner: codex/primary
 - Claimed: 2026-09-16
-- Acceptance: Remove redundant adoption reads and validation, centralize rendering and confirmation schema, and preserve CLI behavior and integrity checks.
+- AC: AC-T-HARNESS-02
 - Evidence: The full suite, Ruff, strict mypy, doctor, build, and CodeGraph status pass. CodeGraph traced the primary adoption path and verified the index is current. Read paths skip publication-only Markdown round trips.
 - Governed by: ADR-006
 
 ## T-WORKFLOW-01: Reduce Prokron to the chronicle workflow
 - Status: DONE
+- Phase: P1
 - Validation: SYNTHETIC
 - Dependencies: none
 - Owner: codex/primary
 - Claimed: 2026-09-16
-- Acceptance: The repository contains the six-file chronicle template, concise agent instructions, and init, work, decide, checkpoint, and resume workflows without an application runtime.
+- AC: AC-T-WORKFLOW-01
 - Evidence: New- and existing-repository template smoke checks, README link checks, Codex skill metadata validation, requirement scans, and Git whitespace checks pass; the prospective repository contains no application runtime.
 - Governed by: ADR-008
 
 ## T-DOCS-01: Rewrite the GitHub documentation
 - Status: DONE
+- Phase: P1
 - Validation: SYNTHETIC
 - Dependencies: T-WORKFLOW-01
 - Owner: codex/primary
 - Claimed: 2026-09-16
-- Acceptance: GitHub readers can understand, install, and use the workflow from concise documentation while all Apache-2.0 legal files remain unchanged.
+- AC: AC-T-DOCS-01
 - Evidence: All 10 README links resolve; required workflow concepts and legal files are present; no runtime paths are tracked; legal files have no diff; Git whitespace checks pass.
 - Governed by: ADR-008
 
 ## T-INSTALL-01: Add one-command repository setup
 - Status: DONE
+- Phase: P1
 - Validation: SYNTHETIC
 - Dependencies: T-DOCS-01
 - Owner: codex/primary
 - Claimed: 2026-09-16
-- Acceptance: One shell command safely installs the Prokron chronicle, workflows, and Codex and Claude adapters into the current repository and tells the developer how to start either entry mode.
+- AC: AC-T-INSTALL-01
 - Evidence: POSIX syntax and local installer checks pass for both modes, all workflows and adapters, repeat installation, preservation, and invalid input. The exact authenticated command published in the README installed successfully from private GitHub `main` into a disposable repository.
 - Governed by: ADR-008, ADR-009
 
 ## T-HOSTS-01: Support model-neutral agent hosts
 - Status: DONE
+- Phase: P1
 - Validation: SYNTHETIC
 - Dependencies: T-INSTALL-01
 - Owner: codex/primary
 - Claimed: 2026-09-16
-- Acceptance: The installer configures OpenCode slash commands and a documented generic path so models such as GLM, MiniMax, Mistral, and Grok can use Prokron through their agent host without provider-specific Prokron logic.
+- AC: AC-T-HOSTS-01
 - Evidence: All five OpenCode command files have valid frontmatter; local installer checks cover every host adapter and generic output; the exact published private-GitHub command installed `AGENTS.md` and all OpenCode commands into a disposable repository; documentation links and Git checks pass.
 - Governed by: ADR-008, ADR-010
 
 ## T-CLEANUP-01: Remove repository CodeGraph state
 - Status: DONE
+- Phase: P1
 - Validation: SYNTHETIC
 - Dependencies: T-HOSTS-01
 - Owner: codex/primary
 - Claimed: 2026-09-16
-- Acceptance: The repository has no CodeGraph index, ignore rule, or active product configuration.
+- AC: AC-T-CLEANUP-01
 - Evidence: CodeGraph `uninit` removed `.codegraph/`; the ignore rule is gone; product files contain no CodeGraph reference; Git checks pass.
 - Governed by: ADR-008
 
 ## T-CONTINUITY-01: Make task, decision, and limit capture automatic
 - Status: DONE
+- Phase: P1
 - Validation: SYNTHETIC
 - Dependencies: T-CLEANUP-01
 - Owner: codex/primary
 - Claimed: 2026-09-16
-- Acceptance: Installed agent rules require immediate task and ADR capture without an explicit Prokron command and require a resumable checkpoint before any known or estimated agent, context, time, or quota cutoff.
+- AC: AC-T-CONTINUITY-01
 - Evidence: Local installer checks and the exact published private-GitHub install confirm that fresh repositories receive automatic pre-implementation task capture, immediate material-decision ADR capture, and early checkpoint rules for known or estimated context, token, time, session, rate, and quota limits.
 - Governed by: ADR-008
 
 ## T-READINESS-01: Close workflow readiness gaps
 - Status: DONE
+- Phase: P1
 - Validation: SYNTHETIC
 - Dependencies: T-CONTINUITY-01
 - Owner: codex/primary
 - Claimed: 2026-09-16
-- Acceptance: Reinstall and init preserve project history; upgrades are explicit; command arguments reach workflows; documentation describes installation and the actual limits of automatic recording; regression checks cover preservation and incomplete installs.
+- AC: AC-T-READINESS-01
 - Evidence: `sh tests/install.sh` passes both fresh modes, byte-for-byte record and custom-instruction preservation on reinstall, incomplete installation repair, decision argument delivery, linked-path rejection, and invalid input. Shell syntax, whitespace, and legal-file preservation checks pass. Repeat init protection is an agent instruction; real-session compliance and limit handling remain unverified, with a pilot procedure in docs/SPEC.md.
 - Governed by: ADR-008, ADR-009, ADR-010, ADR-011
 
 ## T-DOCS-02: Make the GitHub introduction clear and compelling
 - Status: DONE
+- Phase: P1
 - Validation: AI_REVIEWED
 - Dependencies: T-READINESS-01
 - Owner: codex/primary
 - Claimed: 2026-09-16
-- Acceptance: README explains the value through concrete examples and repository graphics, keeps installation usable and claims accurate, and preserves legal files.
+- AC: AC-T-DOCS-02
 - Evidence: Rewritten README includes a repository-owned SVG banner, Mermaid workflow, illustrative handoff, setup, commands, upgrade guidance, and accurate continuity limits. All 15 local links/anchors and SVG XML pass validation; the banner was rendered in an isolated browser and visually inspected. Git whitespace and legal-file preservation checks pass.
 - Governed by: ADR-008, ADR-010, ADR-011
 
 ## T-DOCS-03: Position Prokron as shared project understanding
 - Status: DONE
+- Phase: P1
 - Validation: AI_REVIEWED
 - Dependencies: T-DOCS-02
 - Owner: codex/primary
 - Claimed: 2026-09-16
-- Acceptance: README, specification purpose, and graphic explain Project Chronicle as a common language for people and AI, with purpose, historical decisions, current state, and future work; session handoff is one use of that record.
+- AC: AC-T-DOCS-03
 - Evidence: README, SVG banner, Mermaid diagram, specification purpose, and installed guide now explain shared project understanding across people and AI. The illustrative example traces a changed decision; the pilot includes a human comprehension check. All 15 local links/anchors, SVG XML, whitespace, and legal-file preservation checks pass. The banner was rendered in an isolated browser and visually inspected.
 - Governed by: ADR-008, ADR-012
+
+## T-REMOTE-01: Update origin URL
+- Status: DONE
+- Phase: P-NONE
+- Validation: SYNTHETIC
+- Dependencies: none
+- Owner: codex/primary
+- Claimed: 2026-09-17
+- AC: AC-T-REMOTE-01
+- Evidence: git remote -v confirms the requested URL for both fetch and push.
+- Governed by: ADR-008
+
+## T-GIT-NAME-01: Set global Git username
+- Status: DONE
+- Phase: P-NONE
+- Validation: SYNTHETIC
+- Dependencies: none
+- Owner: codex/primary
+- Claimed: 2026-09-17
+- AC: AC-T-GIT-NAME-01
+- Evidence: git config --global --get user.name returned qomero.
+- Governed by: ADR-008
+
+## T-P2-PLAN-01: Plan Phase 2 into the chronicle
+- Status: DONE
+- Phase: P2
+- Validation: AI_REVIEWED
+- Dependencies: none
+- Owner: claude/primary
+- Claimed: 2026-09-21
+- AC: AC-T-P2-PLAN-01
+- Evidence: ADR-013 through ADR-016 recorded; tasks T-P2-01 through T-P2-14 recorded with the trunk order acceptance, phase, compiler, analytics, renderer; task graph and state synchronized.
+- Governed by: ADR-013
+
+## T-P2-01: Migrate to the authored and compiled layout
+- Status: DONE
+- Phase: P2
+- Validation: AI_REVIEWED
+- Dependencies: none
+- Owner: claude/primary
+- Claimed: 2026-09-21
+- AC: AC-T-P2-01
+- Evidence: Authority moved to `prokron/` with history preserved; ADRs split into sixteen files with a supersession index; installer, templates, host adapters, AGENTS.md, README.md, and docs/SPEC.md updated; `sh tests/install.sh` passes with new assertions that authority never lands in `.prokron/`; repository scan finds no stale authority path.
+- Governed by: ADR-014, ADR-015
+
+## T-P2-02: Build the acceptance foundation
+- Status: DONE
+- Phase: P2
+- Validation: AI_REVIEWED
+- Dependencies: T-P2-01
+- Owner: claude/primary
+- Claimed: 2026-09-21
+- AC: AC-T-P2-02
+- Evidence: `prokron/ACCEPTANCE.md` defines criterion identity, Given/When/Then structure, five evidence classes, three criterion states, four inherited contracts, the finding taxonomy, and the frozen-contract and change-request rules; the schema ships as a template and is asserted by the installer suite.
+- Governed by: ADR-013, ADR-015
+
+## T-P2-03: Migrate task acceptance to contract references
+- Status: DONE
+- Phase: P2
+- Validation: AI_REVIEWED
+- Dependencies: T-P2-02
+- Owner: claude/primary
+- Claimed: 2026-09-21
+- AC: AC-T-P2-03
+- Evidence: Forty tasks migrated in one pass; zero `Acceptance:` fields and forty `AC:` references remain; twenty-five historical contracts preserve their original wording and evidence class; authority switched atomically.
+- Governed by: ADR-015
+
+## T-P2-04: Formalize the builder and reviewer contract
+- Status: DONE
+- Phase: P2
+- Validation: AI_REVIEWED
+- Dependencies: T-P2-03
+- Owner: claude/primary
+- Claimed: 2026-09-21
+- AC: AC-T-P2-04
+- Evidence: `AGENTS.md` carries the completion rule, frozen-contract rule, builder and reviewer contracts, blocking and informative finding classes, and the seven-level arbitration hierarchy; commands and the skill carry the same rules.
+- Governed by: ADR-013, ADR-015
+
+## T-P2-05: Add the phase primitive
+- Status: DONE
+- Phase: P2
+- Validation: AI_REVIEWED
+- Dependencies: T-P2-03
+- Owner: claude/primary
+- Claimed: 2026-09-21
+- AC: AC-T-P2-05
+- Evidence: `prokron/PHASES.md` records P0, P1, and P2 with exactly seven fields each, lists no tasks, and defines six gates and four milestones separately; all forty tasks name a phase or `P-NONE`; every phase names an exit authority.
+- Governed by: ADR-015
+
+## T-P2-06: Establish the deterministic runtime foundation
+- Status: DONE
+- Phase: P2
+- Validation: AI_REVIEWED
+- Dependencies: T-P2-05
+- Owner: claude/primary
+- Claimed: 2026-09-21
+- AC: AC-T-P2-06
+- Evidence: Standard-library-only `src/prokron/` package with typed parsers, `validate`, and `compile`; installed and exercised in a fresh repository by `sh tests/install.sh`; a test proves nothing outside `.prokron/` is written. ADR-017 records how the runtime ships.
+- Governed by: ADR-013, ADR-016
+
+## T-P2-07: Compile project.json
+- Status: DONE
+- Phase: P2
+- Validation: AI_REVIEWED
+- Dependencies: T-P2-06
+- Owner: claude/primary
+- Claimed: 2026-09-21
+- AC: AC-T-P2-07
+- Evidence: `prokron compile` writes `.prokron/project.json` with all twelve sections and per-object provenance; compiling twice and compiling after `rm -rf .prokron` are byte-identical on this repository and in the fixture suite.
+- Governed by: ADR-014, ADR-016
+
+## T-P2-08: Validate authority across documents
+- Status: DONE
+- Phase: P2
+- Validation: AI_REVIEWED
+- Dependencies: T-P2-07
+- Owner: claude/primary
+- Claimed: 2026-09-21
+- AC: AC-T-P2-08
+- Evidence: `prokron validate` detects all eleven listed error conditions and three warning conditions, each covered by a test; `compile` refuses to run while errors exist unless forced.
+- Governed by: ADR-013
+
+## T-P2-09: Compute project analytics and obstacles
+- Status: DONE
+- Phase: P2
+- Validation: AI_REVIEWED
+- Dependencies: T-P2-08
+- Owner: claude/primary
+- Claimed: 2026-09-21
+- AC: AC-T-P2-09
+- Evidence: Ready, blocked, obstacles, critical path, phase and acceptance progress, validation coverage, and gate readiness computed with no model provider; obstacles carry the fixed taxonomy; `status` and `explain` report them.
+- Governed by: ADR-013
+
+## T-P2-10: Render Mermaid views
+- Status: DONE
+- Phase: P2
+- Validation: AI_REVIEWED
+- Dependencies: T-P2-09
+- Owner: claude/primary
+- Claimed: 2026-09-21
+- AC: AC-T-P2-10
+- Evidence: `prokron graph` writes six Mermaid views; headless Chrome rendered the task graph to SVG; rendering is deterministic and the files hold no state absent from authority.
+- Governed by: ADR-016
+
+## T-P2-11: Generate the static dashboard
+- Status: DONE
+- Phase: P2
+- Validation: AI_REVIEWED
+- Dependencies: T-P2-10
+- Owner: claude/primary
+- Claimed: 2026-09-21
+- AC: AC-T-P2-11
+- Evidence: `prokron dashboard` writes one self-contained page; headless Chrome verified rendering, every section, Mermaid SVG, the task drill-down dialog, and the offline fallback; tests assert the page carries no control that writes.
+- Governed by: ADR-016
+
+## T-P2-12: Separate dependency ordering from calendar scheduling
+- Status: DONE
+- Phase: P2
+- Validation: AI_REVIEWED
+- Dependencies: T-P2-11
+- Owner: claude/primary
+- Claimed: 2026-09-21
+- AC: AC-T-P2-12
+- Evidence: Dependency timeline claims no dates and bands by depth; calendar Gantt dates only tasks with a start plus an estimate or end and reports the rest unscheduled; no duration is ever inferred.
+- Governed by: ADR-013
+
+## T-P2-13: Compile agent context packets
+- Status: TODO
+- Phase: P2
+- Validation: UNTESTED
+- Dependencies: T-P2-09
+- Owner: unassigned
+- AC: AC-T-P2-13
+- Evidence: —
+- Governed by: ADR-013
+
+## T-P2-14: Prove regeneration and close Phase 2
+- Status: TODO
+- Phase: P2
+- Validation: UNTESTED
+- Dependencies: T-P2-12, T-P2-13
+- Owner: unassigned
+- AC: AC-T-P2-14
+- Evidence: —
+- Governed by: ADR-013, ADR-014
+
+## T-P2-AUDIT-01: Audit the Phase 2 runtime before release
+- Status: DONE
+- Phase: P2
+- Validation: AI_REVIEWED
+- Dependencies: T-P2-12
+- Owner: claude/primary
+- Claimed: 2026-09-21
+- AC: AC-T-P2-AUDIT-01
+- Evidence: Seven defects found and fixed with regression tests: JSON island broken by `</script>`, unescaped authored text in generated markup and in the drill-down, raw inline Mermaid injection, substring phase matching in gate blockers, a criterion missing its evidence class swallowing later criteria, a DONE task passing on an empty contract, and WIP double-reported as ready. Headless Chrome re-verified rendering. 80 unit tests and the installer suite pass.
+- Governed by: ADR-013, ADR-016

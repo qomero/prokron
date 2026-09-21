@@ -15,21 +15,31 @@ chronicle.
 The same record supports discussion, advice, review, and continuity among
 people and agents. Session handoff is one use of this shared understanding.
 
-Prokron consists of Markdown records, agent instructions, and reusable command
-prompts. It requires no application runtime.
+Prokron consists of authored Markdown records, agent instructions, reusable
+command prompts, and a deterministic compiler over those records. The compiler
+reads `prokron/` and writes only `.prokron/`; it uses the Python standard
+library and needs no network or model provider. See `docs/Phase 2.md`, ADR-013,
+ADR-016, and ADR-017.
 
 ## 2. Chronicle
 
-Every participating repository has one `.prokron/` directory:
+Every participating repository has one authored `prokron/` directory and one
+compiled `.prokron/` directory. Only the first is authoritative.
 
-| File | Role |
+| File in `prokron/` | Role |
 |---|---|
-| `TASKS.md` | Canonical tasks, dependencies, ownership, acceptance, and evidence |
-| `TASK_GRAPH.md` | Current dependency and eligibility view derived from tasks |
-| `DECISIONS.md` | Append-only ADR history and supersession lineage |
-| `STATE.md` | Short snapshot of the project now |
+| `PHASES.md` | Phase outcome, entry, exit, exit authority, status, and gates |
+| `TASKS.md` | Canonical tasks, phase, dependencies, ownership, contract reference, and evidence |
+| `ACCEPTANCE.md` | Completion contracts, evidence classes, and change requests |
+| `ADR/` | Append-only decision history and supersession lineage, one file per ADR |
 | `INTENT.md` | Zero or one task currently being attempted |
+| `HANDOFF.md` | Current implementation continuity, overwritten each checkpoint |
 | `JOURNAL.md` | Append-only session diary and handoff history |
+
+| File in `.prokron/` | Role |
+|---|---|
+| `STATE.md` | Short snapshot of the project now |
+| `TASK_GRAPH.md` | Current dependency and eligibility view derived from tasks |
 
 The product specification records intended behavior. The chronicle records
 current project truth. When they disagree, the agent surfaces and reconciles
@@ -191,8 +201,8 @@ outside this specification.
 2. In an existing repository, initialization starts empty and records the first
    session without fabricated history.
 3. A fresh agent can recover current work, hard dependencies, governing
-   decisions, validation, unfinished work, and the exact next action from
-   `.prokron/`.
+   decisions, validation, unfinished work, and the exact next action from the
+   chronicle.
 4. A superseding decision leaves the earlier ADR intact and discoverable.
 5. A host limit or session-ending signal triggers a checkpoint; without a
    signal, milestone checkpoints preserve continuity.

@@ -1,0 +1,21 @@
+flowchart LR
+    Gate A{"Gate A<br/>Single authority ✓"}
+    Gate B{"Gate B<br/>Determinism ✓"}
+    Gate C{"Gate C<br/>Regeneration ✓"}
+    Gate D{"Gate D<br/>Record preservation ✓"}
+    Gate E{"Gate E<br/>Agent interoperability ✗"}
+    Gate P1_CONTINUITY{"Gate P1-CONTINUITY<br/>P1-CONTINUITY ✗"}
+    P0["P0 exit"]
+    P1["P1 exit"]
+    Gate D --> P1
+    Gate P1_CONTINUITY --> P1
+    P2["P2 exit"]
+    Gate A --> P2
+    Gate B --> P2
+    Gate C --> P2
+    Gate D --> P2
+    Gate E --> P2
+    classDef green fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20;
+    classDef red fill:#ffebee,stroke:#c62828,color:#8e0000;
+    class Gate A,Gate B,Gate C,Gate D green;
+    class Gate E,Gate P1_CONTINUITY red;

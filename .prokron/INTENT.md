@@ -1,3 +1,0 @@
-# Intent
-
-No active intent.

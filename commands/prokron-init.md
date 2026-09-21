@@ -1,7 +1,8 @@
 # /prokron-init
 
-Create `.prokron/` with `README.md`, `TASKS.md`, `TASK_GRAPH.md`,
-`DECISIONS.md`, `STATE.md`, `INTENT.md`, and `JOURNAL.md` if absent.
+Create `prokron/` with `README.md`, `PHASES.md`, `TASKS.md`, `ACCEPTANCE.md`,
+`ADR/`, `INTENT.md`, `HANDOFF.md`, and `JOURNAL.md` if absent, and `.prokron/`
+for compiled views.
 
 If the chronicle already contains tasks, decisions, intent, or journal entries,
 preserve them all and follow `commands/prokron-resume.md`. Neither `new` nor
@@ -10,8 +11,9 @@ records with empty templates. The entry modes below apply only to a fresh,
 empty chronicle.
 
 For a new repository, read the product specification, work with the developer on
-material ambiguity, then create the initial tasks and dependency graph. Record
-the initial product choices as ADRs.
+material ambiguity, then create the first phase, the initial tasks and their
+dependencies, and an acceptance contract for each task. Record the initial
+product choices as ADRs.
 
 For an existing repository, leave tasks and history empty. Record only work and
 decisions made from this session onward. Do not inspect the repository to invent

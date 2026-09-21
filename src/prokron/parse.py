@@ -1,0 +1,294 @@
+"""Parsers for the authored documents under prokron/.
+
+Every parser is total: it either returns typed objects or raises ParseError
+naming the file and the anchor at fault. Parsers never repair input and never
+write.
+"""
+
+from __future__ import annotations
+
+import re
+from pathlib import Path
+
+from .model import (
+    Contract,
+    Criterion,
+    Decision,
+    Gate,
+    Milestone,
+    Phase,
+    Schedule,
+    Source,
+    Task,
+)
+
+
+class ParseError(Exception):
+    def __init__(self, file: str, anchor: str, message: str) -> None:
+        super().__init__(f"{file} [{anchor}]: {message}")
+        self.file = file
+        self.anchor = anchor
+
+
+def _fields(body: str) -> dict[str, str]:
+    """Read `- Key: value` lines, joining wrapped continuation lines."""
+    fields: dict[str, str] = {}
+    key = None
+    for line in body.splitlines():
+        match = re.match(r"- ([A-Za-z][A-Za-z ]*): ?(.*)", line)
+        if match:
+            key = match.group(1).strip()
+            fields[key] = match.group(2).strip()
+        elif key and line.startswith("  ") and line.strip():
+            fields[key] = f"{fields[key]} {line.strip()}".strip()
+        elif not line.strip():
+            key = None
+    return fields
+
+
+def _list(value: str | None) -> list[str]:
+    if not value or value.strip().lower() in {"none", "—", "-"}:
+        return []
+    return [part.strip() for part in value.split(",") if part.strip()]
+
+
+def _sections(text: str, level: str) -> list[tuple[str, str]]:
+    """Split Markdown into (heading, body) pairs at one heading level.
+
+    A section ends at the next heading of the same or a higher level, so a
+    nested subsection never swallows what follows its parent.
+    """
+    depth = len(level)
+    wanted = re.compile(rf"(?m)^{level} (.+)$")
+    boundary = re.compile(r"(?m)^#{1,%d} " % depth)
+    out: list[tuple[str, str]] = []
+    for match in wanted.finditer(text):
+        following = boundary.search(text, match.end())
+        end = following.start() if following else len(text)
+        out.append((match.group(1).strip(), text[match.end() : end]))
+    return out
+
+
+def parse_tasks(path: Path) -> list[Task]:
+    name = path.name
+    tasks: list[Task] = []
+    for heading, body in _sections(path.read_text(), "##"):
+        match = re.match(r"(T-[A-Za-z0-9.\-]+): (.+)", heading)
+        if not match:
+            raise ParseError(name, heading, "task heading must read '## <ID>: <title>'")
+        task_id, title = match.group(1), match.group(2)
+        fields = _fields(body)
+        for required in ("Status", "Phase", "Validation", "Dependencies"):
+            if required not in fields:
+                raise ParseError(name, task_id, f"missing required field '{required}'")
+        schedule = Schedule()
+        if "Schedule" in fields:
+            for part in fields["Schedule"].split():
+                key, _, value = part.partition("=")
+                if key not in {"start", "end", "estimate"} or not value:
+                    raise ParseError(
+                        name, task_id, f"schedule expects start=, end=, or estimate=, got '{part}'"
+                    )
+                setattr(schedule, key, value)
+        tasks.append(
+            Task(
+                id=task_id,
+                title=title,
+                phase=fields["Phase"],
+                status=fields["Status"],
+                validation=fields["Validation"],
+                dependencies=_list(fields["Dependencies"]),
+                owner=fields.get("Owner") or None,
+                claimed=fields.get("Claimed") or None,
+                contract=fields.get("AC") or None,
+                evidence=(fields.get("Evidence") or "").strip("—").strip() or None,
+                decisions=_list(fields.get("Governed by")),
+                schedule=schedule,
+                source=Source(name, task_id),
+            )
+        )
+    return tasks
+
+
+_BULLET = re.compile(r"(?m)^(?=- `AC-[A-Za-z0-9.\-]+` — )")
+_CRITERION = re.compile(
+    r"- `(?P<id>AC-[A-Za-z0-9.\-]+)` — (?P<text>.*?)"
+    r"`(?P<cls>TEST|MUTATION|INSPECTION|RUNTIME|MANUAL)`"
+    r"(?:\s*·\s*`(?P<state>PASS|FAIL|NOT_RUN)`)?",
+    re.S,
+)
+
+
+def parse_acceptance(path: Path) -> dict[str, Contract]:
+    name = path.name
+    text = path.read_text()
+    contracts: dict[str, Contract] = {}
+
+    # Task contracts are '## AC-...'; inherited invariants are '### AC-GLOBAL-...'.
+    sections = [(h, b, "##") for h, b in _sections(text, "##")]
+    sections += [(h, b, "###") for h, b in _sections(text, "###")]
+
+    for heading, body, _level in sections:
+        match = re.match(r"(AC-[A-Za-z0-9.\-]+)(?: — (.+))?$", heading)
+        if not match:
+            continue
+        contract_id, title = match.group(1), match.group(2) or heading
+        if contract_id in contracts:
+            raise ParseError(name, contract_id, "duplicate contract")
+        inherits: list[str] = []
+        inherit_line = re.search(r"(?m)^Inherits: (.+)$", body)
+        if inherit_line:
+            inherits = re.findall(r"`(AC-[A-Za-z0-9.\-]+)`", inherit_line.group(1))
+        criteria: list[Criterion] = []
+        seen: set[str] = set()
+        # One bullet at a time. Matching across the whole body would let a
+        # criterion that is missing its evidence class swallow the criteria
+        # after it, quietly weakening the contract.
+        for bullet in _BULLET.split(body)[1:]:
+            found = _CRITERION.match(bullet)
+            if not found:
+                broken = re.match(r"- `(AC-[A-Za-z0-9.\-]+)`", bullet)
+                raise ParseError(
+                    name,
+                    broken.group(1) if broken else contract_id,
+                    "criterion has no evidence class; expected one of "
+                    "TEST, MUTATION, INSPECTION, RUNTIME, MANUAL",
+                )
+            criterion_id = found.group("id")
+            if criterion_id in seen:
+                raise ParseError(name, criterion_id, "duplicate criterion")
+            seen.add(criterion_id)
+            evidence = re.match(
+                r"\s*\n\s+- Evidence: (.+)", bullet[found.end() :]
+            )
+            criteria.append(
+                Criterion(
+                    id=criterion_id,
+                    text=" ".join(found.group("text").split()),
+                    evidence_class=found.group("cls"),
+                    state=found.group("state") or "NOT_RUN",
+                    evidence=evidence.group(1).strip() if evidence else None,
+                    source=Source(name, criterion_id),
+                )
+            )
+        note = re.search(r"(?m)^Evidence, [^:]+: (.+(?:\n(?!\n)[^\n]+)*)", body)
+        contracts[contract_id] = Contract(
+            id=contract_id,
+            title=title,
+            inherits=inherits,
+            criteria=criteria,
+            evidence=" ".join(note.group(1).split()) if note else None,
+            source=Source(name, contract_id),
+        )
+    return contracts
+
+
+def _block(body: str, label: str) -> str:
+    """Read a labelled block in either authored form.
+
+    Phases write the label on its own line and the value beneath it; gates write
+    `Label: value` inline. Both are natural to read, so both are accepted.
+    """
+    inline = re.search(rf"(?m)^{label}: (.+)$", body)
+    if inline:
+        return inline.group(1).strip()
+    match = re.search(rf"(?m)^{label}:\n((?:(?!^[A-Z][A-Za-z ]*:)[^\n]*\n?)*)", body)
+    return match.group(1).strip() if match else ""
+
+
+def _bullets(text: str) -> list[str]:
+    lines = [line.strip() for line in text.splitlines() if line.strip()]
+    return [re.sub(r"^- ", "", line) for line in lines]
+
+
+def parse_phases(path: Path) -> tuple[list[Phase], list[Gate], list[Milestone]]:
+    name = path.name
+    text = path.read_text()
+    phases: list[Phase] = []
+    gates: list[Gate] = []
+    milestones: list[Milestone] = []
+
+    for heading, body in _sections(text, "##"):
+        phase_match = re.match(r"(P[0-9]+) — (.+)", heading)
+        gate_match = re.match(r"Gate ([A-Za-z0-9\-]+)(?: — (.+))?", heading)
+        if phase_match:
+            phase_id = phase_match.group(1)
+            status = _block(body, "Status") or ""
+            if not status:
+                raise ParseError(name, phase_id, "phase has no Status block")
+            authority = _block(body, "Exit authority")
+            phases.append(
+                Phase(
+                    id=phase_id,
+                    name=phase_match.group(2).strip(),
+                    outcome=" ".join(_block(body, "Outcome").split()),
+                    entry=_bullets(_block(body, "Entry")),
+                    exit=_bullets(_block(body, "Exit")),
+                    exit_authority=authority.split()[0] if authority else None,
+                    status=status.split()[0],
+                    source=Source(name, phase_id),
+                )
+            )
+        elif gate_match:
+            gate_id = f"Gate {gate_match.group(1)}"
+            status = _block(body, "Status")
+            if not status:
+                raise ParseError(name, gate_id, "gate has no Status block")
+            description = body.strip().split("\n\n")[0].strip()
+            gates.append(
+                Gate(
+                    id=gate_id,
+                    name=gate_match.group(2) or gate_match.group(1),
+                    description=" ".join(description.split()),
+                    blocks=_list(_block(body, "Blocks")),
+                    verified_by=re.findall(
+                        r"`(AC-[A-Za-z0-9.\-]+)`", _block(body, "Verified by")
+                    ),
+                    status=status.split()[0],
+                    source=Source(name, gate_id),
+                )
+            )
+    # A milestone bullet may wrap, and the task it depends on often sits on the
+    # continuation line, so match across the whole bullet rather than one line.
+    for found in re.finditer(
+        r"(?m)^- `(M-[A-Za-z0-9\-]+)` — (.+(?:\n  (?!- ).+)*)", text
+    ):
+        task = re.search(r"(T-[A-Za-z0-9.\-]+)", found.group(2))
+        milestones.append(
+            Milestone(
+                id=found.group(1),
+                text=" ".join(found.group(2).split()),
+                task=task.group(1) if task else None,
+                source=Source(name, found.group(1)),
+            )
+        )
+    return phases, gates, milestones
+
+
+def parse_decisions(directory: Path) -> list[Decision]:
+    decisions: list[Decision] = []
+    for path in sorted(directory.glob("ADR-*.md")):
+        text = path.read_text()
+        heading = re.match(r"# (ADR-[0-9]+): (.+)", text)
+        if not heading:
+            raise ParseError(path.name, path.stem, "must start with '# ADR-NNN: <title>'")
+        fields = _fields(text)
+        if "Status" not in fields:
+            raise ParseError(path.name, heading.group(1), "missing Status")
+        decisions.append(
+            Decision(
+                id=heading.group(1),
+                title=heading.group(2).strip(),
+                status=fields["Status"],
+                supersedes=[
+                    part for part in _list(fields.get("Supersedes")) if part.startswith("ADR-")
+                ],
+                affects=_list(fields.get("Affects")),
+                source=Source(f"ADR/{path.name}", heading.group(1)),
+            )
+        )
+    return decisions
+
+
+def read_text(path: Path) -> str:
+    return path.read_text().strip() if path.exists() else ""

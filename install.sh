@@ -32,7 +32,7 @@ done
 case $0 in
   */*)
     candidate=$(CDPATH= cd "$(dirname "$0")" && pwd)
-    if [ -f "$candidate/templates/.prokron/README.md" ]; then
+    if [ -f "$candidate/templates/prokron/README.md" ]; then
       source_dir=$candidate
     fi
     ;;
@@ -61,7 +61,7 @@ if [ -z "$source_dir" ]; then
   source_dir=$1
 fi
 
-if [ ! -f "$source_dir/templates/.prokron/README.md" ]; then
+if [ ! -f "$source_dir/templates/prokron/README.md" ]; then
   echo "Downloaded Prokron source is incomplete" >&2
   exit 1
 fi
@@ -80,20 +80,21 @@ copy_new() {
   fi
 }
 
-for path in .prokron commands .claude .claude/commands .opencode .opencode/commands .agents .agents/skills .agents/skills/prokron; do
+for path in prokron prokron/ADR .prokron .prokron-runtime .prokron-runtime/prokron bin commands .claude .claude/commands .opencode .opencode/commands .agents .agents/skills .agents/skills/prokron; do
   if [ -L "$target/$path" ] || { [ -e "$target/$path" ] && [ ! -d "$target/$path" ]; }; then
     echo "Cannot install into linked or non-directory path: $target/$path" >&2
     exit 1
   fi
 done
 had_chronicle=0
-[ ! -d "$target/.prokron" ] || had_chronicle=1
-for file in README TASKS TASK_GRAPH DECISIONS STATE INTENT JOURNAL; do
-  copy_new "$source_dir/templates/.prokron/$file.md" "$target/.prokron/$file.md"
+[ ! -d "$target/prokron" ] || had_chronicle=1
+for file in README PHASES TASKS ACCEPTANCE INTENT HANDOFF JOURNAL; do
+  copy_new "$source_dir/templates/prokron/$file.md" "$target/prokron/$file.md"
 done
+copy_new "$source_dir/templates/prokron/ADR/README.md" "$target/prokron/ADR/README.md"
 # Differences in project records are expected, not an upgrade warning.
 retained=0
-cmp -s "$source_dir/templates/.prokron/README.md" "$target/.prokron/README.md" || retained=1
+cmp -s "$source_dir/templates/prokron/README.md" "$target/prokron/README.md" || retained=1
 
 for command in init work decide checkpoint resume; do
   copy_new "$source_dir/commands/prokron-$command.md" \
@@ -105,6 +106,16 @@ for command in init work decide checkpoint resume; do
 done
 copy_new "$source_dir/.agents/skills/prokron/SKILL.md" \
   "$target/.agents/skills/prokron/SKILL.md"
+
+# The runtime is code, not a record: replace it on every install so a repository
+# never runs a stale compiler against a current chronicle.
+mkdir -p "$target/.prokron-runtime/prokron" "$target/bin"
+for module in __init__ model parse validate analytics views compile mermaid dashboard cli; do
+  cp "$source_dir/src/prokron/$module.py" "$target/.prokron-runtime/prokron/$module.py"
+done
+cp "$source_dir/VERSION" "$target/.prokron-runtime/VERSION"
+cp "$source_dir/bin/prokron" "$target/bin/prokron"
+chmod +x "$target/bin/prokron"
 
 if [ ! -f "$target/AGENTS.md" ]; then
   cp "$source_dir/AGENTS.md" "$target/AGENTS.md"

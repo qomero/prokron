@@ -113,7 +113,7 @@ For a **new project**, replace `existing` with `new` and bring your product spec
 The repository is currently private, so this command requires an authenticated
 [GitHub CLI](https://cli.github.com/) with repository access.
 
-The installer adds `.prokron/`, shared instructions, portable workflows, and
+The installer adds `prokron/`, shared instructions, portable workflows, and
 command files for Codex, Claude Code, and OpenCode. It preserves existing
 records and custom instructions, restores missing files, and prints what to run
 in your agent chat.
@@ -161,21 +161,70 @@ the saved chronicle.
 
 ## What lives in the chronicle
 
-The **task graph** and **decision history** are the core. Four supporting
-records connect purpose and history to what is actually happening.
+Two directories, and only one of them is authoritative.
 
-| File in `.prokron/` | What it preserves |
+```text
+prokron/     written by people and agents; the only source of truth
+.prokron/    generated views; safe to delete and rebuild
+```
+
+The **decision history** and the **completion contracts** are the core. The rest
+connects purpose and history to what is actually happening.
+
+| File in `prokron/` | What it preserves |
 |---|---|
-| **`TASK_GRAPH.md`** | The path forward: dependencies, ready work, and blockers. |
-| **`DECISIONS.md`** | The reasoning: append-only ADRs and their supersession chain. |
-| `TASKS.md` | The work: owners, acceptance criteria, status, and evidence. |
-| `STATE.md` | The present: project purpose, position, risks, and next steps. |
+| **`ADR/`** | The reasoning: append-only decisions and their supersession chain. |
+| **`ACCEPTANCE.md`** | The bar: what must be demonstrated before work counts as done. |
+| `PHASES.md` | The arc: maturity stages, their exit conditions, and gates. |
+| `TASKS.md` | The work: phase, owners, dependencies, status, and evidence. |
 | `INTENT.md` | The focus: zero or one active task and its exact execution point. |
+| `HANDOFF.md` | The baton: what the next person or agent needs right now. |
 | `JOURNAL.md` | The diary: progress, validation, unfinished work, and handoffs. |
 
-See the [chronicle guide](.prokron/README.md) for the read order, or
-[Prokron's own task graph](.prokron/TASK_GRAPH.md) and
-[decision history](.prokron/DECISIONS.md) for a real example.
+`.prokron/` holds generated views: a state snapshot, the task graph, a
+`project.json`, Mermaid diagrams, and a dashboard. Delete the whole directory
+and `prokron compile` rebuilds it byte for byte.
+
+## Asking the project questions
+
+The installer ships a small tool — standard-library Python, no dependencies, no
+package to install — that compiles the chronicle and answers from it. Nothing it
+reports involves a model, so two agents reading the same project get the same
+answer.
+
+```console
+$ ./bin/prokron status
+Prokron — phase P2
+  tasks        37 / 39
+  acceptance   83 / 88 criteria passing
+  validation   16 / 39 reviewed or verified
+  gates        4 / 6 green
+  P0           14 / 14 · COMPLETE
+  P1           9 / 9 · EXIT_PENDING
+  P2           14 / 16 · ACTIVE
+  WIP       none
+  Ready     T-P2-13
+  Blocked   T-P2-14
+  Next      T-P2-13 (critical path)
+```
+
+| Command | Answers |
+|---|---|
+| `prokron status` | Where the project stands, what is ready, what blocks it. |
+| `prokron explain <task>` | Why one task exists, its criteria, blockers, and evidence. |
+| `prokron context <task>` | The minimal packet an agent needs to start that task. |
+| `prokron validate` | Broken dependencies, dangling references, unmet contracts. |
+| `prokron compile` | Rebuilds `.prokron/` from the authored documents. |
+| `prokron dashboard` | A local page: phases, gates, obstacles, critical path, drill-down. |
+
+A task is not done because someone says it is done. It is done when its frozen
+contract has enough evidence — which is what makes two agents disagreeing about
+it a decidable question instead of an argument.
+
+See the [chronicle guide](prokron/README.md) for the read order, or
+[Prokron's own task graph](.prokron/TASK_GRAPH.md),
+[contracts](prokron/ACCEPTANCE.md), and
+[decision history](prokron/ADR/) for a real example.
 
 ## Commands
 
@@ -227,6 +276,12 @@ with your chosen host and model. Run the installer checks from this checkout:
 sh tests/install.sh
 ```
 
+## Releases
+
+`VERSION` holds the current release and [`CHANGELOG.md`](CHANGELOG.md) summarises
+what changed. The full history lives in the chronicle itself:
+[decisions](prokron/ADR/) and [journal](prokron/JOURNAL.md).
+
 ## Updating an installation
 
 Reinstalling adds missing files; it **does not upgrade existing guidance**.
@@ -235,10 +290,10 @@ review and merge changes to:
 
 - `commands/`, `.claude/commands/`, and `.opencode/commands/`;
 - `.agents/skills/prokron/SKILL.md`;
-- `templates/.prokron/README.md`, installed as `.prokron/README.md`;
+- `templates/prokron/README.md`, installed as `prokron/README.md`;
 - the Prokron block in `AGENTS.md`, preserving surrounding project rules.
 
-Keep customizations and all six chronicle records. Never copy empty templates
+Keep customizations and every chronicle record. Never copy empty templates
 over project history.
 
 ## Help improve the workflow
