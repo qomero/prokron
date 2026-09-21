@@ -419,23 +419,25 @@
 - Governed by: ADR-013
 
 ## T-P2-13: Compile agent context packets
-- Status: TODO
+- Status: DONE
 - Phase: P2
-- Validation: UNTESTED
+- Validation: AI_REVIEWED
 - Dependencies: T-P2-09
-- Owner: unassigned
+- Owner: claude/primary
+- Claimed: 2026-09-21
 - AC: AC-T-P2-13
-- Evidence: —
+- Evidence: Cold start tested against the Codex CLI with no repository. The first run refused and exposed that packets carried project narrative about other tasks, disproving AC-T-P2-13-02 as recorded; packets were scoped to their own task under ADR-018. The retry answered "CAN I START: yes" and "nothing to begin", restating the task, its criteria, invariants, dependency state and first actions from a 2.6 KB packet alone. 91 tests pass.
 - Governed by: ADR-013
 
 ## T-P2-14: Prove regeneration and close Phase 2
-- Status: TODO
+- Status: DONE
 - Phase: P2
-- Validation: UNTESTED
+- Validation: AI_REVIEWED
 - Dependencies: T-P2-12, T-P2-13
-- Owner: unassigned
+- Owner: claude/primary
+- Claimed: 2026-09-21
 - AC: AC-T-P2-14
-- Evidence: —
+- Evidence: Regeneration and authority resolution are asserted against the real chronicle, not a fixture. Gate E was run for real: Codex and Claude each audited the same scheduling implementation against the same reviewer packet. Round one produced a genuine disagreement — Codex returned ACCEPTANCE_FAILURE on AC-T-P2-12-01 where Claude had recorded PASS — settled at level 5 of the arbitration hierarchy by rendering both Gantt variants in headless Chrome, which showed unscheduled work inheriting a date. The defect was real and is fixed. Round two: both agents PASS all three criteria with no blocking findings, differing only in non-blocking preference. Definition-of-done sweep passes all ten items. 91 tests and the installer suite pass.
 - Governed by: ADR-013, ADR-014
 
 ## T-P2-AUDIT-01: Audit the Phase 2 runtime before release

@@ -4,10 +4,9 @@
 
 ## Summary
 
-- TODO: T-P2-13, T-P2-14
-- DONE: T-V01-01, T-V01-02, T-V01-03, T-V01-04, T-V01-05, T-V01-06, T-V011-01, T-V011-02, T-V02-01, T-V02-02, T-V02-03, T-V02-04, T-HARNESS-01, T-HARNESS-02, T-WORKFLOW-01, T-DOCS-01, T-INSTALL-01, T-HOSTS-01, T-CLEANUP-01, T-CONTINUITY-01, T-READINESS-01, T-DOCS-02, T-DOCS-03, T-REMOTE-01, T-GIT-NAME-01, T-P2-PLAN-01, T-P2-01, T-P2-02, T-P2-03, T-P2-04, T-P2-05, T-P2-06, T-P2-07, T-P2-08, T-P2-09, T-P2-10, T-P2-11, T-P2-12, T-P2-AUDIT-01
-- Eligible now: T-P2-13
-- Waiting: T-P2-14
+- DONE: T-V01-01, T-V01-02, T-V01-03, T-V01-04, T-V01-05, T-V01-06, T-V011-01, T-V011-02, T-V02-01, T-V02-02, T-V02-03, T-V02-04, T-HARNESS-01, T-HARNESS-02, T-WORKFLOW-01, T-DOCS-01, T-INSTALL-01, T-HOSTS-01, T-CLEANUP-01, T-CONTINUITY-01, T-READINESS-01, T-DOCS-02, T-DOCS-03, T-REMOTE-01, T-GIT-NAME-01, T-P2-PLAN-01, T-P2-01, T-P2-02, T-P2-03, T-P2-04, T-P2-05, T-P2-06, T-P2-07, T-P2-08, T-P2-09, T-P2-10, T-P2-11, T-P2-12, T-P2-13, T-P2-14, T-P2-AUDIT-01
+- Eligible now: none
+- Waiting: none
 
 ## Tasks
 
@@ -201,12 +200,12 @@
   - depends on: T-P2-11
   - unlocks: T-P2-14, T-P2-AUDIT-01
   - eligible: no
-- T-P2-13 [TODO] Compile agent context packets
+- T-P2-13 [DONE] Compile agent context packets
   - phase: P2
   - depends on: T-P2-09
   - unlocks: T-P2-14
-  - eligible: yes
-- T-P2-14 [TODO] Prove regeneration and close Phase 2
+  - eligible: no
+- T-P2-14 [DONE] Prove regeneration and close Phase 2
   - phase: P2
   - depends on: T-P2-12, T-P2-13
   - unlocks: none

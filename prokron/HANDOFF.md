@@ -5,31 +5,30 @@ the next person or agent needs in order to continue right now. Closed history
 belongs in `JOURNAL.md`.
 
 ## Position
-- Release 0.2.0, merged to `main`.
-- Phase P2 active: 14 of 16 tasks done, 4 of 6 gates green.
-- Nothing in flight. Run `./bin/prokron status` for the numbers.
+- Release 0.2.1. Phase P2 is `EXIT_PENDING`: all 16 tasks done, all its gates
+  green. Accepting the exit is the owner's call, not a computation.
+- Nothing in flight. 39 of 39 tasks done, 88 of 88 criteria passing.
 
 ## What is true now
-- Authority is `prokron/`. `.prokron/` is generated in full and safe to delete.
-- The runtime compiles, validates, reports, renders, and explains the project
-  with no model provider and no network. 80 unit tests plus the installer suite.
-- The runtime was audited before release. Seven defects were found and fixed,
-  each with a regression test; see `AC-T-P2-AUDIT-01`.
-- Gates A, B, C, and D are green on recorded evidence.
+- Gate E is green on real evidence, not assertion. Codex and Claude audited the
+  same implementation against the same reviewer packet. They disagreed on one
+  criterion; rendering both Gantt variants in a browser settled it at level 5 of
+  the arbitration hierarchy, and the defect Codex found was real.
+- A cold agent starts from a packet alone. Verified against Codex with no
+  repository access, and the first, failed attempt is kept as the control.
+- Gates A, B, C, D, E green. Only Gate P1-CONTINUITY is red.
 
 ## What is not done
-- `AC-T-P2-13-03` is `MANUAL`: whether a cold agent can start from a context
-  packet alone is unproven. T-P2-13 stays open because of it.
-- T-P2-14 needs the two-agent audit behind Gate E, then the definition-of-done
-  sweep. The regeneration half is already evidenced.
-- Gate P1-CONTINUITY has never been attempted. P1 cannot exit until it is.
+- **Gate P1-CONTINUITY.** The pilot in `docs/SPEC.md` has never run. It needs a
+  real multi-session run in a real project, observing whether the chronicle is
+  maintained without explicit commands, whether checkpoints fire before actual
+  limits, and whether a person and an agent reach the same understanding. No
+  test substitutes for it. P1 cannot exit until it does.
 - The README banner and Mermaid diagram still depict the six-file chronicle.
 - `.prokron/` is committed so the README can link to it as a live example. That
-  puts a ~120 KB dashboard and a ~100 KB JSON in every diff that touches
-  authority. Reversible either way; nobody has decided.
+  puts a large dashboard and JSON in every diff touching authority. Nobody has
+  decided whether to keep it that way.
 
 ## Next action
-T-P2-13, then T-P2-14. For Gate E, hand one task's `prokron context` packet to a
-second agent, have it audit an implementation against that contract, and record
-what the two agents disagreed about and which level of the arbitration hierarchy
-settled it.
+Run the continuity pilot, or accept the P2 exit and open P3. Both are decisions
+for the owner rather than work an agent should start on its own.

@@ -308,6 +308,17 @@ def explain(project: Project, task_id: str) -> dict[str, object]:
     }
 
 
+def _relevant(narrative: str, task_id: str) -> str | None:
+    """Return project narrative only when it actually concerns this task.
+
+    `INTENT.md` and `HANDOFF.md` describe whatever is in flight, which is
+    usually something else. Pasting them into every packet hands the reader
+    statements that contradict the task it was given, and a cold agent cannot
+    tell which to believe. Silence is better than a confident irrelevance.
+    """
+    return narrative if narrative and task_id in narrative else None
+
+
 def context(project: Project, task_id: str, role: str = "builder") -> dict[str, object]:
     """The minimal packet an agent needs to start work on one task."""
     task = project.task(task_id)
@@ -315,9 +326,12 @@ def context(project: Project, task_id: str, role: str = "builder") -> dict[str, 
         raise KeyError(task_id)
     contract = project.contracts.get(task.contract or "")
     phase = project.phase(task.phase)
+    report_now = report(project)
+    blockers = [o.as_json() for o in report_now.obstacles if o.subject == task_id]
     packet: dict[str, object] = {
         "role": role,
-        "intent": project.intent,
+        "packetFor": task_id,
+        "intent": _relevant(project.intent, task_id),
         "phase": (
             {"id": phase.id, "outcome": phase.outcome, "status": phase.status}
             if phase
@@ -327,8 +341,19 @@ def context(project: Project, task_id: str, role: str = "builder") -> dict[str, 
             "id": task.id,
             "title": task.title,
             "status": task.status,
-            "dependencies": task.dependencies,
+            "validation": task.validation,
+            "dependencies": [
+                {
+                    "id": dependency,
+                    "done": bool(
+                        project.task(dependency) and project.task(dependency).done
+                    ),
+                }
+                for dependency in task.dependencies
+            ],
+            "closed": task.done,
         },
+        "blockers": blockers,
         "acceptance": [
             {"id": c.id, "text": c.text, "class": c.evidence_class, "state": c.state}
             for c in (contract.criteria if contract else [])
@@ -343,8 +368,13 @@ def context(project: Project, task_id: str, role: str = "builder") -> dict[str, 
             if d.id in task.decisions
         ],
         "evidence": task.evidence,
-        "handoff": project.handoff,
+        "handoff": _relevant(project.handoff, task_id),
     }
+    if task.done:
+        packet["note"] = (
+            f"{task.id} is already DONE. This packet is for review or audit, "
+            "not for fresh implementation."
+        )
     if role == "reviewer":
         packet["findingClasses"] = {
             "blocking": [

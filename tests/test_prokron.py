@@ -372,6 +372,34 @@ class TestAnalytics(FixtureCase):
         self.assertEqual(packet["decisions"][0]["id"], "ADR-001")
         self.assertNotIn("findingClasses", packet)
 
+    def test_a_packet_omits_narrative_about_other_work(self) -> None:
+        """A cold agent cannot tell which of two contradicting statements to believe."""
+        (self.root / "prokron" / "INTENT.md").write_text("# Intent\n\nTask: T-ONE, in flight.\n")
+        (self.root / "prokron" / "HANDOFF.md").write_text("# Handoff\n\nT-ONE is half built.\n")
+        project = compiler.load(self.root)
+        about_other = analytics.context(project, "T-TWO")
+        self.assertIsNone(about_other["intent"])
+        self.assertIsNone(about_other["handoff"])
+        about_this = analytics.context(project, "T-ONE")
+        self.assertIn("T-ONE", about_this["intent"])
+        self.assertIn("T-ONE", about_this["handoff"])
+
+    def test_a_packet_says_which_task_it_is_for(self) -> None:
+        packet = analytics.context(self.project, "T-TWO")
+        self.assertEqual(packet["packetFor"], "T-TWO")
+        self.assertFalse(packet["task"]["closed"])
+        self.assertNotIn("note", packet)
+
+    def test_a_packet_for_closed_work_says_so(self) -> None:
+        packet = analytics.context(self.project, "T-ONE")
+        self.assertTrue(packet["task"]["closed"])
+        self.assertIn("already DONE", packet["note"])
+
+    def test_a_packet_states_dependency_readiness_and_blockers(self) -> None:
+        packet = analytics.context(self.project, "T-THREE")
+        self.assertEqual(packet["task"]["dependencies"], [{"id": "T-TWO", "done": False}])
+        self.assertEqual(packet["blockers"][0]["type"], "DEPENDENCY_BLOCKER")
+
     def test_reviewer_packet_adds_finding_classes(self) -> None:
         packet = analytics.context(self.project, "T-TWO", role="reviewer")
         self.assertIn("ACCEPTANCE_FAILURE", packet["findingClasses"]["blocking"])
@@ -383,6 +411,10 @@ class TestAnalytics(FixtureCase):
 
 
 class TestCompile(FixtureCase):
+    def test_a_phase_awaiting_exit_is_still_the_current_phase(self) -> None:
+        self.rewrite("PHASES.md", "Status:\nACTIVE", "Status:\nEXIT_PENDING")
+        self.assertEqual(self.project.current_phase, "P1")
+
     def test_shape_and_provenance(self) -> None:
         compiled = compiler.as_json(self.project)
         for key in (
@@ -464,7 +496,23 @@ class TestRenderers(FixtureCase):
         gantt = mermaid.calendar_gantt(self.project, self.report)
         self.assertIn("T-THREE : 2026-10-01, 3d", gantt)
         self.assertNotIn("T-TWO :", gantt)
-        self.assertIn("without schedule metadata", gantt)
+        self.assertIn("1 unscheduled task not shown", gantt)
+
+    def test_unscheduled_work_never_gets_a_row_on_the_calendar(self) -> None:
+        """A dateless Mermaid entry inherits the previous one's end date."""
+        gantt = mermaid.calendar_gantt(self.project, self.report)
+        rows = [line for line in gantt.splitlines() if " : " in line]
+        self.assertEqual(rows, ["    T-THREE : 2026-10-01, 3d"])
+        self.assertNotIn("milestone", gantt)
+
+    def test_with_nothing_scheduled_no_date_axis_is_drawn_at_all(self) -> None:
+        self.rewrite("TASKS.md", "- Schedule: start=2026-10-01 estimate=3d\n", "")
+        report = analytics.report(self.project)
+        gantt = mermaid.calendar_gantt(self.project, report)
+        self.assertTrue(gantt.startswith("flowchart"))
+        self.assertNotIn("dateFormat", gantt)
+        self.assertNotIn("milestone", gantt)
+        self.assertIn("No task carries schedule metadata", gantt)
 
     def test_rendering_is_deterministic(self) -> None:
         first = mermaid.render_all(self.project, self.report)
@@ -715,6 +763,74 @@ class TestCli(FixtureCase):
     def test_parse_error_is_reported_not_raised(self) -> None:
         (self.root / "prokron" / "TASKS.md").write_text("# Tasks\n\n## broken\n")
         self.assertEqual(cli.main(["-C", str(self.root), "status"]), 1)
+
+
+class TestThisRepository(unittest.TestCase):
+    """Prokron's own chronicle is the acceptance evidence for Phase 2 closure.
+
+    A fixture proves the code works. These prove it works on the real project,
+    which is what the Phase 2 definition of done actually claims.
+    """
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.root = Path(__file__).resolve().parents[1]
+        cls.project = compiler.load(cls.root)
+        cls.report = analytics.report(cls.project)
+
+    def test_authority_is_consistent(self) -> None:
+        self.assertEqual(
+            [f.render() for f in validate.errors(validate.check(self.project))], []
+        )
+
+    def test_every_task_resolves_to_a_contract(self) -> None:
+        for task in self.project.tasks:
+            with self.subTest(task=task.id):
+                self.assertIsNotNone(task.contract, f"{task.id} has no AC reference")
+                self.assertIn(task.contract, self.project.contracts)
+                self.assertTrue(
+                    self.project.contracts[task.contract].criteria,
+                    f"{task.contract} states no criteria",
+                )
+
+    def test_every_task_belongs_to_a_known_phase(self) -> None:
+        known = {phase.id for phase in self.project.phases} | {"P-NONE"}
+        for task in self.project.tasks:
+            with self.subTest(task=task.id):
+                self.assertIn(task.phase, known)
+
+    def test_every_done_task_has_its_criteria_met(self) -> None:
+        for task in self.project.tasks:
+            if not task.done:
+                continue
+            unmet = analytics.unmet(self.project, task)
+            with self.subTest(task=task.id):
+                self.assertEqual(unmet, [], f"{task.id} is DONE with unmet criteria")
+
+    def test_deleting_compiled_state_reproduces_it_exactly(self) -> None:
+        with tempfile.TemporaryDirectory() as workspace:
+            copy = Path(workspace) / "repo"
+            shutil.copytree(
+                self.root / "prokron", copy / "prokron", dirs_exist_ok=False
+            )
+            project = compiler.load(copy)
+            report = analytics.report(project)
+            first = {"project.json": compiler.write(copy, project).read_bytes()}
+            for name, text in mermaid.render_all(project, report).items():
+                first[name] = text.encode()
+            for name, text in views.render_all(project, report).items():
+                first[name] = text.encode()
+
+            shutil.rmtree(copy / ".prokron")
+            rebuilt = compiler.load(copy)
+            rebuilt_report = analytics.report(rebuilt)
+            second = {"project.json": compiler.write(copy, rebuilt).read_bytes()}
+            for name, text in mermaid.render_all(rebuilt, rebuilt_report).items():
+                second[name] = text.encode()
+            for name, text in views.render_all(rebuilt, rebuilt_report).items():
+                second[name] = text.encode()
+
+            self.assertEqual(first, second)
 
 
 class TestNoNetworkOrDependencies(unittest.TestCase):

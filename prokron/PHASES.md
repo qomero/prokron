@@ -139,7 +139,13 @@ Exit authority:
 T-P2-14
 
 Status:
-ACTIVE
+EXIT_PENDING
+
+Note:
+Every exit criterion is met and T-P2-14 is DONE. Gate D also blocks P1, which
+has never run its continuity pilot, so the two phases are recorded separately:
+P2's own conditions are satisfied. The phase becomes COMPLETE when the owner
+accepts the exit, which is a decision rather than a computation.
 
 ---
 
@@ -207,7 +213,15 @@ same work against the same completion contract.
 
 Blocks: P2 exit
 Verified by: `AC-T-P2-14-03`
-Status: RED
+Status: GREEN
+
+Evidence, 2026-09-21: Codex and Claude each audited the same scheduling
+implementation against the same reviewer packet, with no repository access.
+They disagreed on one criterion in round one; the disagreement was settled at
+level 5 of the arbitration hierarchy by rendering both Gantt variants in a
+browser, and the defect Codex found was real. In round two both returned the
+same three verdicts and no blocking findings, differing only in non-blocking
+preference. A cold agent also started work from a packet alone.
 
 ## Gate P1-CONTINUITY
 

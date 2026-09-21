@@ -56,8 +56,13 @@ def load(root: Path) -> Project:
         intent=read_text(authority / "INTENT.md"),
         handoff=read_text(authority / "HANDOFF.md"),
     )
-    active = [p for p in project.phases if p.status == "ACTIVE"]
-    project.current_phase = active[0].id if active else None
+    # A phase whose work is finished but whose exit has not been accepted is
+    # still where the project stands. Reporting "none" would lose that.
+    for status in ("ACTIVE", "EXIT_PENDING"):
+        standing = [phase for phase in project.phases if phase.status == status]
+        if standing:
+            project.current_phase = standing[-1].id
+            break
     return project
 
 

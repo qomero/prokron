@@ -2,5 +2,5 @@
 
 No active intent.
 
-Next task: T-P2-13 Compile agent context packets — only its `MANUAL` criterion
-remains, and it needs a real session rather than a test.
+Phase 2 is complete and awaiting exit acceptance. The only open work in the
+project is Gate P1-CONTINUITY, which needs a real multi-session pilot.

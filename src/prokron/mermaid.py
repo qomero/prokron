@@ -156,16 +156,31 @@ def dependency_timeline(project: Project, report: Report) -> str:
 
 
 def calendar_gantt(project: Project, report: Report) -> str:
-    """Dates only where real metadata exists. Nothing here is inferred."""
-    lines = ["gantt", "    title Scheduled work", "    dateFormat YYYY-MM-DD"]
+    """Dates only where real metadata exists. Nothing here is inferred.
+
+    Unscheduled work is counted in the title and never given a row. A Mermaid
+    task or milestone without an explicit date inherits the previous entry's
+    end date, so putting unscheduled work on this chart would hand it a
+    calendar position it has not earned — the exact fabrication this pair of
+    renderers exists to prevent.
+    """
+    unscheduled = len(report.unscheduled)
+    tail = (
+        f" ({unscheduled} unscheduled "
+        f"{'task' if unscheduled == 1 else 'tasks'} not shown)"
+        if unscheduled
+        else ""
+    )
     if not report.scheduled:
-        lines.append("    section Unscheduled")
-        lines.append(
-            f"    {len(report.unscheduled)} open "
-            f"{'task has' if len(report.unscheduled) == 1 else 'tasks have'} "
-            "no schedule metadata : milestone, 0d"
+        # A gantt with no dated rows would still draw a date axis, so say it
+        # in a diagram that has no axis at all.
+        return (
+            "flowchart LR\n"
+            f'    none["No task carries schedule metadata.<br/>'
+            f'{unscheduled} open {"task is" if unscheduled == 1 else "tasks are"} '
+            'unscheduled."]\n'
         )
-        return "\n".join(lines) + "\n"
+    lines = ["gantt", f"    title Scheduled work{tail}", "    dateFormat YYYY-MM-DD"]
     by_phase: dict[str, list[dict[str, str]]] = {}
     for entry in report.scheduled:
         task = project.task(entry["id"])
@@ -173,15 +188,8 @@ def calendar_gantt(project: Project, report: Report) -> str:
     for phase_id, entries in by_phase.items():
         lines.append(f"    section {phase_id}")
         for entry in entries:
-            tail = entry.get("end") or entry.get("estimate")
-            lines.append(f"    {entry['id']} : {entry['start']}, {tail}")
-    if report.unscheduled:
-        lines.append("    section Unscheduled")
-        lines.append(
-            f"    {len(report.unscheduled)} "
-            f"{'task' if len(report.unscheduled) == 1 else 'tasks'} "
-            "without schedule metadata : milestone, 0d"
-        )
+            end_or_estimate = entry.get("end") or entry.get("estimate")
+            lines.append(f"    {entry['id']} : {entry['start']}, {end_or_estimate}")
     return "\n".join(lines) + "\n"
 
 

@@ -74,11 +74,11 @@
         "Gate A, Gate B, Gate C, Gate D, and Gate E."
       ],
       "exitAuthority": "T-P2-14",
-      "status": "ACTIVE",
+      "status": "EXIT_PENDING",
       "progress": {
-        "done": 14,
+        "done": 16,
         "total": 16,
-        "fraction": 0.875
+        "fraction": 1.0
       },
       "source": {
         "file": "PHASES.md",
@@ -1110,8 +1110,8 @@
       "id": "T-P2-13",
       "title": "Compile agent context packets",
       "phase": "P2",
-      "status": "TODO",
-      "validation": "UNTESTED",
+      "status": "DONE",
+      "validation": "AI_REVIEWED",
       "deps": [
         "T-P2-09"
       ],
@@ -1119,14 +1119,14 @@
         "T-P2-14"
       ],
       "ac": "AC-T-P2-13",
-      "owner": "unassigned",
-      "claimed": null,
-      "evidence": null,
+      "owner": "claude/primary",
+      "claimed": "2026-09-21",
+      "evidence": "Cold start tested against the Codex CLI with no repository. The first run refused and exposed that packets carried project narrative about other tasks, disproving AC-T-P2-13-02 as recorded; packets were scoped to their own task under ADR-018. The retry answered \"CAN I START: yes\" and \"nothing to begin\", restating the task, its criteria, invariants, dependency state and first actions from a 2.6 KB packet alone. 91 tests pass.",
       "decisions": [
         "ADR-013"
       ],
       "schedule": null,
-      "ready": true,
+      "ready": false,
       "blocked": false,
       "source": {
         "file": "TASKS.md",
@@ -1137,24 +1137,24 @@
       "id": "T-P2-14",
       "title": "Prove regeneration and close Phase 2",
       "phase": "P2",
-      "status": "TODO",
-      "validation": "UNTESTED",
+      "status": "DONE",
+      "validation": "AI_REVIEWED",
       "deps": [
         "T-P2-12",
         "T-P2-13"
       ],
       "blocks": [],
       "ac": "AC-T-P2-14",
-      "owner": "unassigned",
-      "claimed": null,
-      "evidence": null,
+      "owner": "claude/primary",
+      "claimed": "2026-09-21",
+      "evidence": "Regeneration and authority resolution are asserted against the real chronicle, not a fixture. Gate E was run for real: Codex and Claude each audited the same scheduling implementation against the same reviewer packet. Round one produced a genuine disagreement \u2014 Codex returned ACCEPTANCE_FAILURE on AC-T-P2-12-01 where Claude had recorded PASS \u2014 settled at level 5 of the arbitration hierarchy by rendering both Gantt variants in headless Chrome, which showed unscheduled work inheriting a date. The defect was real and is fixed. Round two: both agents PASS all three criteria with no blocking findings, differing only in non-blocking preference. Definition-of-done sweep passes all ten items. 91 tests and the installer suite pass.",
       "decisions": [
         "ADR-013",
         "ADR-014"
       ],
       "schedule": null,
       "ready": false,
-      "blocked": true,
+      "blocked": false,
       "source": {
         "file": "TASKS.md",
         "anchor": "T-P2-14"
@@ -2018,8 +2018,8 @@
         {
           "id": "AC-T-P2-13-03",
           "text": "Given an agent with no repository knowledge, When it receives a packet, Then it can begin the task without rescanning the repository.",
-          "evidenceClass": "MANUAL",
-          "state": "NOT_RUN",
+          "evidenceClass": "RUNTIME",
+          "state": "PASS",
           "evidence": null,
           "source": {
             "file": "ACCEPTANCE.md",
@@ -2044,7 +2044,7 @@
           "id": "AC-T-P2-14-01",
           "text": "Given a populated project, When `.prokron/` is deleted and rebuilt, Then the derived logical state is reproduced.",
           "evidenceClass": "TEST",
-          "state": "NOT_RUN",
+          "state": "PASS",
           "evidence": null,
           "source": {
             "file": "ACCEPTANCE.md",
@@ -2055,7 +2055,7 @@
           "id": "AC-T-P2-14-02",
           "text": "Given every task, When its completion authority is resolved, Then it reaches an explicit contract and a known phase.",
           "evidenceClass": "TEST",
-          "state": "NOT_RUN",
+          "state": "PASS",
           "evidence": null,
           "source": {
             "file": "ACCEPTANCE.md",
@@ -2065,8 +2065,8 @@
         {
           "id": "AC-T-P2-14-03",
           "text": "Given two different coding agents, When each receives the same context packet and audits the same implementation, Then both report against the same contract and their disagreement resolves through the arbitration hierarchy.",
-          "evidenceClass": "MANUAL",
-          "state": "NOT_RUN",
+          "evidenceClass": "RUNTIME",
+          "state": "PASS",
           "evidence": null,
           "source": {
             "file": "ACCEPTANCE.md",
@@ -2077,7 +2077,7 @@
           "id": "AC-T-P2-14-04",
           "text": "Given the Phase 2 definition of done, When each item is checked, Then acceptance, phase awareness, authority, compilation, validation, project management, visualization, scheduling, agent interoperability, and regeneration are each demonstrated.",
           "evidenceClass": "INSPECTION",
-          "state": "NOT_RUN",
+          "state": "PASS",
           "evidence": null,
           "source": {
             "file": "ACCEPTANCE.md",
@@ -2845,7 +2845,7 @@
       "verifiedBy": [
         "AC-T-P2-14-03"
       ],
-      "status": "RED",
+      "status": "GREEN",
       "source": {
         "file": "PHASES.md",
         "anchor": "Gate E"
@@ -3150,17 +3150,22 @@
         "file": "ADR/ADR-017.md",
         "anchor": "ADR-017"
       }
+    },
+    {
+      "id": "ADR-018",
+      "title": "Scope a context packet to its own task",
+      "status": "ACCEPTED",
+      "supersedes": [],
+      "affects": [
+        "T-P2-13"
+      ],
+      "source": {
+        "file": "ADR/ADR-018.md",
+        "anchor": "ADR-018"
+      }
     }
   ],
   "obstacles": [
-    {
-      "type": "DEPENDENCY_BLOCKER",
-      "subject": "T-P2-14",
-      "blockers": [
-        "T-P2-13"
-      ],
-      "detail": "T-P2-14 waits on T-P2-13"
-    },
     {
       "type": "GATE_BLOCKER",
       "subject": "P1",
@@ -3168,41 +3173,18 @@
         "Gate P1-CONTINUITY"
       ],
       "detail": "P1 cannot exit while Gate P1-CONTINUITY is red"
-    },
-    {
-      "type": "GATE_BLOCKER",
-      "subject": "P2",
-      "blockers": [
-        "Gate E"
-      ],
-      "detail": "P2 cannot exit while Gate E is red"
-    },
-    {
-      "type": "PHASE_BLOCKER",
-      "subject": "P2",
-      "blockers": [
-        "T-P2-13",
-        "T-P2-14"
-      ],
-      "detail": "P2 has 2 unfinished tasks"
     }
   ],
-  "criticalPath": [
-    "T-P2-13",
-    "T-P2-14"
-  ],
+  "criticalPath": [],
   "schedule": {
     "scheduled": [],
-    "unscheduled": [
-      "T-P2-13",
-      "T-P2-14"
-    ]
+    "unscheduled": []
   },
   "metrics": {
     "taskCompletion": {
-      "done": 37,
+      "done": 39,
       "total": 39,
-      "fraction": 0.9487
+      "fraction": 1.0
     },
     "phaseCompletion": {
       "P0": {
@@ -3216,51 +3198,45 @@
         "fraction": 1.0
       },
       "P2": {
-        "done": 14,
+        "done": 16,
         "total": 16,
-        "fraction": 0.875
+        "fraction": 1.0
       }
     },
     "criticalPathCompletion": {
       "done": 0,
-      "total": 2,
+      "total": 0,
       "fraction": 0.0
     },
     "validationCoverage": {
-      "done": 16,
+      "done": 18,
       "total": 39,
-      "fraction": 0.4103
+      "fraction": 0.4615
     },
     "gateReadiness": {
-      "done": 4,
+      "done": 5,
       "total": 6,
-      "fraction": 0.6667
+      "fraction": 0.8333
     },
     "acceptanceCompletion": {
-      "done": 83,
+      "done": 88,
       "total": 88,
-      "fraction": 0.9432
+      "fraction": 1.0
     },
     "validationBreakdown": {
       "SYNTHETIC": 23,
-      "AI_REVIEWED": 16,
-      "UNTESTED": 2
+      "AI_REVIEWED": 18
     },
     "statusBreakdown": {
-      "DONE": 39,
-      "TODO": 2
+      "DONE": 41
     }
   },
-  "ready": [
-    "T-P2-13"
-  ],
-  "blocked": [
-    "T-P2-14"
-  ],
+  "ready": [],
+  "blocked": [],
   "wip": [],
   "handoff": {
-    "intent": "# Intent\n\nNo active intent.\n\nNext task: T-P2-13 Compile agent context packets \u2014 only its `MANUAL` criterion\nremains, and it needs a real session rather than a test.",
-    "handoff": "# Handoff\n\nCurrent implementation continuity. Overwritten, never appended. It holds what\nthe next person or agent needs in order to continue right now. Closed history\nbelongs in `JOURNAL.md`.\n\n## Position\n- Release 0.2.0, merged to `main`.\n- Phase P2 active: 14 of 16 tasks done, 4 of 6 gates green.\n- Nothing in flight. Run `./bin/prokron status` for the numbers.\n\n## What is true now\n- Authority is `prokron/`. `.prokron/` is generated in full and safe to delete.\n- The runtime compiles, validates, reports, renders, and explains the project\n  with no model provider and no network. 80 unit tests plus the installer suite.\n- The runtime was audited before release. Seven defects were found and fixed,\n  each with a regression test; see `AC-T-P2-AUDIT-01`.\n- Gates A, B, C, and D are green on recorded evidence.\n\n## What is not done\n- `AC-T-P2-13-03` is `MANUAL`: whether a cold agent can start from a context\n  packet alone is unproven. T-P2-13 stays open because of it.\n- T-P2-14 needs the two-agent audit behind Gate E, then the definition-of-done\n  sweep. The regeneration half is already evidenced.\n- Gate P1-CONTINUITY has never been attempted. P1 cannot exit until it is.\n- The README banner and Mermaid diagram still depict the six-file chronicle.\n- `.prokron/` is committed so the README can link to it as a live example. That\n  puts a ~120 KB dashboard and a ~100 KB JSON in every diff that touches\n  authority. Reversible either way; nobody has decided.\n\n## Next action\nT-P2-13, then T-P2-14. For Gate E, hand one task's `prokron context` packet to a\nsecond agent, have it audit an implementation against that contract, and record\nwhat the two agents disagreed about and which level of the arbitration hierarchy\nsettled it."
+    "intent": "# Intent\n\nNo active intent.\n\nPhase 2 is complete and awaiting exit acceptance. The only open work in the\nproject is Gate P1-CONTINUITY, which needs a real multi-session pilot.",
+    "handoff": "# Handoff\n\nCurrent implementation continuity. Overwritten, never appended. It holds what\nthe next person or agent needs in order to continue right now. Closed history\nbelongs in `JOURNAL.md`.\n\n## Position\n- Release 0.2.1. Phase P2 is `EXIT_PENDING`: all 16 tasks done, all its gates\n  green. Accepting the exit is the owner's call, not a computation.\n- Nothing in flight. 39 of 39 tasks done, 88 of 88 criteria passing.\n\n## What is true now\n- Gate E is green on real evidence, not assertion. Codex and Claude audited the\n  same implementation against the same reviewer packet. They disagreed on one\n  criterion; rendering both Gantt variants in a browser settled it at level 5 of\n  the arbitration hierarchy, and the defect Codex found was real.\n- A cold agent starts from a packet alone. Verified against Codex with no\n  repository access, and the first, failed attempt is kept as the control.\n- Gates A, B, C, D, E green. Only Gate P1-CONTINUITY is red.\n\n## What is not done\n- **Gate P1-CONTINUITY.** The pilot in `docs/SPEC.md` has never run. It needs a\n  real multi-session run in a real project, observing whether the chronicle is\n  maintained without explicit commands, whether checkpoints fire before actual\n  limits, and whether a person and an agent reach the same understanding. No\n  test substitutes for it. P1 cannot exit until it does.\n- The README banner and Mermaid diagram still depict the six-file chronicle.\n- `.prokron/` is committed so the README can link to it as a live example. That\n  puts a large dashboard and JSON in every diff touching authority. Nobody has\n  decided whether to keep it that way.\n\n## Next action\nRun the continuity pilot, or accept the P2 exit and open P3. Both are decisions\nfor the owner rather than work an agent should start on its own."
   },
   "sources": {
     "authority": "prokron",

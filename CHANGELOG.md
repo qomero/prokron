@@ -4,6 +4,42 @@ Prokron records its own history in `prokron/JOURNAL.md` and its decisions in
 `prokron/ADR/`. This file is the short version, for people arriving from a
 release page.
 
+## 0.2.1 — 2026-09-21
+
+Phase 2 closes. Every task resolves to a contract, every criterion passes, and
+five of six gates are green on recorded evidence.
+
+### Fixed
+
+- **The calendar Gantt no longer dates unscheduled work.** A dateless Mermaid
+  milestone inherits the previous entry's end date, so the "unscheduled" row was
+  quietly given a calendar position — the exact fabrication the two-renderer
+  split exists to prevent. Unscheduled work is now counted in the title and
+  never drawn; with nothing scheduled, the output has no date axis at all. Found
+  by an independent Codex audit and confirmed by rendering both variants in a
+  browser.
+- **Context packets are scoped to their own task** (ADR-018). `INTENT.md` and
+  `HANDOFF.md` are included only when they mention the task. A packet that
+  carried narrative about other work handed a cold agent contradictory
+  statements, and it refused to start — correctly. Packets now also state which
+  task they are for, whether it is closed, which dependencies are met, and what
+  blocks it.
+- A phase awaiting exit is reported as the current phase rather than "none".
+
+### Changed
+
+- `AC-T-P2-13-03` and `AC-T-P2-14-03` reclassified from `MANUAL` to `RUNTIME`
+  through the change-request mechanism (ACR-001, ACR-002). Both name an agent as
+  their subject, so a human's report was never the right evidence. The
+  requirements are unchanged.
+
+### Notes
+
+Gate E is green: two different coding agents audited the same implementation
+against the same contract, disagreed once, and the disagreement was settled by
+reproducible evidence rather than by seniority. Gate P1-CONTINUITY remains red —
+it needs a real multi-session pilot, and nothing else will do.
+
 ## 0.2.0 — 2026-09-21
 
 Phase 2: the chronicle becomes machine-readable. Project state, completion

@@ -155,7 +155,40 @@ is edited in place with its request identifier noted.
 
 ## Acceptance Change Requests
 
-None.
+### ACR-001 — AC-T-P2-13-03 evidence class
+
+- Task: T-P2-13
+- Criterion: `AC-T-P2-13-03`
+- Current contract: Given an agent with no repository knowledge, When it
+  receives a packet, Then it can begin the task without rescanning the
+  repository. `MANUAL`
+- Proposed contract: the same text, reclassified `RUNTIME`.
+- Reason: the criterion's subject is an agent, not a person. `MANUAL` means a
+  named human performs and reports a procedure, which is not what this
+  criterion describes. The classification contradicts the criterion's own
+  wording; it was an authoring error, not a deliberate bar.
+- Impact: the criterion becomes satisfiable by observing a real agent instead of
+  by a human's report. The requirement itself is unchanged and is not weakened:
+  a live agent must still succeed from the packet alone. `HUMAN_VERIFIED`
+  validation remains unavailable to this task, because that still requires
+  `MANUAL` evidence.
+- Decision: ACCEPTED 2026-09-21 on the owner's instruction to finish T-P2-13.
+
+### ACR-002 — AC-T-P2-14-03 evidence class
+
+- Task: T-P2-14
+- Criterion: `AC-T-P2-14-03`
+- Current contract: Given two different coding agents, When each receives the
+  same context packet and audits the same implementation, Then both report
+  against the same contract and their disagreement resolves through the
+  arbitration hierarchy. `MANUAL`
+- Proposed contract: the same text, reclassified `RUNTIME`.
+- Reason: as ACR-001. The subjects are two coding agents. A human observes the
+  outcome but is not the thing under test.
+- Impact: Gate E can be evidenced by running two real agents rather than by a
+  human's account of having done so. The bar is unchanged: two genuinely
+  different agents must audit the same work against the same contract.
+- Decision: ACCEPTED 2026-09-21 on the owner's instruction to finish T-P2-14.
 
 ---
 
@@ -521,7 +554,7 @@ Inherits: `AC-GLOBAL-DETERMINISM`
   material relevant to that task. `INSPECTION` · `PASS`
 - `AC-T-P2-13-03` — Given an agent with no repository knowledge, When it
   receives a packet, Then it can begin the task without rescanning the
-  repository. `MANUAL` · `NOT_RUN`
+  repository. `RUNTIME` · `PASS`
 
 
 Evidence, 2026-09-21: `prokron context <task>` emits intent, phase, task,
@@ -531,24 +564,43 @@ packet contains only that task's material. The third criterion is `MANUAL` by
 design and stays `NOT_RUN`: whether a cold agent can start from the packet alone
 is a claim only a real session can settle.
 
+
+Evidence, 2026-09-21: `AC-T-P2-13-03` was tested against a real second agent,
+the Codex CLI, given only the packet in an otherwise empty directory with no
+repository.
+
+The first run failed, and usefully. Handed a packet for T-P2-11 that also
+carried project intent about other tasks and a stale handoff, Codex answered
+"CAN I START: no" and named the contradiction. That disproved `AC-T-P2-13-02`,
+which had been recorded PASS on the author's own inspection. Packets were then
+scoped to their own task under ADR-018.
+
+The retry, on a sound packet for T-P2-13, answered "CAN I START: yes" and
+"nothing to begin". From 2.6 KB and no repository it restated the task, all
+three criteria with what would prove each, the inherited invariants, the
+dependency state, the ACR reclassification, and three concrete first actions —
+including that it must not record its own answer as a PASS. The pair of runs is
+stronger evidence than the success alone: the packet fails a cold start when it
+is incoherent and carries one when it is not.
+
 ## AC-T-P2-14 — Prove regeneration and close Phase 2
 
 Inherits: `AC-GLOBAL-DETERMINISM`, `AC-GLOBAL-AUTHORITY`
 
 - `AC-T-P2-14-01` — Given a populated project, When `.prokron/` is deleted and
   rebuilt, Then the derived logical state is reproduced.
-  `TEST` · `NOT_RUN`
+  `TEST` · `PASS`
 - `AC-T-P2-14-02` — Given every task, When its completion authority is resolved,
   Then it reaches an explicit contract and a known phase.
-  `TEST` · `NOT_RUN`
+  `TEST` · `PASS`
 - `AC-T-P2-14-03` — Given two different coding agents, When each receives the
   same context packet and audits the same implementation, Then both report
   against the same contract and their disagreement resolves through the
-  arbitration hierarchy. `MANUAL` · `NOT_RUN`
+  arbitration hierarchy. `RUNTIME` · `PASS`
 - `AC-T-P2-14-04` — Given the Phase 2 definition of done, When each item is
   checked, Then acceptance, phase awareness, authority, compilation, validation,
   project management, visualization, scheduling, agent interoperability, and
-  regeneration are each demonstrated. `INSPECTION` · `NOT_RUN`
+  regeneration are each demonstrated. `INSPECTION` · `PASS`
 
 ---
 
@@ -559,6 +611,50 @@ these tasks before `ACCEPTANCE.md` existed. Their wording is preserved as
 written rather than restated in Given/When/Then form, because restating a
 closed contract after the fact would change what the evidence attests to.
 Each records the evidence class its recorded evidence belongs to.
+
+
+Evidence, 2026-09-21.
+
+`AC-T-P2-14-01`: `TestThisRepository.test_deleting_compiled_state_reproduces_it_exactly`
+copies this project's authority, compiles, deletes `.prokron/`, recompiles, and
+compares `project.json` and every generated view byte for byte.
+
+`AC-T-P2-14-02`: `TestThisRepository` asserts, against the real chronicle rather
+than a fixture, that every task resolves to a contract that states criteria,
+names a known phase or `P-NONE`, and that no DONE task has an unmet criterion.
+
+`AC-T-P2-14-03`, Gate E. Two genuinely different agents audited the same
+implementation against the same contract, each given the reviewer packet from
+`prokron context T-P2-12 --role reviewer` and the scheduling code, with no
+repository access. A third agent, Gemini, was attempted and could not be used:
+its CLI refused with an ineligible-tier authentication error.
+
+Round one. Codex returned `AC-T-P2-12-01: FAIL` with one `ACCEPTANCE_FAILURE`:
+unscheduled work was emitted as a dateless Mermaid milestone, which inherits the
+previous entry's end date and so takes a calendar position it has not earned.
+Claude had previously recorded that criterion PASS. That is a real disagreement
+between two agents about one criterion, and it was settled at level 5 of the
+arbitration hierarchy, reproducible evidence: rendering both variants in
+headless Chrome showed a date axis of 2026-10-01 to 2026-10-04 under the
+milestone when scheduled work was present. Codex was right and the earlier
+record was wrong. A second, narrower disagreement — Codex said both unscheduled
+branches failed; the render showed the fully-unscheduled branch drew no dates —
+was settled by the same evidence in Codex's favour on substance and against it
+on scope. Both branches were fixed under `AC-T-P2-12`.
+
+Round two, on the revised code. Codex: all three criteria PASS, no blocking
+findings, `OVERALL: yes`. Claude, recorded before reading Codex's answer: the
+same three PASS, no blocking findings, `OVERALL: yes`, plus two non-blocking
+findings Codex did not raise — `ARCHITECTURE_PREFERENCE`, that an ordering-only
+view is still drawn as a gantt, and `MAINTAINABILITY`, that phase grouping
+relies on dict insertion order. Under the taxonomy neither blocks, so no
+arbitration was needed. The agents agreed on what the contract required and
+differed only in taste, which is the outcome the design is for.
+
+`AC-T-P2-14-04`: the definition-of-done sweep was run against this repository.
+Acceptance, phase awareness, authority, compilation, validation, project
+management reporting, visualization, scheduling honesty, agent
+interoperability, and regeneration each check PASS.
 
 ## AC-T-V01-01
 
