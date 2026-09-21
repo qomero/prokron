@@ -1,7 +1,7 @@
 {
   "project": {
     "name": "Prokron",
-    "currentPhase": "P2",
+    "currentPhase": "P1",
     "generator": "prokron compile",
     "authority": "prokron"
   },
@@ -74,7 +74,7 @@
         "Gate A, Gate B, Gate C, Gate D, and Gate E."
       ],
       "exitAuthority": "T-P2-14",
-      "status": "ACTIVE",
+      "status": "COMPLETE",
       "progress": {
         "done": 17,
         "total": 17,
@@ -1192,7 +1192,7 @@
       "id": "T-PILOT-01",
       "title": "Run the continuity pilot",
       "phase": "P1",
-      "status": "WIP",
+      "status": "TODO",
       "validation": "UNTESTED",
       "deps": [
         "T-READINESS-01"
@@ -1204,10 +1204,11 @@
       "evidence": null,
       "decisions": [
         "ADR-008",
-        "ADR-011"
+        "ADR-011",
+        "ADR-020"
       ],
       "schedule": null,
-      "ready": false,
+      "ready": true,
       "blocked": false,
       "source": {
         "file": "TASKS.md",
@@ -3422,21 +3423,23 @@
         "file": "ADR/ADR-019.md",
         "anchor": "ADR-019"
       }
+    },
+    {
+      "id": "ADR-020",
+      "title": "Close Phase 2 and carry the continuity pilot as audited debt",
+      "status": "ACCEPTED",
+      "supersedes": [],
+      "affects": [
+        "T-PILOT-01",
+        "T-P2-14"
+      ],
+      "source": {
+        "file": "ADR/ADR-020.md",
+        "anchor": "ADR-020"
+      }
     }
   ],
   "obstacles": [
-    {
-      "type": "ACCEPTANCE_BLOCKER",
-      "subject": "T-PILOT-01",
-      "blockers": [
-        "AC-T-PILOT-01-03",
-        "AC-T-PILOT-01-04",
-        "AC-T-PILOT-01-05",
-        "AC-T-PILOT-01-06",
-        "AC-T-PILOT-01-07"
-      ],
-      "detail": "T-PILOT-01 cannot complete while 5 criteria are unmet"
-    },
     {
       "type": "GATE_BLOCKER",
       "subject": "P1",
@@ -3514,17 +3517,17 @@
     },
     "statusBreakdown": {
       "DONE": 42,
-      "WIP": 1
+      "TODO": 1
     }
   },
-  "ready": [],
-  "blocked": [],
-  "wip": [
+  "ready": [
     "T-PILOT-01"
   ],
+  "blocked": [],
+  "wip": [],
   "handoff": {
-    "intent": "# Intent\n\nTask: T-PILOT-01 \u2014 running the continuity pilot from `docs/SPEC.md`.\n\nPoint: steps 1 and 2 pass, recorded in `docs/pilot-2026-09-21.md`. The\ndisposable project is at /tmp/pilot and is not part of this repository.\n\nNext: step 3 \u2014 make a material choice, then change it, and check that both ADRs\nremain with the newer superseding the earlier, without `/prokron-decide`.",
-    "handoff": "# Handoff\n\nCurrent implementation continuity. Overwritten, never appended. It holds what\nthe next person or agent needs in order to continue right now. Closed history\nbelongs in `JOURNAL.md`.\n\n## Position\n- Release 0.2.1. Phase P2 is `EXIT_PENDING`: all 16 tasks done, all its gates\n  green. Accepting the exit is the owner's call, not a computation.\n- Nothing in flight. 39 of 39 tasks done, 88 of 88 criteria passing.\n\n## What is true now\n- Gate E is green on real evidence, not assertion. Codex and Claude audited the\n  same implementation against the same reviewer packet. They disagreed on one\n  criterion; rendering both Gantt variants in a browser settled it at level 5 of\n  the arbitration hierarchy, and the defect Codex found was real.\n- A cold agent starts from a packet alone. Verified against Codex with no\n  repository access, and the first, failed attempt is kept as the control.\n- Gates A, B, C, D, E green. Only Gate P1-CONTINUITY is red.\n\n## What is not done\n- **Gate P1-CONTINUITY.** The pilot in `docs/SPEC.md` has never run. It needs a\n  real multi-session run in a real project, observing whether the chronicle is\n  maintained without explicit commands, whether checkpoints fire before actual\n  limits, and whether a person and an agent reach the same understanding. No\n  test substitutes for it. P1 cannot exit until it does.\n- The README banner and Mermaid diagram still depict the six-file chronicle.\n- `.prokron/` is committed so the README can link to it as a live example. That\n  puts a large dashboard and JSON in every diff touching authority. Nobody has\n  decided whether to keep it that way.\n\n## Next action\nRun the continuity pilot, or accept the P2 exit and open P3. Both are decisions\nfor the owner rather than work an agent should start on its own."
+    "intent": "# Intent\n\nNo task in progress.\n\nPhase 2 closed on 2026-09-22 under ADR-020. The continuity pilot, T-PILOT-01, is\nparked at step 3 of 7 and is not in flight; it resumes at the Phase 3 exit audit.\n\nNext: open P3 from `docs/Phase 3.md` \u2014 an ADR accepting it as governing\nauthority, its phase record and gates in `PHASES.md`, its tasks in `TASKS.md`,\nand their contracts in `ACCEPTANCE.md`, before any implementation starts.",
+    "handoff": "# Handoff\n\nCurrent implementation continuity. Overwritten, never appended. It holds what\nthe next person or agent needs in order to continue right now. Closed history\nbelongs in `JOURNAL.md`.\n\n## Position\n- Release 0.2.3. P2 is `COMPLETE` as of 2026-09-22, accepted by the owner under\n  ADR-020. P0 is `COMPLETE`. P1 is `EXIT_PENDING` behind one red gate.\n- Nothing in flight. Intent is empty.\n- 42 of 43 tasks done. The one open task is T-PILOT-01, deliberately parked.\n\n## What is true now\n- Gates A, B, C, D and E are green on recorded evidence. Gate E is green because\n  Codex and Claude audited the same implementation against the same reviewer\n  packet, disagreed on one criterion, and the disagreement was settled at level\n  5 of the arbitration hierarchy by rendering both Gantt variants in a browser.\n  The defect Codex found was real.\n- A cold agent starts from a packet alone, verified against Codex with no\n  repository access. The first, failed attempt is kept as the control.\n- `prokron migrate` gives v0.1 chronicles an upgrade path, which is what\n  reopened and then closed P2.\n\n## Carried debt\n- **Gate P1-CONTINUITY is RED.** The continuity pilot in `docs/SPEC.md` is two\n  steps into seven. Steps 1 and 2 pass, recorded in `docs/pilot-2026-09-21.md`.\n  ADR-020 parks the rest and names the payoff: the P3 exit audit runs the\n  procedure against the Phase 3 build itself, in this repository, across the\n  real multi-session work. Deferred is not passing. P1 stays `EXIT_PENDING`.\n- The accepted risk: P3 is built on a workflow whose cross-session agent\n  compliance is unverified. A pilot failure at that audit lands against P3 work\n  already written. Stated rather than hidden.\n- The README banner and Mermaid diagram still depict the six-file chronicle.\n- `.prokron/` is committed so the README can link to it as a live example. That\n  puts a large dashboard and JSON in every diff touching authority. Nobody has\n  decided whether to keep it that way.\n\n## Next action\nOpen P3 from `docs/Phase 3.md`, authority first and in this order: an ADR\naccepting the specification as governing, the P3 phase record and its gates in\n`PHASES.md`, its tasks in `TASKS.md`, their contracts in `ACCEPTANCE.md`, then\n`validate` and `compile`. Only then claim the first task. Phase 3 \u00a725 requires a\nplanning task that inspects the existing architecture before any code changes,\nwhich is what T-P2-PLAN-01 was for P2."
   },
   "sources": {
     "authority": "prokron",

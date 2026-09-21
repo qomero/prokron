@@ -452,7 +452,7 @@
 - Governed by: ADR-013, ADR-016
 
 ## T-PILOT-01: Run the continuity pilot
-- Status: WIP
+- Status: TODO
 - Phase: P1
 - Validation: UNTESTED
 - Dependencies: T-READINESS-01
@@ -460,7 +460,8 @@
 - Claimed: 2026-09-21
 - AC: AC-T-PILOT-01
 - Evidence: —
-- Governed by: ADR-008, ADR-011
+- Governed by: ADR-008, ADR-011, ADR-020
+- Note: Parked at step 3 of 7 under ADR-020, not abandoned. Steps 1 and 2 ran against Codex CLI 0.155.0 with Prokron 0.2.1 in a disposable project on 2026-09-21; two of seven criteria carry PASS in the contract and the observations are in `docs/pilot-2026-09-21.md`. Task evidence stays empty because the task is not complete. The contract froze when this task first went WIP and stays frozen; no criterion is weakened or dropped. It resumes at the P3 exit audit, run against the Phase 3 build itself.
 
 ## T-MIGRATE-01: Migrate a v0.1 chronicle to the v0.2 layout
 - Status: DONE

@@ -24,3 +24,4 @@ editing history.
 - [ADR-017](ADR-017.md) — Ship the runtime as copied files beside the chronicle (ACCEPTED)
 - [ADR-018](ADR-018.md) — Scope a context packet to its own task (ACCEPTED)
 - [ADR-019](ADR-019.md) — Migrate v0.1 chronicles explicitly, and never in place (ACCEPTED)
+- [ADR-020](ADR-020.md) — Close Phase 2 and carry the continuity pilot as audited debt (ACCEPTED)

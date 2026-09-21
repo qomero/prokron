@@ -4,6 +4,40 @@ Prokron records its own history in `prokron/JOURNAL.md` and its decisions in
 `prokron/ADR/`. This file is the short version, for people arriving from a
 release page.
 
+## 0.2.3 — 2026-09-22
+
+Closes Phase 2 and writes down what it left unfinished. No code changed; this
+release is a governance record, and it is versioned because the chronicle
+shipped beside the runtime is part of what a user installs.
+
+### Changed
+
+- **Phase 2 is `COMPLETE`.** All 17 tasks done, Gates A through E green on
+  recorded evidence, every exit criterion met. The exit was accepted by the
+  owner rather than computed, so it is recorded as ADR-020 rather than as a
+  status edit.
+- **The continuity pilot is parked, not dropped.** T-PILOT-01 returns to `TODO`
+  at step 3 of 7 with its contract still frozen and its two passing criteria
+  intact. Gate P1-CONTINUITY stays RED and P1 stays `EXIT_PENDING`; the gate
+  never governed P2's exit. ADR-020 names where the debt is paid: the Phase 3
+  exit audit runs the pilot procedure against the Phase 3 build itself, in a
+  real repository across real sessions, instead of restarting it in a
+  disposable project.
+- The accepted risk is stated in the decision rather than implied: Phase 3 gets
+  built on a workflow whose cross-session agent compliance is unverified, and a
+  pilot failure at that audit lands against work already written.
+
+### Fixed
+
+- Restored `docs/Phase 2.md`, which had been deleted from the working tree
+  while ADR-013, ADR-014, ADR-015 and the P2 phase record all cite it as
+  governing authority.
+
+### Added
+
+- `docs/Phase 3.md` — the Phase 3 specification, Execution Intelligence. Not
+  yet accepted as governing authority; that is a decision P3 opens with.
+
 ## 0.2.2 — 2026-09-21
 
 Fixes the upgrade path. 0.2.0 moved authority from `.prokron/` to `prokron/`

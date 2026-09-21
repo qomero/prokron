@@ -105,9 +105,11 @@ EXIT_PENDING
 
 Note:
 Delivery is complete. The exit gate is not. The continuity pilot in
-`docs/SPEC.md` has never run, so cross-session agent compliance and host-limit
-handling remain unverified. Phase 2 proceeds in parallel by owner decision; P1
-does not become `COMPLETE` until the gate is green.
+`docs/SPEC.md` is two steps into seven, so cross-session agent compliance and
+host-limit handling remain unverified. P2 closed in parallel by owner decision
+under ADR-020, which parks the pilot and moves its remaining steps into the P3
+exit audit. P1 does not become `COMPLETE` until that evidence exists and the
+gate is green.
 
 ---
 
@@ -139,20 +141,29 @@ Exit authority:
 T-P2-14
 
 Status:
-ACTIVE
+COMPLETE
 
 Note:
 Reopened on 2026-09-21. ADR-014 moved authority from `.prokron/` to `prokron/`
 and no migration was written, so updating a real v0.1 project strands its
 chronicle: the records survive but the tool reads the new location and reports
 an empty project. The phase's own exit criteria were met, but shipping a layout
-change without an upgrade path means the work was not done. T-MIGRATE-01 closes
+change without an upgrade path means the work was not done. T-MIGRATE-01 closed
 it.
 
-Every other exit criterion is met and T-P2-14 is DONE. Gate D also blocks P1, which
-has never run its continuity pilot, so the two phases are recorded separately:
-P2's own conditions are satisfied. The phase becomes COMPLETE when the owner
-accepts the exit, which is a decision rather than a computation.
+Exit accepted by the owner on 2026-09-22 under ADR-020. Every exit criterion is
+met, all 17 tasks are DONE, Gates A through E are green on recorded evidence,
+and T-P2-14 is DONE.
+
+Carried debt: the continuity pilot is unfinished. Gate P1-CONTINUITY governs
+P1's exit and not this one, so it did not block the close, but it is real and it
+is not written off. T-PILOT-01 is parked at step 3 of 7 with its contract frozen
+and its two passing criteria intact. ADR-020 sets the payoff point: the P3 exit
+audit runs the pilot procedure in `docs/SPEC.md` against the Phase 3 build
+itself rather than restarting it in a disposable project. P3 is therefore built
+on a workflow whose cross-session compliance is still unverified, and a pilot
+failure at that audit lands against work already written. That is the accepted
+cost of closing here.
 
 ---
 
@@ -240,6 +251,11 @@ understanding of the project.
 Blocks: P1 exit
 Verified by: the pilot procedure in `docs/SPEC.md`
 Status: RED
+
+Two of seven criteria pass, recorded in `docs/pilot-2026-09-21.md`. The rest are
+deferred under ADR-020 to the P3 exit audit, which runs the procedure against
+the Phase 3 build rather than a disposable project. Deferred is not passing: the
+gate stays red and P1 stays EXIT_PENDING until the evidence exists.
 
 ---
 

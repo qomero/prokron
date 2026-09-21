@@ -371,3 +371,34 @@
 - Learned: Preserving files is not continuity. ADR-011 made the installer careful never to overwrite anything, and that care is exactly what hid the problem: the records were all there, so nothing looked broken, while the tool reported zero. A second bug hid behind the first — task completion excluded phase-independent work, so a freshly migrated project also read `0 / 0`, which looks identical to a failed migration. Neither would have surfaced from testing the current version against itself. It took someone upgrading a real project.
 - Left mid-air: Nothing. Released as 0.2.2.
 - Next: The continuity pilot resumes at step 3. Gate P1-CONTINUITY stays red.
+
+## 2026-09-22 — Phase 2 closes, the pilot becomes named debt
+- Task: T-P2-14 (exit authority), T-PILOT-01 (parked)
+- Owner: claude/primary
+- Did: The owner accepted the P2 exit. Recorded it as ADR-020 rather than as a
+  status edit, because closing a phase over an unfinished pilot is a choice and
+  not a computation. P2 moves to `COMPLETE`: 17 of 17 tasks done, Gates A
+  through E green on recorded evidence, every exit criterion met. Gate
+  P1-CONTINUITY governs P1's exit and not P2's, so it never blocked this close,
+  but it stays RED and P1 stays `EXIT_PENDING`. T-PILOT-01 returns from `WIP` to
+  `TODO` with its contract still frozen, its two passing criteria intact, and
+  the evidence it earned now written on the task instead of living only in the
+  journal. The single intent slot is free. Also restored `docs/Phase 2.md`,
+  which was deleted in the working tree while ADR-013, ADR-014, ADR-015 and the
+  P2 phase record all cite it as governing authority.
+- Validation: UNTESTED. This is a records change; `prokron validate` and
+  `prokron compile` are the check that it holds together.
+- Learned: The debt only stays honest because it has three separate homes a
+  compile can report — a red gate, an open task, and an accepted decision — and
+  a named payoff point rather than an intention. A deferral written as prose in
+  a handoff is the kind that quietly expires. Worth noting too that parking a
+  task is not the same as weakening it: the contract froze when T-PILOT-01 first
+  went `WIP`, and moving the status back does not thaw it.
+- Released: 0.2.3. No code changed. The chronicle ships beside the runtime, so a
+  governance change to it is still something a user installs, and it gets a
+  version for the same reason the code does.
+- Left mid-air: Nothing. Intent is empty by design.
+- Next: Open P3 from `docs/Phase 3.md`, authority before implementation — the
+  accepting ADR, the phase record and gates, the tasks, the contracts, then
+  validate and compile. The first P3 task is a planning task that inspects the
+  existing architecture, as §25 requires.
