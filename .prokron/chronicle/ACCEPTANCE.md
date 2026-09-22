@@ -1425,3 +1425,39 @@ repository URL is not something a paper can cite.
   - Evidence: authorship is recorded as the organisation. A personal name and
     an ORCID are the author's to give, were not confirmed, and a deposited
     record can be edited afterwards.
+
+## AC-T-BASELINE-01 — Offer an opt-in baseline of existing decisions
+
+- `AC-T-BASELINE-01-01` — Given an ADR with `Origin: RECONSTRUCTED` and no
+  `Evidence:` value, When validation runs, Then it reports an error naming
+  that ADR. `TEST` · `PASS`
+  - Evidence: TestReconstructedDecisions.test_a_reconstruction_without_evidence_is_an_error covers an empty, `none`, and absent `Evidence:`; disabling the rule fails 3 cases.
+- `AC-T-BASELINE-01-02` — Given a reconstructed ADR with status `ACCEPTED`
+  whose `Authority:` is empty or `none`, When validation runs, Then it reports
+  an error; the same ADR with status `PROPOSED` validates. `TEST` · `PASS`
+  - Evidence: test_an_accepted_reconstruction_needs_a_named_authority and test_a_proposed_reconstruction_with_evidence_validates; disabling the rule fails 3 cases. Also reproduced on the flask pilot.
+- `AC-T-BASELINE-01-03` — Given reconstructed and contemporaneous ADRs, When
+  the project compiles and the dashboard renders, Then compiled JSON carries
+  each decision's origin and evidence and the dashboard visibly labels
+  reconstructed decisions. `TEST` · `PASS`
+  - Evidence: test_compiled_state_carries_origin_and_evidence, test_a_context_packet_says_which_decisions_were_reconstructed, test_the_dashboard_labels_reconstructed_decisions; removing the dashboard label fails the last.
+- `AC-T-BASELINE-01-04` — Given ADRs without an `Origin:` field, When this
+  repository validates and compiles, Then they are treated as contemporaneous
+  and regeneration is byte-identical apart from the new fields. `TEST` · `PASS`
+  - Evidence: test_an_adr_without_origin_is_contemporaneous; compiling this chronicle with the `main` runtime and this one differs only by 34 `origin`/`evidence` pairs and the generator version; STATE.md, TASK_GRAPH.md, README.md byte-identical.
+- `AC-T-BASELINE-01-05` — Given a fresh `existing` installation, When files
+  are enumerated and initialization is followed, Then the baseline workflow is
+  installed for every host surface and initialization itself creates no ADR.
+  `TEST` · `PASS`
+  - Evidence: tests/install.sh asserts the baseline workflow for .prokron, Claude Code, OpenCode, the skill, and AGENTS.md, and that a fresh install contains no ADR file; `installer smoke: pass`.
+- `AC-T-BASELINE-01-06` — Given the baseline workflow text, When it is read,
+  Then it states that it runs only on explicit owner request, proposes at most
+  ten decisions, creates no tasks, journal history, or intent, writes
+  proposals as `PROPOSED`, and cites existing ADR files rather than copying
+  them. `INSPECTION` · `PASS`
+  - Evidence: TestBaselineWorkflow.test_the_workflow_states_every_limit pins each limit in `.prokron/commands/prokron-baseline.md`; read in full against ADR-037.
+- `AC-T-BASELINE-01-07` — Given a real repository of at least moderate size
+  with no chronicle, When an agent runs the baseline workflow, Then it
+  proposes no more than ten decisions, every cited evidence path exists, and
+  `TASKS.md`, `INTENT.md`, and `JOURNAL.md` are unchanged. `RUNTIME` · `PASS`
+  - Evidence: pallets/flask at d73fa1c (83 Python files), installed `existing` from this branch: 7 PROPOSED reconstructed ADRs, every cited path exists, TASKS.md/INTENT.md/JOURNAL.md byte-identical to the install, validate consistent, dashboard labels all 7; accepting one without authority is refused.

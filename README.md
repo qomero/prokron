@@ -448,6 +448,7 @@ Use these when you want to invoke a workflow explicitly.
 | Record or supersede a decision | `/prokron-decide [decision]` | `$prokron decide [decision]` |
 | Save a handoff | `/prokron-checkpoint` | `$prokron checkpoint` |
 | Recover current work | `/prokron-resume` | `$prokron resume` |
+| Record decisions an existing codebase already depends on | `/prokron-baseline` | `$prokron baseline` |
 
 All workflows also install as portable Markdown prompts in
 `.prokron/commands/`, which any capable agent can follow directly.

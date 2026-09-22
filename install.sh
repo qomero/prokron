@@ -130,7 +130,7 @@ copy_new "$source_dir/templates/chronicle/ADR/README.md" "$target/$chronicle/ADR
 retained=0
 cmp -s "$source_dir/templates/chronicle/README.md" "$target/$chronicle/README.md" || retained=1
 
-for command in init work decide checkpoint resume; do
+for command in init work decide checkpoint resume baseline; do
   copy_new "$source_dir/.prokron/commands/prokron-$command.md" \
     "$target/$commands/prokron-$command.md"
   copy_new "$source_dir/.claude/commands/prokron-$command.md" \

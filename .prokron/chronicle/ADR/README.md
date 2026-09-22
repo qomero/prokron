@@ -37,3 +37,5 @@ editing history.
 - [ADR-030](ADR-030.md) — A project names itself in authority, not in the filesystem (ACCEPTED)
 - [ADR-031](ADR-031.md) — Generated views are refreshed on upgrade, and say which version wrote them (ACCEPTED)
 - [ADR-032](ADR-032.md) — Releases are archived and citable (ACCEPTED)
+- [ADR-037](ADR-037.md) — Offer an opt-in, evidence-cited baseline of existing decisions (ACCEPTED)
+- [ADR-038](ADR-038.md) — Build the baseline ahead of the hierarchy on its own branch (ACCEPTED)

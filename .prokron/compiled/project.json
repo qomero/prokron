@@ -1641,6 +1641,30 @@
         "file": "TASKS.md",
         "anchor": "T-DOI-01"
       }
+    },
+    {
+      "id": "T-BASELINE-01",
+      "title": "Offer an opt-in baseline of existing decisions",
+      "phase": "P-NONE",
+      "status": "DONE",
+      "validation": "SYNTHETIC",
+      "deps": [],
+      "blocks": [],
+      "ac": "AC-T-BASELINE-01",
+      "owner": "claude/baseline",
+      "claimed": "2026-09-23",
+      "evidence": "139 unittest cases and the installer suite pass; mutation of each new validation rule and the dashboard label fails its tests; a real-repository pilot on pallets/flask produced 7 evidence-cited proposals with no task, intent, or journal change.",
+      "decisions": [
+        "ADR-037",
+        "ADR-038"
+      ],
+      "schedule": null,
+      "ready": false,
+      "blocked": false,
+      "source": {
+        "file": "TASKS.md",
+        "anchor": "T-BASELINE-01"
+      }
     }
   ],
   "acceptance": {
@@ -4143,6 +4167,94 @@
         "file": "ACCEPTANCE.md",
         "anchor": "AC-T-DOI-01"
       }
+    },
+    "AC-T-BASELINE-01": {
+      "title": "Offer an opt-in baseline of existing decisions",
+      "inherits": [],
+      "evidence": null,
+      "criteria": [
+        {
+          "id": "AC-T-BASELINE-01-01",
+          "text": "Given an ADR with `Origin: RECONSTRUCTED` and no `Evidence:` value, When validation runs, Then it reports an error naming that ADR.",
+          "evidenceClass": "TEST",
+          "state": "PASS",
+          "evidence": "TestReconstructedDecisions.test_a_reconstruction_without_evidence_is_an_error covers an empty, `none`, and absent `Evidence:`; disabling the rule fails 3 cases.",
+          "source": {
+            "file": "ACCEPTANCE.md",
+            "anchor": "AC-T-BASELINE-01-01"
+          }
+        },
+        {
+          "id": "AC-T-BASELINE-01-02",
+          "text": "Given a reconstructed ADR with status `ACCEPTED` whose `Authority:` is empty or `none`, When validation runs, Then it reports an error; the same ADR with status `PROPOSED` validates.",
+          "evidenceClass": "TEST",
+          "state": "PASS",
+          "evidence": "test_an_accepted_reconstruction_needs_a_named_authority and test_a_proposed_reconstruction_with_evidence_validates; disabling the rule fails 3 cases. Also reproduced on the flask pilot.",
+          "source": {
+            "file": "ACCEPTANCE.md",
+            "anchor": "AC-T-BASELINE-01-02"
+          }
+        },
+        {
+          "id": "AC-T-BASELINE-01-03",
+          "text": "Given reconstructed and contemporaneous ADRs, When the project compiles and the dashboard renders, Then compiled JSON carries each decision's origin and evidence and the dashboard visibly labels reconstructed decisions.",
+          "evidenceClass": "TEST",
+          "state": "PASS",
+          "evidence": "test_compiled_state_carries_origin_and_evidence, test_a_context_packet_says_which_decisions_were_reconstructed, test_the_dashboard_labels_reconstructed_decisions; removing the dashboard label fails the last.",
+          "source": {
+            "file": "ACCEPTANCE.md",
+            "anchor": "AC-T-BASELINE-01-03"
+          }
+        },
+        {
+          "id": "AC-T-BASELINE-01-04",
+          "text": "Given ADRs without an `Origin:` field, When this repository validates and compiles, Then they are treated as contemporaneous and regeneration is byte-identical apart from the new fields.",
+          "evidenceClass": "TEST",
+          "state": "PASS",
+          "evidence": "test_an_adr_without_origin_is_contemporaneous; compiling this chronicle with the `main` runtime and this one differs only by 34 `origin`/`evidence` pairs and the generator version; STATE.md, TASK_GRAPH.md, README.md byte-identical.",
+          "source": {
+            "file": "ACCEPTANCE.md",
+            "anchor": "AC-T-BASELINE-01-04"
+          }
+        },
+        {
+          "id": "AC-T-BASELINE-01-05",
+          "text": "Given a fresh `existing` installation, When files are enumerated and initialization is followed, Then the baseline workflow is installed for every host surface and initialization itself creates no ADR.",
+          "evidenceClass": "TEST",
+          "state": "PASS",
+          "evidence": "tests/install.sh asserts the baseline workflow for .prokron, Claude Code, OpenCode, the skill, and AGENTS.md, and that a fresh install contains no ADR file; `installer smoke: pass`.",
+          "source": {
+            "file": "ACCEPTANCE.md",
+            "anchor": "AC-T-BASELINE-01-05"
+          }
+        },
+        {
+          "id": "AC-T-BASELINE-01-06",
+          "text": "Given the baseline workflow text, When it is read, Then it states that it runs only on explicit owner request, proposes at most ten decisions, creates no tasks, journal history, or intent, writes proposals as `PROPOSED`, and cites existing ADR files rather than copying them.",
+          "evidenceClass": "INSPECTION",
+          "state": "PASS",
+          "evidence": "TestBaselineWorkflow.test_the_workflow_states_every_limit pins each limit in `.prokron/commands/prokron-baseline.md`; read in full against ADR-037.",
+          "source": {
+            "file": "ACCEPTANCE.md",
+            "anchor": "AC-T-BASELINE-01-06"
+          }
+        },
+        {
+          "id": "AC-T-BASELINE-01-07",
+          "text": "Given a real repository of at least moderate size with no chronicle, When an agent runs the baseline workflow, Then it proposes no more than ten decisions, every cited evidence path exists, and `TASKS.md`, `INTENT.md`, and `JOURNAL.md` are unchanged.",
+          "evidenceClass": "RUNTIME",
+          "state": "PASS",
+          "evidence": "pallets/flask at d73fa1c (83 Python files), installed `existing` from this branch: 7 PROPOSED reconstructed ADRs, every cited path exists, TASKS.md/INTENT.md/JOURNAL.md byte-identical to the install, validate consistent, dashboard labels all 7; accepting one without authority is refused.",
+          "source": {
+            "file": "ACCEPTANCE.md",
+            "anchor": "AC-T-BASELINE-01-07"
+          }
+        }
+      ],
+      "source": {
+        "file": "ACCEPTANCE.md",
+        "anchor": "AC-T-BASELINE-01"
+      }
     }
   },
   "invariants": [
@@ -4427,6 +4539,8 @@
         "T-V01-04",
         "T-V01-05"
       ],
+      "origin": "CONTEMPORANEOUS",
+      "evidence": null,
       "source": {
         "file": "ADR/ADR-001.md",
         "anchor": "ADR-001"
@@ -4442,6 +4556,8 @@
         "T-V01-02",
         "T-V01-03"
       ],
+      "origin": "CONTEMPORANEOUS",
+      "evidence": null,
       "source": {
         "file": "ADR/ADR-002.md",
         "anchor": "ADR-002"
@@ -4455,6 +4571,8 @@
       "affects": [
         "T-V01-06"
       ],
+      "origin": "CONTEMPORANEOUS",
+      "evidence": null,
       "source": {
         "file": "ADR/ADR-003.md",
         "anchor": "ADR-003"
@@ -4468,6 +4586,8 @@
       "affects": [
         "T-V011-01"
       ],
+      "origin": "CONTEMPORANEOUS",
+      "evidence": null,
       "source": {
         "file": "ADR/ADR-004.md",
         "anchor": "ADR-004"
@@ -4481,6 +4601,8 @@
       "affects": [
         "T-V02-03"
       ],
+      "origin": "CONTEMPORANEOUS",
+      "evidence": null,
       "source": {
         "file": "ADR/ADR-005.md",
         "anchor": "ADR-005"
@@ -4494,6 +4616,8 @@
       "affects": [
         "T-HARNESS-01"
       ],
+      "origin": "CONTEMPORANEOUS",
+      "evidence": null,
       "source": {
         "file": "ADR/ADR-006.md",
         "anchor": "ADR-006"
@@ -4507,6 +4631,8 @@
       "affects": [
         "T-HARNESS-01"
       ],
+      "origin": "CONTEMPORANEOUS",
+      "evidence": null,
       "source": {
         "file": "ADR/ADR-007.md",
         "anchor": "ADR-007"
@@ -4524,6 +4650,8 @@
       "affects": [
         "T-WORKFLOW-01"
       ],
+      "origin": "CONTEMPORANEOUS",
+      "evidence": null,
       "source": {
         "file": "ADR/ADR-008.md",
         "anchor": "ADR-008"
@@ -4537,6 +4665,8 @@
       "affects": [
         "T-INSTALL-01"
       ],
+      "origin": "CONTEMPORANEOUS",
+      "evidence": null,
       "source": {
         "file": "ADR/ADR-009.md",
         "anchor": "ADR-009"
@@ -4550,6 +4680,8 @@
       "affects": [
         "T-HOSTS-01"
       ],
+      "origin": "CONTEMPORANEOUS",
+      "evidence": null,
       "source": {
         "file": "ADR/ADR-010.md",
         "anchor": "ADR-010"
@@ -4563,6 +4695,8 @@
       "affects": [
         "T-READINESS-01"
       ],
+      "origin": "CONTEMPORANEOUS",
+      "evidence": null,
       "source": {
         "file": "ADR/ADR-011.md",
         "anchor": "ADR-011"
@@ -4576,6 +4710,8 @@
       "affects": [
         "T-DOCS-03"
       ],
+      "origin": "CONTEMPORANEOUS",
+      "evidence": null,
       "source": {
         "file": "ADR/ADR-012.md",
         "anchor": "ADR-012"
@@ -4593,6 +4729,8 @@
         "T-P2-01",
         "T-P2-06"
       ],
+      "origin": "CONTEMPORANEOUS",
+      "evidence": null,
       "source": {
         "file": "ADR/ADR-013.md",
         "anchor": "ADR-013"
@@ -4607,6 +4745,8 @@
         "T-P2-01",
         "T-P2-07"
       ],
+      "origin": "CONTEMPORANEOUS",
+      "evidence": null,
       "source": {
         "file": "ADR/ADR-014.md",
         "anchor": "ADR-014"
@@ -4623,6 +4763,8 @@
         "T-P2-03",
         "T-P2-05"
       ],
+      "origin": "CONTEMPORANEOUS",
+      "evidence": null,
       "source": {
         "file": "ADR/ADR-015.md",
         "anchor": "ADR-015"
@@ -4639,6 +4781,8 @@
         "T-P2-10",
         "T-P2-11"
       ],
+      "origin": "CONTEMPORANEOUS",
+      "evidence": null,
       "source": {
         "file": "ADR/ADR-016.md",
         "anchor": "ADR-016"
@@ -4652,6 +4796,8 @@
       "affects": [
         "T-P2-06"
       ],
+      "origin": "CONTEMPORANEOUS",
+      "evidence": null,
       "source": {
         "file": "ADR/ADR-017.md",
         "anchor": "ADR-017"
@@ -4665,6 +4811,8 @@
       "affects": [
         "T-P2-13"
       ],
+      "origin": "CONTEMPORANEOUS",
+      "evidence": null,
       "source": {
         "file": "ADR/ADR-018.md",
         "anchor": "ADR-018"
@@ -4678,6 +4826,8 @@
       "affects": [
         "T-MIGRATE-01"
       ],
+      "origin": "CONTEMPORANEOUS",
+      "evidence": null,
       "source": {
         "file": "ADR/ADR-019.md",
         "anchor": "ADR-019"
@@ -4692,6 +4842,8 @@
         "T-PILOT-01",
         "T-P2-14"
       ],
+      "origin": "CONTEMPORANEOUS",
+      "evidence": null,
       "source": {
         "file": "ADR/ADR-020.md",
         "anchor": "ADR-020"
@@ -4705,6 +4857,8 @@
       "affects": [
         "T-RENAME-01"
       ],
+      "origin": "CONTEMPORANEOUS",
+      "evidence": null,
       "source": {
         "file": "ADR/ADR-021.md",
         "anchor": "ADR-021"
@@ -4718,6 +4872,8 @@
       "affects": [
         "T-DOCS-04"
       ],
+      "origin": "CONTEMPORANEOUS",
+      "evidence": null,
       "source": {
         "file": "ADR/ADR-022.md",
         "anchor": "ADR-022"
@@ -4731,6 +4887,8 @@
       "affects": [
         "T-AUTHOR-01"
       ],
+      "origin": "CONTEMPORANEOUS",
+      "evidence": null,
       "source": {
         "file": "ADR/ADR-023.md",
         "anchor": "ADR-023"
@@ -4744,6 +4902,8 @@
       "affects": [
         "T-LAYOUT-01"
       ],
+      "origin": "CONTEMPORANEOUS",
+      "evidence": null,
       "source": {
         "file": "ADR/ADR-024.md",
         "anchor": "ADR-024"
@@ -4757,6 +4917,8 @@
       "affects": [
         "T-GRAPHVIEW-01"
       ],
+      "origin": "CONTEMPORANEOUS",
+      "evidence": null,
       "source": {
         "file": "ADR/ADR-025.md",
         "anchor": "ADR-025"
@@ -4770,6 +4932,8 @@
       "affects": [
         "T-DOCS-05"
       ],
+      "origin": "CONTEMPORANEOUS",
+      "evidence": null,
       "source": {
         "file": "ADR/ADR-026.md",
         "anchor": "ADR-026"
@@ -4783,6 +4947,8 @@
       "affects": [
         "T-CLI-01"
       ],
+      "origin": "CONTEMPORANEOUS",
+      "evidence": null,
       "source": {
         "file": "ADR/ADR-027.md",
         "anchor": "ADR-027"
@@ -4796,6 +4962,8 @@
       "affects": [
         "T-PILOT-01"
       ],
+      "origin": "CONTEMPORANEOUS",
+      "evidence": null,
       "source": {
         "file": "ADR/ADR-028.md",
         "anchor": "ADR-028"
@@ -4809,6 +4977,8 @@
       "affects": [
         "T-CI-01"
       ],
+      "origin": "CONTEMPORANEOUS",
+      "evidence": null,
       "source": {
         "file": "ADR/ADR-029.md",
         "anchor": "ADR-029"
@@ -4822,6 +4992,8 @@
       "affects": [
         "T-NAME-01"
       ],
+      "origin": "CONTEMPORANEOUS",
+      "evidence": null,
       "source": {
         "file": "ADR/ADR-030.md",
         "anchor": "ADR-030"
@@ -4835,6 +5007,8 @@
       "affects": [
         "T-UPGRADE-01"
       ],
+      "origin": "CONTEMPORANEOUS",
+      "evidence": null,
       "source": {
         "file": "ADR/ADR-031.md",
         "anchor": "ADR-031"
@@ -4848,9 +5022,41 @@
       "affects": [
         "T-DOI-01"
       ],
+      "origin": "CONTEMPORANEOUS",
+      "evidence": null,
       "source": {
         "file": "ADR/ADR-032.md",
         "anchor": "ADR-032"
+      }
+    },
+    {
+      "id": "ADR-037",
+      "title": "Offer an opt-in, evidence-cited baseline of existing decisions",
+      "status": "ACCEPTED",
+      "supersedes": [],
+      "affects": [
+        "T-BASELINE-01"
+      ],
+      "origin": "CONTEMPORANEOUS",
+      "evidence": null,
+      "source": {
+        "file": "ADR/ADR-037.md",
+        "anchor": "ADR-037"
+      }
+    },
+    {
+      "id": "ADR-038",
+      "title": "Build the baseline ahead of the hierarchy on its own branch",
+      "status": "ACCEPTED",
+      "supersedes": [],
+      "affects": [
+        "T-BASELINE-01"
+      ],
+      "origin": "CONTEMPORANEOUS",
+      "evidence": null,
+      "source": {
+        "file": "ADR/ADR-038.md",
+        "anchor": "ADR-038"
       }
     }
   ],
@@ -4862,8 +5068,8 @@
   },
   "metrics": {
     "taskCompletion": {
-      "done": 58,
-      "total": 58,
+      "done": 59,
+      "total": 59,
       "fraction": 1.0
     },
     "phaseCompletion": {
@@ -4890,35 +5096,35 @@
     },
     "validationCoverage": {
       "done": 20,
-      "total": 58,
-      "fraction": 0.3448
+      "total": 59,
+      "fraction": 0.339
     },
-    "phaseIndependent": 17,
+    "phaseIndependent": 18,
     "gateReadiness": {
       "done": 6,
       "total": 6,
       "fraction": 1.0
     },
     "acceptanceCompletion": {
-      "done": 166,
-      "total": 166,
+      "done": 173,
+      "total": 173,
       "fraction": 1.0
     },
     "validationBreakdown": {
-      "SYNTHETIC": 38,
+      "SYNTHETIC": 39,
       "AI_REVIEWED": 19,
       "HUMAN_VERIFIED": 1
     },
     "statusBreakdown": {
-      "DONE": 58
+      "DONE": 59
     }
   },
   "ready": [],
   "blocked": [],
   "wip": [],
   "handoff": {
-    "intent": "# Intent\n\nNo task in progress.\n\nT-DOI-01 closed on 2026-09-22 under ADR-032. Releases now carry their own\narchive and citation metadata, so each one is preserved independently of the\ncode host and can be cited.\n\nNext: open Phase 0 or Phase 3 from their internal specifications in\n`next_plan/`. Both are new scope. Authority first: an ADR accepting the\nspecification as governing, the phase record and its gates in `PHASES.md` under\nan identifier that does not collide with the finished P0, its tasks, and their\ncontracts \u2014 before any implementation starts.",
-    "handoff": "# Handoff\n\nCurrent implementation continuity. Overwritten, never appended. It holds what\nthe next person or agent needs in order to continue right now. Closed history\nbelongs in `JOURNAL.md`.\n\n## Position\n- Release 0.4.1. P0, P1 and P2 are all `COMPLETE`. Every gate is green.\n- 53 of 53 tasks done, 146 of 146 criteria passing. Nothing in flight, nothing\n  ready, no obstacles.\n- Everything Prokron installs lives in `.prokron/` (ADR-024). Installing takes\n  one line with no arguments and the command is `prokron` (ADR-027).\n\n## What is true now\n- The continuity pilot ran in full against v0.4.0 on 2026-09-22 and all seven\n  criteria pass, recorded in `docs/pilot-2026-09-22.md`. Three participants\n  across two disposable projects: Codex CLI 0.155.1, a cold Gemini 3.8 Flash\n  session, and the product owner. ADR-028 closed the debt ADR-020 had carried.\n- Gate E is green because Codex and Claude audited the same implementation\n  against the same contract, disagreed on one criterion, and the disagreement\n  was settled at level 5 of the arbitration hierarchy. The defect Codex found\n  was real.\n- T-PILOT-01 is the first and only `HUMAN_VERIFIED` task in the project.\n\n## What is still not proven\n- **Checkpointing against a real host limit.** No host exposed a limit warning\n  to observe during the pilot, and nothing was simulated in its place. Prokron\n  cannot read a quota counter it is not shown. Untested, not passed.\n- **The human reading, in detail.** Step 7 passed on the owner's attestation\n  across two projects. No point-by-point account was recorded and no comparison\n  against an agent's reading of the same chronicle was made.\n- `.prokron/compiled/` is committed so the README can link to it as a live\n  example. That puts a large dashboard and JSON in every diff touching\n  authority. Nobody has decided whether to keep it that way.\n- One validator warning is worth revisiting: `premature-evidence` fires on a\n  `WIP` task carrying partial evidence, which the pilot showed is a reasonable\n  thing for an agent to record mid-task.\n\n## Repository identity\n- Commits are authored as `qomero`, with an address verified on that account,\n  set repository-locally under ADR-023. `git config --local user.email` shows it. The whole history was rewritten to match on 2026-09-22 and\n  force-pushed, so every hash before that date is dead. `backup-pre-author-rewrite`\n  holds the pre-rewrite tip locally and is safe to delete.\n\n## Next action\nOpen Phase 0 or Phase 3 from their internal specifications in `next_plan/`,\nwhich are not published (ADR-026). Both are new scope rather than remaining\nscope, and neither is accepted as governing yet.\n\nAuthority first, in this order: an ADR accepting the specification, the phase\nrecord and its gates in `PHASES.md`, its tasks in `TASKS.md`, their contracts\nin `ACCEPTANCE.md`, then `validate` and `compile`. Only then claim the first\ntask, which should be a planning task that inspects the existing architecture\nbefore any code changes \u2014 what T-P2-PLAN-01 was for P2.\n\nThree things to settle before opening Phase 0: it cannot be called `P0`, which\nis the finished executable state harness; it needs an LLM, which Gate B's\nwording must be read against; and `SPEC.md` \u00a73.2 currently states the opposite\nof what Phase 0 does."
+    "intent": "# Intent\n\nNo task in progress.\n\nT-BASELINE-01 closed on 2026-09-23 on branch `cambos-td/baseline` (ADR-038).\n\nNext: review, then open a pull request from `cambos-td/baseline` to `main`.",
+    "handoff": "# Handoff\n\nCurrent implementation continuity. Overwritten, never appended. It holds what\nthe next person or agent needs in order to continue right now. Closed history\nbelongs in `JOURNAL.md`.\n\n## Position\n- T-BASELINE-01 is complete on `cambos-td/baseline` in `../Prokron-baseline`,\n  based on `main` at `30c9f37` (ADR-037, ADR-038).\n- T-HIERARCHY-01 (ADR-035, ADR-036) is `WIP` separately on `cambos-td/work` in\n  `../Prokron-cambos-td`, uncommitted. Its chronicle also queues a\n  T-BASELINE-01 entry, which this branch supersedes.\n\n## What is true now\n- ADRs may carry `Origin: RECONSTRUCTED`, `Evidence:`, and `Authority:`;\n  validation enforces evidence and confirmed authority; compiled JSON,\n  context packets, and the dashboard expose origin.\n- `/prokron-baseline` ships for every host surface and is never run by init.\n- ADR numbers 033\u2013036 are absent on this branch because they exist on others.\n\n## Next action\nOpen a pull request to `main` when the owner approves. Whichever of this branch\nand `cambos-td/work` lands second rebases through `parse.py`, `validate.py`,\n`compile.py`, `dashboard.py`, the tests, and the chronicle; on that branch,\nremove its queued T-BASELINE-01 duplicate and ADR-037 copy."
   },
   "sources": {
     "authority": ".prokron/chronicle",

@@ -88,8 +88,15 @@ past tasks, decisions, or intent. The current request becomes the first task
 when work starts, and later sessions maintain the chronicle as part of normal
 work.
 
-A developer may explicitly request historical reconstruction. It is outside the
-default workflow.
+A developer may explicitly request a baseline of the decisions the code already
+depends on (ADR-037). It is a separate workflow, `/prokron-baseline`, that
+initialization never runs. It proposes at most ten ADRs, each marked
+`Origin: RECONSTRUCTED` with an `Evidence:` field naming the paths it was
+inferred from, and creates no tasks, journal history, or intent. Proposals are
+`PROPOSED` until the owner confirms them and is named in `Authority`.
+Validation rejects a reconstructed ADR with no evidence, or one that is
+`ACCEPTED` with no confirming authority, and the dashboard labels every
+reconstructed decision.
 
 ### 3.3 Bootstrap
 
@@ -195,6 +202,7 @@ The portable workflows are:
 - `/prokron-decide`
 - `/prokron-checkpoint`
 - `/prokron-resume`
+- `/prokron-baseline` (existing repositories, on request)
 
 Claude Code and OpenCode expose these as project slash commands. Codex exposes
 the same workflows through `$prokron <mode>`. Every installation provides

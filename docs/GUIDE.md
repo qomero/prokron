@@ -144,6 +144,7 @@ These are prompts, not code. Each one is a Markdown file in
 | Record or change a decision | `/prokron-decide [decision]` | `$prokron decide [decision]` | `prokron-decide.md` |
 | Save a handoff | `/prokron-checkpoint` | `$prokron checkpoint` | `prokron-checkpoint.md` |
 | Recover current work | `/prokron-resume` | `$prokron resume` | `prokron-resume.md` |
+| Record decisions an existing codebase already depends on | `/prokron-baseline` | `$prokron baseline` | `prokron-baseline.md` |
 
 **You will not need these most of the time.** The rules installed into
 `AGENTS.md` ask an agent to create the task, write its contract, record a
@@ -187,7 +188,7 @@ actually needs.
 | `status` says views were written by another version | Same | `prokron compile && prokron graph && prokron dashboard` |
 | `prokron: command not found` | No launcher on `PATH` | `.prokron/prokron …`, or reinstall without `--no-link` |
 | `No .prokron/ in … or any parent directory` | Running outside an installed project | `cd` into it, or install there |
-| `status` reports an empty project | `existing` mode starts empty on purpose | Work normally; it records from now on |
+| `status` reports an empty project | `existing` mode starts empty on purpose | Work normally; it records from now on. To capture decisions the code already depends on, ask for `/prokron-baseline` |
 | The compiler refuses to compile | Validation errors | `prokron validate` names the file and anchor |
 | The diagram is unreadable | It opened fitted, or the library is unreachable | Zoom, drag, hover to trace a chain; offline it falls back to diagram source |
 | Something disagrees with the code | The chronicle records intent, the code records what exists | Reconcile deliberately; do not silently trust either |

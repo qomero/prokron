@@ -323,6 +323,107 @@ class TestValidation(FixtureCase):
         self.assertIn("multiple-active-phases", self.codes())
 
 
+RECONSTRUCTED_ADR = """# ADR-002: Store records in PostgreSQL
+- Date: 2026-09-23
+- Status: PROPOSED
+- Authority: none
+- Origin: RECONSTRUCTED
+- Evidence: db/schema.sql, docs/adr/0003-postgres.md
+- Supersedes: none
+- Affects: T-TWO
+- Context: The code already depends on it.
+- Decision: Records live in PostgreSQL.
+"""
+
+
+class TestReconstructedDecisions(FixtureCase):
+    """A baseline ADR records a decision the chronicle never observed being
+    made (ADR-037). It must say where it came from, and it gains authority only
+    when a person confirms it."""
+
+    def add(self, text: str = RECONSTRUCTED_ADR) -> None:
+        (self.root / layout.AUTHORITY_DIR / "ADR" / "ADR-002.md").write_text(text)
+        self.project = compiler.load(self.root)
+
+    def test_an_adr_without_origin_is_contemporaneous(self) -> None:
+        decision = self.project.decisions[0]
+        self.assertEqual(decision.origin, "CONTEMPORANEOUS")
+        self.assertIsNone(decision.evidence)
+        self.assertEqual(validate.check(self.project), [])
+
+    def test_a_proposed_reconstruction_with_evidence_validates(self) -> None:
+        self.add()
+        decision = self.project.decisions[1]
+        self.assertEqual(decision.origin, "RECONSTRUCTED")
+        self.assertEqual(decision.evidence, "db/schema.sql, docs/adr/0003-postgres.md")
+        self.assertEqual(validate.check(self.project), [])
+
+    def test_a_reconstruction_without_evidence_is_an_error(self) -> None:
+        for evidence in ("- Evidence: \n", "- Evidence: none\n", ""):
+            with self.subTest(evidence=evidence):
+                self.add(RECONSTRUCTED_ADR.replace(
+                    "- Evidence: db/schema.sql, docs/adr/0003-postgres.md\n", evidence
+                ))
+                found = validate.errors(validate.check(self.project))
+                self.assertEqual([f.code for f in found], ["reconstruction-without-evidence"])
+                self.assertIn("ADR-002", found[0].where)
+
+    def test_an_accepted_reconstruction_needs_a_named_authority(self) -> None:
+        for authority in ("- Authority: none\n", "- Authority: \n", ""):
+            with self.subTest(authority=authority):
+                self.add(
+                    RECONSTRUCTED_ADR.replace("- Status: PROPOSED", "- Status: ACCEPTED")
+                    .replace("- Authority: none\n", authority)
+                )
+                self.assertIn("unconfirmed-reconstruction", self.codes())
+
+    def test_a_confirmed_reconstruction_validates(self) -> None:
+        self.add(
+            RECONSTRUCTED_ADR.replace("- Status: PROPOSED", "- Status: ACCEPTED")
+            .replace("- Authority: none", "- Authority: Ada Lovelace (product owner)")
+        )
+        self.assertEqual(validate.check(self.project), [])
+
+    def test_an_unknown_origin_is_an_error(self) -> None:
+        self.add(RECONSTRUCTED_ADR.replace("Origin: RECONSTRUCTED", "Origin: GUESSED"))
+        self.assertIn("invalid-origin", self.codes())
+
+    def test_compiled_state_carries_origin_and_evidence(self) -> None:
+        self.add()
+        decisions = {d["id"]: d for d in compiler.as_json(self.project)["decisions"]}
+        self.assertEqual(decisions["ADR-001"]["origin"], "CONTEMPORANEOUS")
+        self.assertIsNone(decisions["ADR-001"]["evidence"])
+        self.assertEqual(decisions["ADR-002"]["origin"], "RECONSTRUCTED")
+        self.assertEqual(
+            decisions["ADR-002"]["evidence"], "db/schema.sql, docs/adr/0003-postgres.md"
+        )
+
+    def test_a_context_packet_says_which_decisions_were_reconstructed(self) -> None:
+        self.add()
+        self.rewrite(
+            "TASKS.md",
+            "- AC: AC-T-TWO\n- Evidence: —\n- Governed by: ADR-001",
+            "- AC: AC-T-TWO\n- Evidence: —\n- Governed by: ADR-001, ADR-002",
+        )
+        packet = analytics.context(self.project, "T-TWO")
+        origins = {d["id"]: d["origin"] for d in packet["decisions"]}
+        self.assertEqual(origins, {"ADR-001": "CONTEMPORANEOUS", "ADR-002": "RECONSTRUCTED"})
+
+    def test_the_dashboard_labels_reconstructed_decisions(self) -> None:
+        self.add()
+        html = dashboard.render(
+            self.project, analytics.report(self.project), compiler.as_json(self.project)
+        )
+        section = html.split(">Decisions<", 1)[1].split("<h2>", 1)[0]
+        rows = {
+            re.search(r"<code>(ADR-\d+)</code>", row).group(1): row
+            for row in section.split("<li")[1:]
+        }
+        self.assertIn("RECONSTRUCTED", rows["ADR-002"])
+        self.assertIn("db/schema.sql", rows["ADR-002"])
+        self.assertNotIn("RECONSTRUCTED", rows["ADR-001"])
+
+
 class TestAnalytics(FixtureCase):
     def setUp(self) -> None:
         super().setUp()
@@ -568,7 +669,7 @@ class TestDashboard(FixtureCase):
     def test_shows_every_required_section(self) -> None:
         for heading in (
             "Progress", "Phases", "Gates", "In flight", "Ready", "Obstacles",
-            "Critical path", "Views", "Schedule", "Validation", "All tasks",
+            "Critical path", "Views", "Schedule", "Validation", "Decisions", "All tasks",
         ):
             self.assertIn(f">{heading}<", self.html)
 
@@ -1282,6 +1383,47 @@ class TestPublishedDocumentation(unittest.TestCase):
         readme = (self.ROOT / "README.md").read_text()
         named = set(re.findall(r"v(\d+\.\d+\.\d+)", readme))
         self.assertIn(version, named, f"README names {named or 'no release'}, not {version}")
+
+
+class TestBaselineWorkflow(unittest.TestCase):
+    """The baseline is the one place an agent writes about a past it did not
+    watch (ADR-037). Every limit on it lives in prose, so the prose is what
+    has to be pinned."""
+
+    ROOT = Path(__file__).resolve().parents[1]
+
+    def test_the_workflow_states_every_limit(self) -> None:
+        text = " ".join((self.ROOT / ".prokron/commands/prokron-baseline.md").read_text().split())
+        for rule in (
+            "only when the project owner explicitly asks",
+            "never part of `/prokron-init`",
+            "at most ten",
+            "`Status: PROPOSED`",
+            "`Origin: RECONSTRUCTED`",
+            "Every cited path must exist",
+            "do not copy them into the chronicle",
+            "Create no tasks, journal history, or intent",
+            "never delete one",
+        ):
+            with self.subTest(rule=rule):
+                self.assertIn(rule, text)
+
+    def test_every_host_surface_offers_it(self) -> None:
+        for path in (
+            ".claude/commands/prokron-baseline.md",
+            ".opencode/commands/prokron-baseline.md",
+        ):
+            with self.subTest(path=path):
+                self.assertIn(
+                    ".prokron/commands/prokron-baseline.md", (self.ROOT / path).read_text()
+                )
+        self.assertIn("baseline", (self.ROOT / ".agents/skills/prokron/SKILL.md").read_text())
+        self.assertIn("/prokron-baseline", (self.ROOT / "AGENTS.md").read_text())
+        self.assertIn("resume baseline; do", (self.ROOT / "install.sh").read_text())
+
+    def test_initialization_does_not_run_it(self) -> None:
+        text = " ".join((self.ROOT / ".prokron/commands/prokron-init.md").read_text().split())
+        self.assertIn("initialization never runs it", text)
 
 
 class TestNoNetworkOrDependencies(unittest.TestCase):

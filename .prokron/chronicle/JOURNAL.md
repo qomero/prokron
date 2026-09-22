@@ -867,3 +867,23 @@
   `10.5281/zenodo.22897871`. The badge and `CITATION.cff` point at the concept
   identifier, which always resolves to the newest release; pointing at a
   version identifier would have frozen the badge at 0.4.6.
+
+## 2026-09-23 — T-BASELINE-01
+
+- Did: ADRs gain optional `Origin`, `Evidence`, and `Authority` fields.
+  Validation adds `reconstruction-without-evidence`,
+  `unconfirmed-reconstruction`, and `invalid-origin`. Compiled decisions carry
+  `origin` and `evidence`, context packets carry `origin`, and the dashboard
+  gains a Decisions section labelling reconstructed decisions. The
+  `/prokron-baseline` workflow ships for `.prokron/commands`, Claude Code,
+  OpenCode, the skill, and `AGENTS.md`; init points to it but never runs it.
+- Chose: build on a separate branch off `main` instead of waiting for the
+  hierarchy (ADR-038), because the owner asked for it now and the hierarchy
+  worktree holds another agent's uncommitted work.
+- Proved: 139 unit cases and the installer suite pass; mutations of both new
+  rules and the dashboard label are caught; a pallets/flask pilot produced 7
+  proposals with every evidence path real and no task, intent, or journal
+  change.
+- Left mid-air: nothing on this task. The branch is local and unpushed.
+- Next: pull request to `main` on owner approval; rebase against the
+  hierarchy branch, whichever lands second.

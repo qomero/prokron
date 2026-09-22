@@ -30,6 +30,7 @@ Recognize these workflows:
 - `/prokron-decide` → `.prokron/commands/prokron-decide.md`
 - `/prokron-checkpoint` → `.prokron/commands/prokron-checkpoint.md`
 - `/prokron-resume` → `.prokron/commands/prokron-resume.md`
+- `/prokron-baseline` → `.prokron/commands/prokron-baseline.md` (only when the owner asks)
 
 Maintain the chronicle automatically; do not wait for a Prokron command. Before
 starting newly requested work, create or claim its task, give it a phase from

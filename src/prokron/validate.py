@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from .model import (
     CRITERION_STATES,
+    DECISION_ORIGINS,
     EVIDENCE_CLASSES,
     GATE_STATUSES,
     NO_PHASE,
@@ -206,6 +207,32 @@ def check(project: Project) -> list[Finding]:
                 "unknown-milestone-task",
                 f"milestone names {milestone.task}, which does not exist",
                 f"{milestone.source.file}#{milestone.id}",
+            )
+
+    # A reconstructed decision claims something the chronicle never observed.
+    # It must say what it was inferred from, and it binds work only once a
+    # person has confirmed it (ADR-037).
+    for decision in project.decisions:
+        where = f"{decision.source.file}#{decision.id}"
+        if decision.origin not in DECISION_ORIGINS:
+            error(
+                "invalid-origin",
+                f"'{decision.origin}' is not a known decision origin",
+                where,
+            )
+        if not decision.reconstructed:
+            continue
+        if not decision.evidence:
+            error(
+                "reconstruction-without-evidence",
+                "reconstructed decision cites no Evidence it was inferred from",
+                where,
+            )
+        if decision.status == "ACCEPTED" and not decision.authority:
+            error(
+                "unconfirmed-reconstruction",
+                "reconstructed decision is ACCEPTED but names no confirming Authority",
+                where,
             )
 
     active = [phase for phase in project.phases if phase.status == "ACTIVE"]

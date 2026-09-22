@@ -57,11 +57,24 @@ for file in project.json README.md STATE.md TASK_GRAPH.md; do
 done
 rm -rf "$fixture/first-compile"
 
-for command in init work decide checkpoint resume; do
+for command in init work decide checkpoint resume baseline; do
   test -f "$fixture/.prokron/commands/prokron-$command.md"
   test -f "$fixture/.claude/commands/prokron-$command.md"
   test -f "$fixture/.opencode/commands/prokron-$command.md"
 done
+# Initialization records nothing about the past on its own; the baseline is a
+# separate workflow the owner has to ask for (ADR-037).
+if ls "$fixture/.prokron/chronicle/ADR/"ADR-*.md >/dev/null 2>&1; then
+  echo "a fresh install must contain no ADR" >&2
+  exit 1
+fi
+grep -Fq 'only when the project owner explicitly asks' \
+  "$fixture/.prokron/commands/prokron-baseline.md"
+grep -Fq 'initialization never runs it' "$fixture/.prokron/commands/prokron-init.md"
+grep -Fq '/prokron-baseline' "$fixture/AGENTS.md"
+grep -Fq 'baseline' "$fixture/.agents/skills/prokron/SKILL.md"
+grep -Fq '.prokron/commands/prokron-baseline.md' "$fixture/.claude/commands/prokron-baseline.md"
+grep -Fq 'Origin: RECONSTRUCTED' "$fixture/.prokron/chronicle/ADR/README.md"
 # A host command file must name a document that was actually installed.
 grep -Fq '.prokron/commands/prokron-work.md' "$fixture/.claude/commands/prokron-work.md"
 grep -Fq '# Keep agent rules' "$fixture/AGENTS.md"

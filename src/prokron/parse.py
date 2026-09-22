@@ -52,6 +52,13 @@ def _list(value: str | None) -> list[str]:
     return [part.strip() for part in value.split(",") if part.strip()]
 
 
+def _named(value: str | None) -> str | None:
+    """A free-text field that may be left empty or written as `none`."""
+    if not value or value.strip().lower() in {"none", "—", "-"}:
+        return None
+    return value.strip()
+
+
 def _sections(text: str, level: str) -> list[tuple[str, str]]:
     """Split Markdown into (heading, body) pairs at one heading level.
 
@@ -305,6 +312,9 @@ def parse_decisions(directory: Path) -> list[Decision]:
                 ],
                 affects=_list(fields.get("Affects")),
                 source=Source(f"ADR/{path.name}", heading.group(1)),
+                origin=fields.get("Origin") or "CONTEMPORANEOUS",
+                evidence=_named(fields.get("Evidence")),
+                authority=_named(fields.get("Authority")),
             )
         )
     return decisions
