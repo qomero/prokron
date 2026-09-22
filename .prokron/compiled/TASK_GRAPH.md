@@ -4,7 +4,7 @@
 
 ## Summary
 
-- DONE: T-V01-01, T-V01-02, T-V01-03, T-V01-04, T-V01-05, T-V01-06, T-V011-01, T-V011-02, T-V02-01, T-V02-02, T-V02-03, T-V02-04, T-HARNESS-01, T-HARNESS-02, T-WORKFLOW-01, T-DOCS-01, T-INSTALL-01, T-HOSTS-01, T-CLEANUP-01, T-CONTINUITY-01, T-READINESS-01, T-DOCS-02, T-DOCS-03, T-REMOTE-01, T-GIT-NAME-01, T-RENAME-01, T-AUTHOR-01, T-GATEVIEW-01, T-DOCS-04, T-P2-PLAN-01, T-P2-01, T-P2-02, T-P2-03, T-P2-04, T-P2-05, T-P2-06, T-P2-07, T-P2-08, T-P2-09, T-P2-10, T-P2-11, T-P2-12, T-P2-13, T-P2-14, T-P2-AUDIT-01, T-PILOT-01, T-MIGRATE-01, T-LAYOUT-01, T-GRAPHVIEW-01, T-GRAPHVIEW-02, T-SAFETY-01, T-DOCS-05, T-CLI-01
+- DONE: T-V01-01, T-V01-02, T-V01-03, T-V01-04, T-V01-05, T-V01-06, T-V011-01, T-V011-02, T-V02-01, T-V02-02, T-V02-03, T-V02-04, T-HARNESS-01, T-HARNESS-02, T-WORKFLOW-01, T-DOCS-01, T-INSTALL-01, T-HOSTS-01, T-CLEANUP-01, T-CONTINUITY-01, T-READINESS-01, T-DOCS-02, T-DOCS-03, T-REMOTE-01, T-GIT-NAME-01, T-RENAME-01, T-AUTHOR-01, T-GATEVIEW-01, T-DOCS-04, T-P2-PLAN-01, T-P2-01, T-P2-02, T-P2-03, T-P2-04, T-P2-05, T-P2-06, T-P2-07, T-P2-08, T-P2-09, T-P2-10, T-P2-11, T-P2-12, T-P2-13, T-P2-14, T-P2-AUDIT-01, T-PILOT-01, T-MIGRATE-01, T-LAYOUT-01, T-GRAPHVIEW-01, T-GRAPHVIEW-02, T-SAFETY-01, T-DOCS-05, T-CLI-01, T-CI-01
 - Eligible now: none
 - Waiting: none
 
@@ -228,7 +228,7 @@
 - T-P2-14 [DONE] Prove regeneration and close Phase 2
   - phase: P2
   - depends on: T-P2-12, T-P2-13
-  - unlocks: none
+  - unlocks: T-CI-01
   - eligible: no
 - T-P2-AUDIT-01 [DONE] Audit the Phase 2 runtime before release
   - phase: P2
@@ -273,5 +273,10 @@
 - T-CLI-01 [DONE] Install with one line, and type one word
   - phase: P-NONE
   - depends on: T-LAYOUT-01
+  - unlocks: none
+  - eligible: no
+- T-CI-01 [DONE] Enforce the project's invariants on every change
+  - phase: P-NONE
+  - depends on: T-P2-14
   - unlocks: none
   - eligible: no

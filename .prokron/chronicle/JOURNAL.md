@@ -711,3 +711,31 @@
   four dashboard figures regenerated rather than left describing a project that
   no longer exists.
 - Next: Phase 0 or Phase 3. New scope, not remaining scope. Authority first.
+
+## 2026-09-22 — T-CI-01
+
+- Did: added continuous integration and the contributor documents a public
+  repository needs. Nothing ran this project's tests except a person typing the
+  command.
+- Chose: CI that enforces the project's own claims, not just `unittest`. Two of
+  the central ones had no test at all — that the compiled directory regenerates
+  from authority, and that the chronicle validates. Both were true only because
+  someone remembered to check.
+- Verified before committing: every CI step was run locally first. The
+  regeneration check earned its place immediately by failing — run against a
+  chronicle whose rebuild had not yet been committed, it named the eight files
+  that differed. A check that has never failed is a check nobody has tested.
+- Settled by side effect: whether `.prokron/compiled/` should stay committed.
+  It stays, because the diff is now the mechanism that proves regeneration. The
+  handoff had carried that as an open question.
+- Chose: the Python floor is whatever the matrix proves, not what the README
+  asserts. Nothing in the runtime uses a feature newer than 3.9, so the matrix
+  starts there and will say if that is wrong.
+- Chose: no maintainer address published. Reports go through GitHub's private
+  advisory form. The conduct document says plainly that a single-maintainer
+  project gives a report about the maintainer no independent reviewer, rather
+  than implying a process that does not exist.
+- Wrote `CONTRIBUTING.md` as the workflow the tool installs, because that is
+  what it actually is: a task, a contract frozen before the work, an ADR for a
+  material choice, evidence before `DONE`.
+- Next: Phase 0 or Phase 3. Authority first.

@@ -4,6 +4,39 @@ Prokron records its own history in `.prokron/chronicle/JOURNAL.md` and its
 decisions in `.prokron/chronicle/ADR/`. This file is the short version, for
 people arriving from a release page.
 
+## 0.4.2 — 2026-09-22
+
+Nothing ran the tests except a person typing the command. Now something does.
+
+### Added
+
+- **Continuous integration** ([`ci.yml`](.github/workflows/ci.yml)) that
+  enforces this project's own claims rather than only running `unittest`:
+  - `tests` — the unit and installer suites on Ubuntu and macOS, Python 3.9
+    through 3.13, with no dependency installed.
+  - `invariants` — validates the real chronicle, then deletes
+    `.prokron/compiled/`, rebuilds it, and fails if the result differs from
+    what is committed. This makes Gate B and `AC-T-P2-14-01` continuously
+    enforced instead of periodically remembered.
+  - `no network, no dependencies` — asserts the runtime imports nothing outside
+    the standard library.
+- **[`CONTRIBUTING.md`](CONTRIBUTING.md)** — how a change is accepted here: a
+  task, a contract frozen before the work, an ADR for a material choice, and
+  evidence before `DONE`. The same workflow the tool installs.
+- **[`SECURITY.md`](SECURITY.md)** — the four parts of the surface worth
+  attacking, and three things that are not vulnerabilities.
+- **[`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md)**, issue templates for a
+  chronicle gap and a bug, and a pull request template that asks for the task,
+  the contract and the evidence.
+
+Reports route through GitHub's private advisory form; no maintainer address is
+published. ADR-029.
+
+### Decided
+
+- `.prokron/compiled/` stays committed. The diff is now the mechanism that
+  proves regeneration, which settles an open question the handoff had carried.
+
 ## 0.4.1 — 2026-09-22
 
 The continuity pilot ran in full. Every phase is closed and every gate is green.

@@ -581,3 +581,14 @@
 - AC: AC-T-CLI-01
 - Evidence: Installing is `curl -fsSL <url> | sh` with no arguments; `existing` is the default and `new` still works. The installer writes a `prokron` launcher into a directory already on `PATH`, which walks up to the nearest `.prokron/prokron` and execs it, so the command works from any subdirectory and each project keeps its own runtime. It creates no directory, leaves shell configuration untouched, never replaces a `prokron` it did not write, and prints the alias when it cannot link. `--no-link` opts out. 123 unit tests and the installer suite pass, including a full install under a fake `HOME` and `PATH`.
 - Governed by: ADR-027
+
+## T-CI-01: Enforce the project's invariants on every change
+- Status: DONE
+- Phase: P-NONE
+- Validation: SYNTHETIC
+- Dependencies: T-P2-14
+- Owner: claude/primary
+- Claimed: 2026-09-22
+- AC: AC-T-CI-01
+- Evidence: `.github/workflows/ci.yml` runs the unit and installer suites across Ubuntu and macOS on Python 3.9 to 3.13, then enforces two claims no unit test covered: that the chronicle validates, and that the compiled directory regenerates byte for byte from authority. Every step was run locally first; the regeneration check was shown to fail on real drift before it was committed. Contributor documents added: `CONTRIBUTING.md`, `SECURITY.md`, `CODE_OF_CONDUCT.md`, two issue templates and a pull request template, all routing reports through GitHub's private form rather than a published address. The documentation test now holds all three new documents to their own links.
+- Governed by: ADR-029

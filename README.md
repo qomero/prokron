@@ -295,7 +295,7 @@ Prokron — phase none
   Blocked   none
 ```
 
-That is this repository at v0.4.1, reporting its own unfinished work.
+That is this repository at v0.4.2, reporting its own unfinished work.
 
 ```console
 $ prokron explain T-PILOT-01
@@ -508,6 +508,8 @@ project history.
 |---|---|
 | [`docs/SPEC.md`](docs/SPEC.md) | The record format, working lifecycle, invariants, scope, and the continuity pilot. |
 | [`docs/PRODUCT-THESIS.md`](docs/PRODUCT-THESIS.md) | Why shared project state, and how the model is built. |
+| [`CONTRIBUTING.md`](CONTRIBUTING.md) | How a change is accepted here: a task, a contract, evidence. |
+| [`SECURITY.md`](SECURITY.md) | What is in scope, and how to report privately. |
 | [`.prokron/chronicle/README.md`](.prokron/chronicle/README.md) | The read order and working rules an agent follows. |
 | [`CHANGELOG.md`](CHANGELOG.md) | What changed in each release. |
 
@@ -518,8 +520,11 @@ When reporting a gap, include the host and model, the request, what was
 recorded, and what a person or agent could not understand from it. Remove
 private project details before sharing.
 
-Changes should keep Prokron small and readable. The
-[specification](docs/SPEC.md) defines the working agreement and scope.
+Changes should keep Prokron small and readable.
+[`CONTRIBUTING.md`](CONTRIBUTING.md) describes how a change is accepted — a
+task, a frozen contract, and evidence, which is the same workflow the tool
+installs. The [specification](docs/SPEC.md) defines the working agreement and
+scope.
 
 ## Qomero
 

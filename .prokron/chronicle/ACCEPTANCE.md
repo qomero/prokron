@@ -1251,3 +1251,49 @@ paid the cost of an awkward invocation.
     with no argument forwarding, and that no runnable example in the README
     begins with `.prokron/prokron`. The path appears twice: once explaining
     the fallback, once for `new` mode inside a fold.
+
+## AC-T-CI-01 — Enforce the project's invariants on every change
+
+Nothing ran the tests except a person typing the command, and two central
+claims — that compiled output regenerates and that authority is consistent —
+were checked only when someone remembered.
+
+- `AC-T-CI-01-01` — Every push and pull request runs the unit suite and the
+  installer suite on Linux and macOS across the supported Python versions.
+  `INSPECTION` · `PASS`
+  - Evidence: `.github/workflows/ci.yml` runs on push to `main`, on every pull
+    request, and on demand. The `tests` job is a ten-cell matrix — Ubuntu and
+    macOS against Python 3.9 through 3.13 — running `unittest discover` and
+    `tests/install.sh`, with `fail-fast` off so one red cell does not hide the
+    others. No dependency is installed, because a runtime that needs one would
+    already have broken ADR-016.
+- `AC-T-CI-01-02` — The workflow deletes the compiled directory, rebuilds it,
+  and fails if the result differs from what is committed. `INSPECTION` · `PASS`
+  - Evidence: the `invariants` job removes `.prokron/compiled/`, runs
+    `compile`, `graph` and `dashboard`, and fails on a non-empty `git diff`
+    against it, printing the command that fixes it. Exercised before it was
+    committed: run against a chronicle whose rebuild had not yet been
+    committed, it failed and named the eight files that differed. It also
+    asserts the generated views still carry their generated-by header, so a
+    hand-edited view is caught rather than silently trusted.
+- `AC-T-CI-01-03` — The workflow validates the real chronicle, not a fixture.
+  `INSPECTION` · `PASS`
+  - Evidence: the same job runs `.prokron/prokron validate` against this
+    repository's own chronicle before anything derived from it is checked.
+- `AC-T-CI-01-04` — A contributor can find how a change is accepted here, what
+  evidence it needs, and how to report a gap or a vulnerability, without
+  reading the specification first. `INSPECTION` · `PASS`
+  - Evidence: `CONTRIBUTING.md` states the four steps — task, frozen contract,
+    ADR for a material choice, evidence before `DONE` — the house rules, the
+    arbitration order and the finding taxonomy, and what each CI job proves.
+    Issue templates cover a chronicle gap and a bug; the pull request template
+    asks for the task, the contract and the evidence. `SECURITY.md` names the
+    four parts of the surface that are actually interesting and the three
+    things that are not vulnerabilities. Every relative link in all three
+    resolves, asserted by the documentation test, which now covers them.
+- `AC-T-CI-01-05` — No maintainer's personal address is published to receive
+  reports. `INSPECTION` · `PASS`
+  - Evidence: `SECURITY.md` and `CODE_OF_CONDUCT.md` both route reports through
+    GitHub's private advisory form. The conduct document also states plainly
+    that a single-maintainer project gives a report about the maintainer no
+    independent reviewer, rather than implying a process that does not exist.

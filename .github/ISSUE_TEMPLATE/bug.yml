@@ -1,0 +1,40 @@
+name: Bug
+description: The tool did something other than what it says it does
+labels: ["bug"]
+body:
+  - type: input
+    id: version
+    attributes:
+      label: Prokron version
+      description: "`prokron --version`"
+    validations:
+      required: true
+  - type: input
+    id: platform
+    attributes:
+      label: Platform and Python
+      placeholder: macOS 15, python 3.12 · Ubuntu 24.04, python 3.10
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: What you ran
+      description: The commands, in order.
+      render: shell
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected, and what happened
+      description: Paste the output rather than describing it, where you can.
+    validations:
+      required: true
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before posting
+      options:
+        - label: "`prokron validate` reports the chronicle is consistent, or its output is included above"
+        - label: The report contains no private project detail

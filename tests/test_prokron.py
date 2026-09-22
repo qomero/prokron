@@ -1169,7 +1169,14 @@ class TestPublishedDocumentation(unittest.TestCase):
     instruction that no longer meant what it said."""
 
     ROOT = Path(__file__).resolve().parents[1]
-    PUBLISHED = ("README.md", "docs/SPEC.md", "docs/PRODUCT-THESIS.md")
+    PUBLISHED = (
+        "README.md",
+        "docs/SPEC.md",
+        "docs/PRODUCT-THESIS.md",
+        "CONTRIBUTING.md",
+        "SECURITY.md",
+        "CODE_OF_CONDUCT.md",
+    )
 
     def documents(self):
         for name in self.PUBLISHED:

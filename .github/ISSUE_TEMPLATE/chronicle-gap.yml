@@ -1,0 +1,53 @@
+name: Chronicle gap
+description: A person or an agent could not understand a project from its chronicle
+labels: ["chronicle-gap"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        The most useful reports for this project. Something was done, the
+        chronicle recorded it, and the record turned out not to carry what the
+        next participant needed.
+
+        Remove private project details before posting.
+  - type: input
+    id: host
+    attributes:
+      label: Host and model
+      placeholder: Codex CLI 0.155.1, gpt-5-codex · Claude Code, Opus 5 · OpenCode, GLM-4.6
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Prokron version
+      description: "`prokron --version`"
+    validations:
+      required: true
+  - type: textarea
+    id: request
+    attributes:
+      label: What was asked
+      description: The request, as it was actually phrased.
+    validations:
+      required: true
+  - type: textarea
+    id: recorded
+    attributes:
+      label: What was recorded
+      description: The relevant task, contract, intent, handoff or journal entry.
+      render: markdown
+    validations:
+      required: true
+  - type: textarea
+    id: gap
+    attributes:
+      label: What could not be understood from it
+      description: What the next person or agent had to guess, reconstruct, or ask for.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What the record should have carried
+      description: Optional. If you know what was missing, say so.

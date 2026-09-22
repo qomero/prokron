@@ -20,7 +20,7 @@ editing history.
 - [ADR-013](ADR-013.md) — Adopt the Phase 2 specification and reinstate a deterministic runtime (ACCEPTED)
 - [ADR-014](ADR-014.md) — Separate authored authority from compiled state (ACCEPTED) — amended by ADR-024
 - [ADR-015](ADR-015.md) — Adopt the Phase 2 execution document set (ACCEPTED)
-- [ADR-016](ADR-016.md) — Implement the Phase 2 compiler with the Python standard library only (ACCEPTED) — amended by ADR-025
+- [ADR-016](ADR-016.md) — Implement the Phase 2 compiler with the Python standard library only (ACCEPTED) — amended by ADR-025, ADR-029
 - [ADR-017](ADR-017.md) — Ship the runtime as copied files beside the chronicle (ACCEPTED) — amended by ADR-024, ADR-027
 - [ADR-018](ADR-018.md) — Scope a context packet to its own task (ACCEPTED)
 - [ADR-019](ADR-019.md) — Migrate v0.1 chronicles explicitly, and never in place (ACCEPTED) — amended by ADR-024
@@ -33,3 +33,4 @@ editing history.
 - [ADR-026](ADR-026.md) — Phase specifications are internal; the public documentation leads with the problem (ACCEPTED)
 - [ADR-027](ADR-027.md) — Install with one line, and put the command on PATH (ACCEPTED)
 - [ADR-028](ADR-028.md) — The continuity pilot was completed rather than deferred (ACCEPTED)
+- [ADR-029](ADR-029.md) — Continuous integration enforces the project's own invariants (ACCEPTED)
