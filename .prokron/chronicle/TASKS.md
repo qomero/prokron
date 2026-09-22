@@ -625,3 +625,14 @@
 - AC: AC-T-DOCS-06
 - Evidence: Every command, flag and failure mode was exercised in a freshly installed project rather than in this repository: thirteen invocations succeeded, and `explain` on an unknown task and `migrate` with nothing to migrate exit non-zero as intended. Every host pointer resolves — ten command files across Claude Code and OpenCode, the agent skill, and the five workflow references in `AGENTS.md`. The audit found one real gap: Claude Code showed the body of each command file in its slash menu, so a user read `Follow .prokron/commands/prokron-work.md` where an OpenCode user read `Start or continue one Prokron task`. All five now carry a description and an argument hint. `docs/GUIDE.md` was written from that audit, so every command and flag in it is one that was run.
 - Governed by: ADR-022
+
+## T-DOI-01: Make releases archived and citable
+- Status: DONE
+- Phase: P-NONE
+- Validation: SYNTHETIC
+- Dependencies: T-DOCS-06
+- Owner: claude/primary
+- Claimed: 2026-09-22
+- AC: AC-T-DOI-01
+- Evidence: `.zenodo.json` and `CITATION.cff` carry the title, description, licence, keywords and authorship the archive should record, rather than leaving it to infer them. Both parse. Authorship is the organisation, because a personal name and ORCID were not confirmed and are the author's to give. A regression test asserts the version in `CITATION.cff` matches `VERSION`, which is the same drift class the README test already guards.
+- Governed by: ADR-032

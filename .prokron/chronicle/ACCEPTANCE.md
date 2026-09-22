@@ -1404,3 +1404,24 @@ fresh installation.
     command and flag in it is one that was run. It joins the published set held
     by the documentation tests: every relative link resolves, and no `rm -rf`
     names anything but the compiled directory.
+
+## AC-T-DOI-01 — Make releases archived and citable
+
+A release on a code host can disappear with the account that owns it, and a
+repository URL is not something a paper can cite.
+
+- `AC-T-DOI-01-01` — The repository carries its own archive metadata rather
+  than leaving the deposit to infer it. `INSPECTION` · `PASS`
+  - Evidence: `.zenodo.json` records the title, description, licence, access
+    level, keywords and creators; `CITATION.cff` records the same for readers
+    and for the citation affordance on the code host. Both parse.
+- `AC-T-DOI-01-02` — The version a release claims is the same everywhere it
+  appears. `TEST` · `PASS`
+  - Evidence: a test asserts `CITATION.cff` names the version in `VERSION`.
+    The README is already held to the same file, so a release that updates one
+    and forgets another fails rather than shipping inconsistent metadata.
+- `AC-T-DOI-01-03` — No personal identity is published that its owner did not
+  confirm. `INSPECTION` · `PASS`
+  - Evidence: authorship is recorded as the organisation. A personal name and
+    an ORCID are the author's to give, were not confirmed, and a deposited
+    record can be edited afterwards.

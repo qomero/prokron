@@ -842,3 +842,21 @@
   nothing in it describes behaviour nobody observed. That is the same rule the
   project applies to evidence.
 - Next: Phase 0 or Phase 3. Authority first.
+
+## 2026-09-22 — T-DOI-01
+
+- Did: added `.zenodo.json` and `CITATION.cff` so the archived deposit records
+  what the project is rather than inferring it.
+- Why it needed a release at all: archiving only deposits releases created
+  after it was switched on. Everything up to 0.4.5 predates that and is not
+  retroactively archived, which is worth knowing when reading the version
+  history.
+- Chose: organisation authorship, not a person. A personal name and an ORCID
+  are the author's to give and were not confirmed, and a deposited record is a
+  durable thing to get wrong. It is editable afterwards, and this is the part
+  most worth revisiting deliberately — a DOI is usually wanted for personal
+  academic credit, which an organisation name does not provide.
+- Noticed: the version now appears in a third place. The README was already
+  held to `VERSION` by a test after that drift shipped once; `CITATION.cff` got
+  the same guard immediately rather than after it broke.
+- Next: Phase 0 or Phase 3. Authority first.

@@ -1,0 +1,26 @@
+cff-version: 1.2.0
+message: If you use Prokron in your work, please cite it.
+title: "Prokron: project management that a person and an AI can both read"
+abstract: >-
+  Prokron keeps people and AI agents working from the same project state. A
+  project's phases, tasks, dependencies, decisions and definition of done live
+  as Markdown inside its repository, and a deterministic compiler turns those
+  documents into project state, projected as a dashboard for a person and as a
+  context packet for an agent.
+type: software
+authors:
+  - name: Qomero
+repository-code: https://github.com/qomero/prokron
+url: https://github.com/qomero/prokron
+license: Apache-2.0
+version: 0.4.6
+date-released: "2026-09-22"
+keywords:
+  - project management
+  - software engineering
+  - AI agents
+  - human-AI collaboration
+  - shared project state
+  - architectural decision records
+  - acceptance criteria
+  - reproducibility

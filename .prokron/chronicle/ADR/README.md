@@ -36,3 +36,4 @@ editing history.
 - [ADR-029](ADR-029.md) — Continuous integration enforces the project's own invariants (ACCEPTED)
 - [ADR-030](ADR-030.md) — A project names itself in authority, not in the filesystem (ACCEPTED)
 - [ADR-031](ADR-031.md) — Generated views are refreshed on upgrade, and say which version wrote them (ACCEPTED)
+- [ADR-032](ADR-032.md) — Releases are archived and citable (ACCEPTED)

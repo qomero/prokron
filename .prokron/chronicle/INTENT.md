@@ -2,9 +2,9 @@
 
 No task in progress.
 
-T-DOCS-06 closed on 2026-09-22. Both surfaces were audited against a fresh
-installation, the Claude Code slash menu now says what each command does rather
-than where it lives, and `docs/GUIDE.md` covers day-to-day use.
+T-DOI-01 closed on 2026-09-22 under ADR-032. Releases now carry their own
+archive and citation metadata, so each one is preserved independently of the
+code host and can be cited.
 
 Next: open Phase 0 or Phase 3 from their internal specifications in
 `next_plan/`. Both are new scope. Authority first: an ADR accepting the

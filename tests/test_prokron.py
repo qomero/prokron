@@ -1268,6 +1268,15 @@ class TestPublishedDocumentation(unittest.TestCase):
                         "published examples run `prokron`, not a path",
                     )
 
+    def test_citation_metadata_names_the_release_it_ships_with(self) -> None:
+        """A deposited record is durable, so metadata that disagrees with the
+        release is worse than metadata that is missing (ADR-032)."""
+        version = (self.ROOT / "VERSION").read_text().strip()
+        citation = (self.ROOT / "CITATION.cff").read_text()
+        named = re.search(r"(?m)^version:\s*(\S+)\s*$", citation)
+        self.assertIsNotNone(named, "CITATION.cff records no version")
+        self.assertEqual(named.group(1).strip('"\''), version)
+
     def test_the_readme_names_the_release_it_ships_with(self) -> None:
         version = (self.ROOT / "VERSION").read_text().strip()
         readme = (self.ROOT / "README.md").read_text()

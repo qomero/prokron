@@ -1,0 +1,31 @@
+{
+  "upload_type": "software",
+  "title": "Prokron: project management that a person and an AI can both read",
+  "description": "<p>Prokron keeps people and AI agents working from the same project state.</p><p>A project's phases, tasks, dependencies, decisions and definition of done live as Markdown inside its repository. A deterministic compiler, written with the Python standard library and no network or model provider, turns those documents into project state: what is done, what is ready, what is blocked, which gates pass, what sits on the critical path, and what evidence exists for any claim that work is finished. The same state is projected two ways &mdash; a browsable dashboard for a person, and a structured context packet for an agent &mdash; so neither side gets a private version of the truth.</p><p>Completion is governed by acceptance contracts that freeze when work starts, and disagreements are resolved by a stated arbitration order rather than by seniority. Prokron owns project understanding, not project execution.</p>",
+  "creators": [
+    {
+      "name": "Qomero"
+    }
+  ],
+  "license": "Apache-2.0",
+  "access_right": "open",
+  "keywords": [
+    "project management",
+    "software engineering",
+    "AI agents",
+    "human-AI collaboration",
+    "shared project state",
+    "architectural decision records",
+    "acceptance criteria",
+    "provenance",
+    "reproducibility",
+    "developer tools"
+  ],
+  "related_identifiers": [
+    {
+      "identifier": "https://github.com/qomero/prokron",
+      "relation": "isSupplementTo",
+      "scheme": "url"
+    }
+  ]
+}

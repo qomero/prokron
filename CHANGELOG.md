@@ -4,6 +4,22 @@ Prokron records its own history in `.prokron/chronicle/JOURNAL.md` and its
 decisions in `.prokron/chronicle/ADR/`. This file is the short version, for
 people arriving from a release page.
 
+## 0.4.6 — 2026-09-22
+
+### Added
+
+- **Archive and citation metadata.** `.zenodo.json` and `CITATION.cff` record
+  the title, description, licence, keywords and authorship, so the archived
+  deposit says what the project is rather than what could be inferred from the
+  repository on the day it was read. Releases from here on are preserved
+  independently of the code host and carry a persistent identifier. ADR-032.
+
+  Authorship is recorded as the organisation. A personal name and an ORCID are
+  the author's to give; the deposited record can be edited.
+
+- A test asserting `CITATION.cff` names the version in `VERSION`, the same
+  drift guard the README already has.
+
 ## 0.4.5 — 2026-09-22
 
 ### Added
