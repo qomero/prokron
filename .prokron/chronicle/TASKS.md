@@ -592,3 +592,14 @@
 - AC: AC-T-CI-01
 - Evidence: `.github/workflows/ci.yml` runs the unit and installer suites across Ubuntu and macOS on Python 3.9 to 3.13, then enforces two claims no unit test covered: that the chronicle validates, and that the compiled directory regenerates byte for byte from authority. Every step was run locally first; the regeneration check was shown to fail on real drift before it was committed. Contributor documents added: `CONTRIBUTING.md`, `SECURITY.md`, `CODE_OF_CONDUCT.md`, two issue templates and a pull request template, all routing reports through GitHub's private form rather than a published address. The documentation test now holds all three new documents to their own links.
 - Governed by: ADR-029
+
+## T-NAME-01: Compile the same in every checkout
+- Status: DONE
+- Phase: P-NONE
+- Validation: SYNTHETIC
+- Dependencies: T-CI-01
+- Owner: claude/primary
+- Claimed: 2026-09-22
+- AC: AC-T-NAME-01
+- Evidence: The compiled project name came from the directory the repository was cloned into. Continuous integration caught it on its first run: the same authority produced `Prokron` locally and `prokron` on the runner, and `STATE.md`, `project.json` and `dashboard.html` differed. A project now names itself with a `Project:` line in `PHASES.md`, and a chronicle without one falls back to the directory name, so nothing existing needs migrating. Loading the same chronicle from two differently named directories now yields the same name, asserted by a regression test that fails on the previous behaviour.
+- Governed by: ADR-030

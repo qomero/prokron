@@ -739,3 +739,28 @@
   what it actually is: a task, a contract frozen before the work, an ADR for a
   material choice, evidence before `DONE`.
 - Next: Phase 0 or Phase 3. Authority first.
+
+## 2026-09-22 — T-NAME-01
+
+- Did: a project now names itself in `PHASES.md` instead of inheriting the name
+  of the directory it was cloned into.
+- Found by: the CI added hours earlier, on its first run. The same authority
+  compiled to `Prokron` locally and `prokron` on the runner, and three
+  generated files differed.
+- Why no test caught it: a fixture is always created under one name. The defect
+  only exists across two checkouts, which is precisely the thing a second
+  machine provides and a local suite cannot.
+- What it actually broke: not just a cosmetic label. Gate B and
+  `AC-T-P2-14-01` claim compiled output regenerates from authority, and that
+  was only ever true within one machine's directory naming. The wider claim —
+  that two participants reading the same project reach the same answer — was
+  false the moment two people cloned into differently named directories.
+- Rejected: checking the repository out into a fixed directory name in the
+  workflow. That would have made the pipeline green by making it dishonest,
+  which is the failure this project exists to prevent.
+- Kept compatible: a chronicle with no `Project:` line falls back to the
+  directory name, so every existing installation works unchanged and nothing
+  needs migrating. The template ships the field empty so the next project sees
+  it exists without being made to fill it.
+- Verified by mutation: reverting to `root.name` fails the new regression test.
+- Next: Phase 0 or Phase 3. Authority first.

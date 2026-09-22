@@ -4,6 +4,27 @@ Prokron records its own history in `.prokron/chronicle/JOURNAL.md` and its
 decisions in `.prokron/chronicle/ADR/`. This file is the short version, for
 people arriving from a release page.
 
+## 0.4.3 — 2026-09-22
+
+CI found a determinism defect on its first run.
+
+### Fixed
+
+- **Compiled output no longer depends on the directory the repository sits in.**
+  The project name came from `root.name`, so the same chronicle compiled to
+  `Prokron` in one checkout and `prokron` in another, and three generated files
+  differed. The regeneration claim had therefore only ever held within one
+  machine's directory naming.
+
+  A project can now name itself with a `Project:` line above the first heading
+  of `PHASES.md`. A chronicle without one keeps using the directory name, so
+  **nothing existing needs migrating**, and the shipped template carries the
+  field empty. ADR-030.
+
+  The fix was to make the record more complete, not to make the check less
+  strict — checking out into a fixed directory name would have turned a green
+  pipeline into a lie.
+
 ## 0.4.2 — 2026-09-22
 
 Nothing ran the tests except a person typing the command. Now something does.

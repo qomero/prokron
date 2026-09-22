@@ -18,7 +18,7 @@ editing history.
 - [ADR-011](ADR-011.md) — Preserve installed guidance and make upgrades explicit (ACCEPTED)
 - [ADR-012](ADR-012.md) — Lead with shared understanding across people and AI (ACCEPTED)
 - [ADR-013](ADR-013.md) — Adopt the Phase 2 specification and reinstate a deterministic runtime (ACCEPTED)
-- [ADR-014](ADR-014.md) — Separate authored authority from compiled state (ACCEPTED) — amended by ADR-024
+- [ADR-014](ADR-014.md) — Separate authored authority from compiled state (ACCEPTED) — amended by ADR-024, ADR-030
 - [ADR-015](ADR-015.md) — Adopt the Phase 2 execution document set (ACCEPTED)
 - [ADR-016](ADR-016.md) — Implement the Phase 2 compiler with the Python standard library only (ACCEPTED) — amended by ADR-025, ADR-029
 - [ADR-017](ADR-017.md) — Ship the runtime as copied files beside the chronicle (ACCEPTED) — amended by ADR-024, ADR-027
@@ -34,3 +34,4 @@ editing history.
 - [ADR-027](ADR-027.md) — Install with one line, and put the command on PATH (ACCEPTED)
 - [ADR-028](ADR-028.md) — The continuity pilot was completed rather than deferred (ACCEPTED)
 - [ADR-029](ADR-029.md) — Continuous integration enforces the project's own invariants (ACCEPTED)
+- [ADR-030](ADR-030.md) — A project names itself in authority, not in the filesystem (ACCEPTED)

@@ -1162,6 +1162,49 @@ class TestSingleDirectory(unittest.TestCase):
         self.assertFalse(layout.AUTHORITY_DIR.startswith(layout.COMPILED_DIR))
 
 
+class TestProjectIdentity(unittest.TestCase):
+    """The compiled name used to come from the directory the repository sat in,
+    so two clones of one chronicle disagreed. A fixture is always made under a
+    single name, which is why only CI could find it (ADR-030)."""
+
+    def chronicle_in(self, root: Path, project_line: str = "Project: Fixture\n\n") -> Path:
+        authority = root / layout.AUTHORITY_DIR
+        (authority / "ADR").mkdir(parents=True)
+        (authority / "PHASES.md").write_text(project_line + PHASES)
+        (authority / "TASKS.md").write_text(TASKS)
+        (authority / "ACCEPTANCE.md").write_text(ACCEPTANCE)
+        (authority / "ADR" / "ADR-001.md").write_text(ADR)
+        (authority / "INTENT.md").write_text("# Intent\n\nNone.\n")
+        (authority / "HANDOFF.md").write_text("# Handoff\n\nNone.\n")
+        return root
+
+    def test_one_chronicle_compiles_the_same_from_any_directory(self) -> None:
+        with tempfile.TemporaryDirectory() as workspace:
+            names = []
+            for directory in ("alpha", "a-different-checkout"):
+                root = self.chronicle_in(Path(workspace) / directory)
+                names.append(compiler.load(root).name)
+            self.assertEqual(names[0], names[1])
+            self.assertEqual(names[0], "Fixture")
+
+    def test_a_chronicle_that_names_nothing_keeps_the_directory_name(self) -> None:
+        """Every installation that predates the field has no line to read, and
+        must keep working without being migrated."""
+        with tempfile.TemporaryDirectory() as workspace:
+            root = self.chronicle_in(Path(workspace) / "unnamed", project_line="")
+            self.assertEqual(compiler.load(root).name, "unnamed")
+
+    def test_the_name_is_read_from_authority_only_above_the_first_heading(self) -> None:
+        """`Project:` inside a phase body is prose, not the project's name."""
+        with tempfile.TemporaryDirectory() as workspace:
+            root = Path(workspace) / "elsewhere"
+            self.chronicle_in(root, project_line="")
+            phases = root / layout.AUTHORITY_DIR / "PHASES.md"
+            phases.write_text(phases.read_text().replace(
+                "# Phases", "# Phases\n\nProject: NotTheName", 1))
+            self.assertEqual(compiler.load(root).name, "elsewhere")
+
+
 class TestPublishedDocumentation(unittest.TestCase):
     """The public documents drift silently. A path that moved, a count that
     grew, a version that shipped — none of it fails anything, and a reader

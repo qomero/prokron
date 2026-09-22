@@ -1518,7 +1518,9 @@
       "deps": [
         "T-P2-14"
       ],
-      "blocks": [],
+      "blocks": [
+        "T-NAME-01"
+      ],
       "ac": "AC-T-CI-01",
       "owner": "claude/primary",
       "claimed": "2026-09-22",
@@ -1532,6 +1534,31 @@
       "source": {
         "file": "TASKS.md",
         "anchor": "T-CI-01"
+      }
+    },
+    {
+      "id": "T-NAME-01",
+      "title": "Compile the same in every checkout",
+      "phase": "P-NONE",
+      "status": "DONE",
+      "validation": "SYNTHETIC",
+      "deps": [
+        "T-CI-01"
+      ],
+      "blocks": [],
+      "ac": "AC-T-NAME-01",
+      "owner": "claude/primary",
+      "claimed": "2026-09-22",
+      "evidence": "The compiled project name came from the directory the repository was cloned into. Continuous integration caught it on its first run: the same authority produced `Prokron` locally and `prokron` on the runner, and `STATE.md`, `project.json` and `dashboard.html` differed. A project now names itself with a `Project:` line in `PHASES.md`, and a chronicle without one falls back to the directory name, so nothing existing needs migrating. Loading the same chronicle from two differently named directories now yields the same name, asserted by a regression test that fails on the previous behaviour.",
+      "decisions": [
+        "ADR-030"
+      ],
+      "schedule": null,
+      "ready": false,
+      "blocked": false,
+      "source": {
+        "file": "TASKS.md",
+        "anchor": "T-NAME-01"
       }
     }
   ],
@@ -3826,6 +3853,50 @@
         "file": "ACCEPTANCE.md",
         "anchor": "AC-T-CI-01"
       }
+    },
+    "AC-T-NAME-01": {
+      "title": "Compile the same in every checkout",
+      "inherits": [],
+      "evidence": null,
+      "criteria": [
+        {
+          "id": "AC-T-NAME-01-01",
+          "text": "Given one chronicle loaded from two differently named directories, When each is compiled, Then both carry the same project name.",
+          "evidenceClass": "TEST",
+          "state": "PASS",
+          "evidence": "a regression test copies this repository's chronicle into two",
+          "source": {
+            "file": "ACCEPTANCE.md",
+            "anchor": "AC-T-NAME-01-01"
+          }
+        },
+        {
+          "id": "AC-T-NAME-01-02",
+          "text": "Given a chronicle that authors no name, When it is compiled, Then the directory name is used and nothing needs migrating.",
+          "evidenceClass": "TEST",
+          "state": "PASS",
+          "evidence": "a test compiles a chronicle whose `PHASES.md` carries no",
+          "source": {
+            "file": "ACCEPTANCE.md",
+            "anchor": "AC-T-NAME-01-02"
+          }
+        },
+        {
+          "id": "AC-T-NAME-01-03",
+          "text": "Given the shipped template, When a project installs, Then the field is present and empty rather than absent.",
+          "evidenceClass": "TEST",
+          "state": "PASS",
+          "evidence": "the installer suite asserts the installed `PHASES.md` carries the",
+          "source": {
+            "file": "ACCEPTANCE.md",
+            "anchor": "AC-T-NAME-01-03"
+          }
+        }
+      ],
+      "source": {
+        "file": "ACCEPTANCE.md",
+        "anchor": "AC-T-NAME-01"
+      }
     }
   },
   "invariants": [
@@ -4496,6 +4567,19 @@
         "file": "ADR/ADR-029.md",
         "anchor": "ADR-029"
       }
+    },
+    {
+      "id": "ADR-030",
+      "title": "A project names itself in authority, not in the filesystem",
+      "status": "ACCEPTED",
+      "supersedes": [],
+      "affects": [
+        "T-NAME-01"
+      ],
+      "source": {
+        "file": "ADR/ADR-030.md",
+        "anchor": "ADR-030"
+      }
     }
   ],
   "obstacles": [],
@@ -4506,8 +4590,8 @@
   },
   "metrics": {
     "taskCompletion": {
-      "done": 54,
-      "total": 54,
+      "done": 55,
+      "total": 55,
       "fraction": 1.0
     },
     "phaseCompletion": {
@@ -4534,34 +4618,34 @@
     },
     "validationCoverage": {
       "done": 20,
-      "total": 54,
-      "fraction": 0.3704
+      "total": 55,
+      "fraction": 0.3636
     },
-    "phaseIndependent": 13,
+    "phaseIndependent": 14,
     "gateReadiness": {
       "done": 6,
       "total": 6,
       "fraction": 1.0
     },
     "acceptanceCompletion": {
-      "done": 151,
-      "total": 151,
+      "done": 154,
+      "total": 154,
       "fraction": 1.0
     },
     "validationBreakdown": {
-      "SYNTHETIC": 34,
+      "SYNTHETIC": 35,
       "AI_REVIEWED": 19,
       "HUMAN_VERIFIED": 1
     },
     "statusBreakdown": {
-      "DONE": 54
+      "DONE": 55
     }
   },
   "ready": [],
   "blocked": [],
   "wip": [],
   "handoff": {
-    "intent": "# Intent\n\nNo task in progress.\n\nT-CI-01 closed on 2026-09-22 under ADR-029: continuous integration now enforces\nthe chronicle's consistency and the regeneration claim on every change, and the\nrepository carries the contributor documents a public project needs.\n\nNext: open Phase 0 or Phase 3 from their internal specifications in\n`next_plan/`. Both are new scope. Authority first: an ADR accepting the\nspecification as governing, the phase record and its gates in `PHASES.md` under\nan identifier that does not collide with the finished P0, its tasks, and their\ncontracts \u2014 before any implementation starts.",
+    "intent": "# Intent\n\nNo task in progress.\n\nT-NAME-01 closed on 2026-09-22 under ADR-030. A project names itself in\nauthority, so one chronicle compiles the same in every checkout. Found by the\ncontinuous integration added in T-CI-01, on its first run.\n\nNext: open Phase 0 or Phase 3 from their internal specifications in\n`next_plan/`. Both are new scope. Authority first: an ADR accepting the\nspecification as governing, the phase record and its gates in `PHASES.md` under\nan identifier that does not collide with the finished P0, its tasks, and their\ncontracts \u2014 before any implementation starts.",
     "handoff": "# Handoff\n\nCurrent implementation continuity. Overwritten, never appended. It holds what\nthe next person or agent needs in order to continue right now. Closed history\nbelongs in `JOURNAL.md`.\n\n## Position\n- Release 0.4.1. P0, P1 and P2 are all `COMPLETE`. Every gate is green.\n- 53 of 53 tasks done, 146 of 146 criteria passing. Nothing in flight, nothing\n  ready, no obstacles.\n- Everything Prokron installs lives in `.prokron/` (ADR-024). Installing takes\n  one line with no arguments and the command is `prokron` (ADR-027).\n\n## What is true now\n- The continuity pilot ran in full against v0.4.0 on 2026-09-22 and all seven\n  criteria pass, recorded in `docs/pilot-2026-09-22.md`. Three participants\n  across two disposable projects: Codex CLI 0.155.1, a cold Gemini 3.8 Flash\n  session, and the product owner. ADR-028 closed the debt ADR-020 had carried.\n- Gate E is green because Codex and Claude audited the same implementation\n  against the same contract, disagreed on one criterion, and the disagreement\n  was settled at level 5 of the arbitration hierarchy. The defect Codex found\n  was real.\n- T-PILOT-01 is the first and only `HUMAN_VERIFIED` task in the project.\n\n## What is still not proven\n- **Checkpointing against a real host limit.** No host exposed a limit warning\n  to observe during the pilot, and nothing was simulated in its place. Prokron\n  cannot read a quota counter it is not shown. Untested, not passed.\n- **The human reading, in detail.** Step 7 passed on the owner's attestation\n  across two projects. No point-by-point account was recorded and no comparison\n  against an agent's reading of the same chronicle was made.\n- `.prokron/compiled/` is committed so the README can link to it as a live\n  example. That puts a large dashboard and JSON in every diff touching\n  authority. Nobody has decided whether to keep it that way.\n- One validator warning is worth revisiting: `premature-evidence` fires on a\n  `WIP` task carrying partial evidence, which the pilot showed is a reasonable\n  thing for an agent to record mid-task.\n\n## Repository identity\n- Commits are authored as `qomero`, with an address verified on that account,\n  set repository-locally under ADR-023. `git config --local user.email` shows it. The whole history was rewritten to match on 2026-09-22 and\n  force-pushed, so every hash before that date is dead. `backup-pre-author-rewrite`\n  holds the pre-rewrite tip locally and is safe to delete.\n\n## Next action\nOpen Phase 0 or Phase 3 from their internal specifications in `next_plan/`,\nwhich are not published (ADR-026). Both are new scope rather than remaining\nscope, and neither is accepted as governing yet.\n\nAuthority first, in this order: an ADR accepting the specification, the phase\nrecord and its gates in `PHASES.md`, its tasks in `TASKS.md`, their contracts\nin `ACCEPTANCE.md`, then `validate` and `compile`. Only then claim the first\ntask, which should be a planning task that inspects the existing architecture\nbefore any code changes \u2014 what T-P2-PLAN-01 was for P2.\n\nThree things to settle before opening Phase 0: it cannot be called `P0`, which\nis the finished executable state harness; it needs an LLM, which Gate B's\nwording must be read against; and `SPEC.md` \u00a73.2 currently states the opposite\nof what Phase 0 does."
   },
   "sources": {

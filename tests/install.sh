@@ -76,6 +76,9 @@ grep -Fq 'Do not edit' "$fixture/.prokron/compiled/README.md"
 grep -Fq 'Given <precondition>' "$fixture/.prokron/chronicle/ACCEPTANCE.md"
 grep -Fq 'ACCEPTANCE_FAILURE' "$fixture/.prokron/chronicle/ACCEPTANCE.md"
 grep -Fq 'Exit authority' "$fixture/.prokron/chronicle/PHASES.md"
+# A project can name itself; the field ships present and empty so the next
+# project is shown it exists without being made to fill it (ADR-030).
+grep -Eq '^Project:' "$fixture/.prokron/chronicle/PHASES.md"
 grep -Fq '$prokron init existing' "$fixture/output"
 grep -Fq '/prokron-init existing' "$fixture/output"
 grep -Fq '.prokron/commands/prokron-init.md in existing mode' "$fixture/output"

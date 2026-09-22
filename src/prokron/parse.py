@@ -201,6 +201,26 @@ def _bullets(text: str) -> list[str]:
     return [re.sub(r"^- ", "", line) for line in lines]
 
 
+def parse_project_name(path: Path) -> str | None:
+    """The project's own name for itself, if it authored one.
+
+    Without this the name came from whatever directory the repository happened
+    to be cloned into, so the same authority compiled to different output in
+    two checkouts. A project fact belongs in an authored document, not in the
+    filesystem.
+    """
+    if not path.is_file():
+        return None
+    for line in path.read_text().splitlines():
+        if line.startswith("#"):
+            break
+        stripped = line.strip()
+        if stripped.lower().startswith("project:"):
+            named = stripped.split(":", 1)[1].strip()
+            return named or None
+    return None
+
+
 def parse_phases(path: Path) -> tuple[list[Phase], list[Gate], list[Milestone]]:
     name = path.name
     text = path.read_text()

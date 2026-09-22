@@ -1297,3 +1297,28 @@ were checked only when someone remembered.
     GitHub's private advisory form. The conduct document also states plainly
     that a single-maintainer project gives a report about the maintainer no
     independent reviewer, rather than implying a process that does not exist.
+
+## AC-T-NAME-01 — Compile the same in every checkout
+
+Compiled output took the project's name from the directory the repository
+happened to sit in, so two clones of the same authority disagreed. Continuous
+integration found it on its first run; no local test could have, because a
+fixture is always created under one name.
+
+- `AC-T-NAME-01-01` — Given one chronicle loaded from two differently named
+  directories, When each is compiled, Then both carry the same project name.
+  `TEST` · `PASS`
+  - Evidence: a regression test copies this repository's chronicle into two
+    directories with different names and asserts the compiled names match.
+    Reverting to `root.name` fails it.
+- `AC-T-NAME-01-02` — Given a chronicle that authors no name, When it is
+  compiled, Then the directory name is used and nothing needs migrating.
+  `TEST` · `PASS`
+  - Evidence: a test compiles a chronicle whose `PHASES.md` carries no
+    `Project:` line and gets the directory name, which is the behaviour every
+    existing installation already has.
+- `AC-T-NAME-01-03` — Given the shipped template, When a project installs,
+  Then the field is present and empty rather than absent. `TEST` · `PASS`
+  - Evidence: the installer suite asserts the installed `PHASES.md` carries the
+    field, so the next project is shown it exists without being made to fill
+    it.

@@ -295,7 +295,7 @@ Prokron — phase none
   Blocked   none
 ```
 
-That is this repository at v0.4.2, reporting its own unfinished work.
+That is this repository at v0.4.3, reporting its own unfinished work.
 
 ```console
 $ prokron explain T-PILOT-01

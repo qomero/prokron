@@ -34,7 +34,7 @@ one compiled `compiled/` directory. Only the first is authoritative.
 
 | File in `.prokron/chronicle/` | Role |
 |---|---|
-| `PHASES.md` | Phase outcome, entry, exit, exit authority, status, and gates |
+| `PHASES.md` | Phase outcome, entry, exit, exit authority, status, and gates; optionally the project's own name |
 | `TASKS.md` | Canonical tasks, phase, dependencies, ownership, contract reference, and evidence |
 | `ACCEPTANCE.md` | Completion contracts, evidence classes, and change requests |
 | `ADR/` | Append-only decision history and supersession lineage, one file per ADR |
@@ -52,6 +52,11 @@ one compiled `compiled/` directory. Only the first is authoritative.
 
 Every compiled file is disposable. Deleting the directory and compiling again
 reproduces all of them byte for byte.
+
+A project may name itself with a `Project:` line above the first heading of
+`PHASES.md`. Without one the directory name is used, which is what every
+chronicle written before the field did. Naming the project in authority is what
+makes compiled output identical in two differently named checkouts (ADR-030).
 
 The product specification records intended behavior. The chronicle records
 current project truth. When they disagree, the agent surfaces and reconciles

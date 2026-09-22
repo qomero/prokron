@@ -18,6 +18,7 @@ from .parse import (
     parse_acceptance,
     parse_decisions,
     parse_phases,
+    parse_project_name,
     parse_tasks,
     read_text,
 )
@@ -41,8 +42,11 @@ def locate(start: Path | None = None) -> Path:
 def load(root: Path) -> Project:
     authority = root / AUTHORITY_DIR
     phases, gates, milestones = parse_phases(authority / "PHASES.md")
+    # A project that names itself compiles the same in every checkout. One that
+    # does not falls back to its directory, which is where the name used to
+    # come from always.
     project = Project(
-        name=root.name,
+        name=parse_project_name(authority / "PHASES.md") or root.name,
         root=str(root),
         current_phase=None,
         phases=phases,
