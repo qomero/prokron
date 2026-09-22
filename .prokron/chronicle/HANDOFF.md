@@ -16,10 +16,13 @@ belongs in `JOURNAL.md`.
   validation enforces evidence and confirmed authority; compiled JSON,
   context packets, and the dashboard expose origin.
 - `/prokron-baseline` ships for every host surface and is never run by init.
+- `cambos-td` has read-only access to `origin`; review branches push to
+  `fork`.
 - ADR numbers 033–036 are absent on this branch because they exist on others.
 
 ## Next action
-Open a pull request to `main` when the owner approves. Whichever of this branch
+Review qomero/prokron#1, opened from the `cambos-td/prokron` fork (remote
+`fork`, ADR-039); a `qomero/prokron` maintainer merges. Whichever of this branch
 and `cambos-td/work` lands second rebases through `parse.py`, `validate.py`,
 `compile.py`, `dashboard.py`, the tests, and the chronicle; on that branch,
 remove its queued T-BASELINE-01 duplicate and ADR-037 copy.
