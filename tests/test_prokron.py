@@ -1216,6 +1216,7 @@ class TestPublishedDocumentation(unittest.TestCase):
         "README.md",
         "docs/SPEC.md",
         "docs/PRODUCT-THESIS.md",
+        "docs/GUIDE.md",
         "CONTRIBUTING.md",
         "SECURITY.md",
         "CODE_OF_CONDUCT.md",

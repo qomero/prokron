@@ -614,3 +614,14 @@
 - AC: AC-T-UPGRADE-01
 - Evidence: Reported from real use: after upgrading, the dashboard was the one the previous release wrote, so a shipped feature looked missing. Reproduced against the published distribution before any change. Installing now refreshes the generated views when an installation already has them and the chronicle holds work, never on a fresh install; when authority does not validate it says so, names the command, and still succeeds. `project.json` records the version that compiled it and `status` reports a mismatch, which covers the reader who never reinstalls. The installer suite gained five assertions over the upgrade path it had never exercised, and mutation-verified that disabling the refresh fails them. 126 unit tests and the installer suite pass.
 - Governed by: ADR-031
+
+## T-DOCS-06: Audit both surfaces and write the usage guide
+- Status: DONE
+- Phase: P-NONE
+- Validation: SYNTHETIC
+- Dependencies: T-UPGRADE-01
+- Owner: claude/primary
+- Claimed: 2026-09-22
+- AC: AC-T-DOCS-06
+- Evidence: Every command, flag and failure mode was exercised in a freshly installed project rather than in this repository: thirteen invocations succeeded, and `explain` on an unknown task and `migrate` with nothing to migrate exit non-zero as intended. Every host pointer resolves — ten command files across Claude Code and OpenCode, the agent skill, and the five workflow references in `AGENTS.md`. The audit found one real gap: Claude Code showed the body of each command file in its slash menu, so a user read `Follow .prokron/commands/prokron-work.md` where an OpenCode user read `Start or continue one Prokron task`. All five now carry a description and an argument hint. `docs/GUIDE.md` was written from that audit, so every command and flag in it is one that was run.
+- Governed by: ADR-022

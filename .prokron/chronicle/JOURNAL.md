@@ -819,3 +819,26 @@
   somewhere other than where it was built — the first was CI finding the
   project name came from the directory. Both were invisible from inside.
 - Next: Phase 0 or Phase 3. Authority first.
+
+## 2026-09-22 — T-DOCS-06
+
+- Did: audited the command line and the agent-host surface against a fresh
+  installation, then wrote `docs/GUIDE.md` from what the audit observed.
+- Why a fresh install: this repository is the one place where everything works
+  by construction. The last two defects were both found somewhere else.
+- Found: Claude Code shows the body of a command file in its slash menu, so a
+  user read `Follow .prokron/commands/prokron-work.md` while the same command
+  in OpenCode read `Start or continue one Prokron task`. The mechanism was
+  showing where the intent should have been. Fixed with frontmatter on all
+  five.
+- Learned: the two hosts were never compared side by side. Each was checked
+  against itself and both passed. Worth remembering for the next integration —
+  parity is a different question from correctness.
+- Confirmed: every command, flag and failure mode behaves as documented, and
+  every host pointer resolves. `explain` on an unknown task and `migrate` with
+  nothing to migrate both exit non-zero, which is intended and now written
+  down.
+- Chose: write the guide from the audit rather than from memory of the code, so
+  nothing in it describes behaviour nobody observed. That is the same rule the
+  project applies to evidence.
+- Next: Phase 0 or Phase 3. Authority first.

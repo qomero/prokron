@@ -1368,3 +1368,39 @@ installed over existing generated output.
     `status` reports `written by prokron 0.0.1` along with the command to
     refresh. This is the path for someone who never reinstalls, and it is the
     reason the stamp exists rather than only the refresh.
+
+## AC-T-DOCS-06 — Audit both surfaces and write the usage guide
+
+The README explains why Prokron exists and the specification defines the
+records. Neither tells someone how to drive it on an ordinary day, and nobody
+had checked that every command and every host pointer actually works from a
+fresh installation.
+
+- `AC-T-DOCS-06-01` — Every command, flag and documented failure mode runs as
+  described, in a freshly installed project. `RUNTIME` · `PASS`
+  - Evidence: thirteen invocations — `--version`, `validate`, `validate
+    --quiet`, `compile`, `compile --force`, `graph`, `dashboard`, `status`,
+    `status --limit`, `explain`, `explain --json`, `context`, `context --role
+    reviewer` — all succeed, plus `-C`. `explain` on an unknown task and
+    `migrate` with nothing to migrate exit non-zero, which is the documented
+    behaviour. All eleven generated files appear.
+- `AC-T-DOCS-06-02` — Every agent-host pointer resolves to a file that exists
+  in an installed project. `TEST` · `PASS`
+  - Evidence: ten command files across `.claude/commands/` and
+    `.opencode/commands/`, the skill in `.agents/skills/prokron/`, and the five
+    workflow references in `AGENTS.md` were resolved against the installed
+    tree. No dead pointers.
+- `AC-T-DOCS-06-03` — A slash command presents what it does, not where it is
+  implemented. `INSPECTION` · `PASS`
+  - Evidence: the audit found Claude Code showing each command file's body in
+    the slash menu, so a user read `Follow .prokron/commands/prokron-work.md`
+    where an OpenCode user read `Start or continue one Prokron task`. All five
+    Claude command files now carry a `description` and, where the command takes
+    one, an `argument-hint`. The installer suite still passes, so they install
+    unchanged.
+- `AC-T-DOCS-06-04` — The guide describes only behaviour that was observed,
+  and its links resolve. `TEST` · `PASS`
+  - Evidence: `docs/GUIDE.md` was written from the audit above, so every
+    command and flag in it is one that was run. It joins the published set held
+    by the documentation tests: every relative link resolves, and no `rm -rf`
+    names anything but the compiled directory.

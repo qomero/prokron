@@ -2,10 +2,9 @@
 
 No task in progress.
 
-T-UPGRADE-01 closed on 2026-09-22 under ADR-031. Upgrading refreshes the
-generated views, compiled output records the version that wrote it, and
-`status` reports a mismatch. Found by the owner using Prokron on a real
-project, not by any test.
+T-DOCS-06 closed on 2026-09-22. Both surfaces were audited against a fresh
+installation, the Claude Code slash menu now says what each command does rather
+than where it lives, and `docs/GUIDE.md` covers day-to-day use.
 
 Next: open Phase 0 or Phase 3 from their internal specifications in
 `next_plan/`. Both are new scope. Authority first: an ADR accepting the

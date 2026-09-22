@@ -122,8 +122,8 @@ against a host we have not tried is a genuine contribution on its own.
 
 ## Documentation
 
-The README, [`docs/SPEC.md`](docs/SPEC.md) and
-[`docs/PRODUCT-THESIS.md`](docs/PRODUCT-THESIS.md) are the published set, and
+The README, [`docs/GUIDE.md`](docs/GUIDE.md), [`docs/SPEC.md`](docs/SPEC.md)
+and [`docs/PRODUCT-THESIS.md`](docs/PRODUCT-THESIS.md) are the published set, and
 tests hold them to their own facts: every relative link resolves, no `rm -rf`
 names anything but the compiled directory, and the release the README cites
 matches `VERSION`.

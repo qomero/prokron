@@ -4,6 +4,29 @@ Prokron records its own history in `.prokron/chronicle/JOURNAL.md` and its
 decisions in `.prokron/chronicle/ADR/`. This file is the short version, for
 people arriving from a release page.
 
+## 0.4.5 — 2026-09-22
+
+### Added
+
+- **[`docs/GUIDE.md`](docs/GUIDE.md)** — using Prokron day to day: every
+  command and flag, the agent workflows and when you actually need them, what
+  an ordinary session looks like, and a table of symptoms with their causes.
+  Written from an audit, so every command in it is one that was run against a
+  fresh installation.
+
+### Fixed
+
+- **Claude Code's slash menu showed the plumbing.** `/prokron-work` read
+  `Follow .prokron/commands/prokron-work.md` where the same command in OpenCode
+  read `Start or continue one Prokron task`. All five now carry a description
+  and an argument hint.
+
+### Checked
+
+- Every command, flag and documented failure mode, run in a freshly installed
+  project. Every agent-host pointer — ten command files, the skill, and the
+  workflow references in `AGENTS.md` — resolves to a file that exists.
+
 ## 0.4.4 — 2026-09-22
 
 Upgrading left the old dashboard in place. Reported from real use.

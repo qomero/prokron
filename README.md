@@ -10,7 +10,7 @@ Project management that a person and an AI can both read. Prokron is short for
 Project Chronicle.
 
 [The problem](#the-problem) · [Get started](#get-started) ·
-[Commands](#asking-the-project-questions) · [Specification](docs/SPEC.md) ·
+[Guide](docs/GUIDE.md) · [Specification](docs/SPEC.md) ·
 [Thesis](docs/PRODUCT-THESIS.md)
 
 ## The problem
@@ -295,7 +295,7 @@ Prokron — phase none
   Blocked   none
 ```
 
-That is this repository at v0.4.4, reporting its own unfinished work.
+That is this repository at v0.4.5, reporting its own unfinished work.
 
 ```console
 $ prokron explain T-PILOT-01
@@ -506,6 +506,7 @@ project history.
 
 | Document | What it covers |
 |---|---|
+| [`docs/GUIDE.md`](docs/GUIDE.md) | Using it day to day: every command, the agent workflows, and what to do when something looks wrong. |
 | [`docs/SPEC.md`](docs/SPEC.md) | The record format, working lifecycle, invariants, scope, and the continuity pilot. |
 | [`docs/PRODUCT-THESIS.md`](docs/PRODUCT-THESIS.md) | Why shared project state, and how the model is built. |
 | [`CONTRIBUTING.md`](CONTRIBUTING.md) | How a change is accepted here: a task, a contract, evidence. |
