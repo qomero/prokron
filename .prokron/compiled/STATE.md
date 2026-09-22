@@ -4,9 +4,9 @@
 
 - Project: Prokron
 - Current phase: none
-- Tasks: 55 of 55 done
-- Acceptance: 154 of 154 criteria passing
-- Validation: 20 of 55 reviewed or verified
+- Tasks: 56 of 56 done
+- Acceptance: 159 of 159 criteria passing
+- Validation: 20 of 56 reviewed or verified
 - Gates: 6 of 6 green
 
 ## Phases

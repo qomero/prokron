@@ -11,29 +11,11 @@ import json
 import sys
 from pathlib import Path
 
-from . import analytics, compile as compiler, dashboard, mermaid, migrate, validate
+from . import analytics, compile as compiler, dashboard, layout, mermaid, migrate, validate
 from .model import Project
 from .parse import ParseError
 
-FALLBACK_VERSION = "0.2.0"
-
-
-def _version() -> str:
-    """Read the VERSION shipped with the runtime, never the host project's own.
-
-    Installed, the runtime sits in `.prokron/runtime/prokron/`, so its VERSION
-    is one level up. In a source checkout it is at the repository root. A
-    `VERSION` belonging to the project being tracked is deliberately out of
-    reach.
-    """
-    here = Path(__file__).resolve()
-    for candidate in (here.parents[1] / "VERSION", here.parents[2] / "VERSION"):
-        if candidate.is_file():
-            return candidate.read_text().strip() or FALLBACK_VERSION
-    return FALLBACK_VERSION
-
-
-VERSION = _version()
+VERSION = layout.version()
 
 
 def _load(root: Path) -> Project:
@@ -48,6 +30,23 @@ def _fail(message: str) -> int:
 def _report_findings(findings: list, stream=sys.stdout) -> None:
     for finding in findings:
         print(f"  {finding.render()}", file=stream)
+
+
+def _stale_compiled(root: Path) -> str | None:
+    """The version that wrote the compiled views, when it is not this one.
+
+    An upgrade replaces the runtime and, before ADR-031, left the generated
+    views alone. A page written by an older release looks like a release that
+    lost a feature, so the mismatch is reported rather than left to be noticed.
+    """
+    written = root / compiler.COMPILED_DIR / "project.json"
+    if not written.is_file():
+        return None
+    try:
+        recorded = json.loads(written.read_text())["project"].get("generatorVersion")
+    except (ValueError, KeyError, OSError):
+        return None
+    return None if recorded in (None, VERSION) else str(recorded)
 
 
 def cmd_validate(root: Path, args: argparse.Namespace) -> int:
@@ -111,6 +110,13 @@ def cmd_status(root: Path, args: argparse.Namespace) -> int:
     metrics = report.metrics()
 
     print(f"{project.name} — phase {project.current_phase or 'none'}")
+    stale = _stale_compiled(root)
+    if stale:
+        print(
+            f"\n  Compiled views were written by prokron {stale}; this is "
+            f"{VERSION}.\n  Run `prokron compile && prokron graph && prokron "
+            "dashboard` to refresh them.\n"
+        )
     if migrate.needs_relocation(root):
         print(
             f"\n  A chronicle is still at {migrate.layout.V02_AUTHORITY_DIR}/ and "

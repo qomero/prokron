@@ -190,6 +190,25 @@ LAUNCHER
   done
 fi
 
+# Generated views are neither records nor guidance: they are reproducible from
+# the chronicle, so an upgrade refreshes them rather than leaving a current
+# runtime beside a page the previous release wrote (ADR-031). Only when the
+# installation already has views and the chronicle holds work — never on a
+# fresh install, where compiled state still appears only after compiling.
+refreshed=
+if [ -d "$target/$home/compiled" ] && grep -q '^## T-' "$target/$chronicle/TASKS.md" 2>/dev/null; then
+  if (
+    cd "$target" \
+      && "$home/prokron" compile >/dev/null 2>&1 \
+      && "$home/prokron" graph >/dev/null 2>&1 \
+      && "$home/prokron" dashboard >/dev/null 2>&1
+  ); then
+    refreshed=done
+  else
+    refreshed=failed
+  fi
+fi
+
 if [ ! -f "$target/AGENTS.md" ]; then
   cp "$source_dir/AGENTS.md" "$target/AGENTS.md"
 elif ! grep -Fq '<!-- project-prokron:start -->' "$target/AGENTS.md"; then
@@ -224,6 +243,14 @@ elif grep -q '^## T-' "$target/$home/TASKS.md" 2>/dev/null; then
   printf 'Your records are intact. Move them with:\n'
   printf '  %s/prokron migrate           # shows what it would do\n' "$home"
   printf '  %s/prokron migrate --apply   # performs it, archiving the originals\n\n' "$home"
+fi
+if [ "$refreshed" = done ]; then
+  printf 'Generated views were refreshed by the new runtime.\n\n'
+elif [ "$refreshed" = failed ]; then
+  printf 'Generated views could not be refreshed and are still the previous\n'
+  printf 'version'"'"'s. Your records are untouched. Fix what `%s/prokron validate`\n' "$home"
+  printf 'reports, then run:\n'
+  printf '  %s/prokron compile && %s/prokron graph && %s/prokron dashboard\n\n' "$home" "$home" "$home"
 fi
 if [ "$retained" -eq 1 ]; then
   printf 'Existing guidance was preserved; reinstall does not upgrade it.\n'

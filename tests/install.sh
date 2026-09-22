@@ -127,6 +127,46 @@ cmp "$root/templates/chronicle/ADR/README.md" \
 # compiled state appears only after compiling
 test ! -d "$fixture/partial/.prokron/compiled"
 
+# Upgrading over existing generated views must refresh them. Every other case
+# in this suite installs into a directory that has none, which is exactly why
+# this defect shipped: the upgrade path had never been exercised (ADR-031).
+upgrade="$fixture/upgrade"
+mkdir -p "$upgrade"
+"$root/install.sh" "$upgrade" --no-link >/dev/null
+printf '\n## T-001: Real work\n- Status: DONE\n- Phase: P-NONE\n- Validation: SYNTHETIC\n- Dependencies: none\n- AC: AC-T-001\n- Evidence: recorded\n- Governed by: none\n' >> "$upgrade/.prokron/chronicle/TASKS.md"
+printf '\n## AC-T-001 — Real work\n\n- `AC-T-001-01` — It exists. `INSPECTION` · `PASS`\n  - Evidence: it does.\n' >> "$upgrade/.prokron/chronicle/ACCEPTANCE.md"
+( cd "$upgrade" && .prokron/prokron compile >/dev/null && .prokron/prokron dashboard >/dev/null )
+# Stand in for output written by an older release.
+printf 'STALE\n' > "$upgrade/.prokron/compiled/dashboard.html"
+printf 'STALE\n' > "$upgrade/.prokron/compiled/STATE.md"
+"$root/install.sh" "$upgrade" --no-link > "$upgrade/output"
+grep -Fq 'Generated views were refreshed' "$upgrade/output"
+grep -Fvq 'STALE' "$upgrade/.prokron/compiled/dashboard.html"
+grep -Fvq 'STALE' "$upgrade/.prokron/compiled/STATE.md"
+grep -Fq 'generatorVersion' "$upgrade/.prokron/compiled/project.json"
+# The refreshed views must come from the version that just installed.
+grep -Fq "\"generatorVersion\": \"$(cat "$root/VERSION")\"" "$upgrade/.prokron/compiled/project.json"
+
+# Authority that does not validate must not fail the installation, and must
+# not leave the reader guessing what to do.
+printf '\n## T-BROKEN: Bad\n- Status: DONE\n- Phase: P-NONE\n- Validation: SYNTHETIC\n- Dependencies: T-GHOST\n- AC: AC-T-NOPE\n- Evidence: x\n- Governed by: none\n' >> "$upgrade/.prokron/chronicle/TASKS.md"
+"$root/install.sh" "$upgrade" --no-link > "$upgrade/output-broken"
+grep -Fq 'could not be refreshed' "$upgrade/output-broken"
+grep -Fq 'prokron compile' "$upgrade/output-broken"
+grep -Fq 'T-BROKEN' "$upgrade/.prokron/chronicle/TASKS.md"
+
+# A stale installation is visible to someone who never reinstalls.
+stale="$fixture/stale"
+mkdir -p "$stale"
+"$root/install.sh" "$stale" --no-link >/dev/null
+printf '\n## T-001: Real work\n- Status: DONE\n- Phase: P-NONE\n- Validation: SYNTHETIC\n- Dependencies: none\n- AC: AC-T-001\n- Evidence: recorded\n- Governed by: none\n' >> "$stale/.prokron/chronicle/TASKS.md"
+printf '\n## AC-T-001 — Real work\n\n- `AC-T-001-01` — It exists. `INSPECTION` · `PASS`\n  - Evidence: it does.\n' >> "$stale/.prokron/chronicle/ACCEPTANCE.md"
+( cd "$stale" && .prokron/prokron compile >/dev/null )
+sed 's/"generatorVersion": "[^"]*"/"generatorVersion": "0.0.1"/' \
+  "$stale/.prokron/compiled/project.json" > "$stale/patched.json"
+mv "$stale/patched.json" "$stale/.prokron/compiled/project.json"
+( cd "$stale" && .prokron/prokron status ) | grep -Fq 'written by prokron 0.0.1'
+
 # Upgrading a v0.2 project must relocate its chronicle without rewriting it.
 legacy2="$fixture/v02"
 mkdir -p "$legacy2/prokron/ADR" "$legacy2/.prokron" "$legacy2/commands" "$legacy2/bin"

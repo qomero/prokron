@@ -764,3 +764,58 @@
   it exists without being made to fill it.
 - Verified by mutation: reverting to `root.name` fails the new regression test.
 - Next: Phase 0 or Phase 3. Authority first.
+
+## 2026-09-22 — First use on an unrelated real project
+
+- Observed, reported by the product owner: Prokron was installed and run on one
+  of their own active projects, unrelated to this repository. It behaved as
+  expected, and they were able to use it to verify that that project's tasks
+  had been done well.
+- Why this matters more than it sounds: before today every claim in this
+  repository rested on Prokron running against Prokron, two disposable pilot
+  fixtures, and a second project opened only to read the dashboard. Working on
+  a real codebase with real work in it is the first evidence from outside the
+  conditions the tool was built in.
+- Recorded narrowly on purpose. The owner reports that it worked and that it
+  let them check completion. Which specific claims that exercises — install on
+  an unfamiliar repository, an agent maintaining the chronicle during ordinary
+  work, the dashboard as a review surface, completion judged against contracts
+  rather than assertion — is not yet established, so no criterion is being
+  upgraded on the strength of it and no validation state has changed.
+- Next: establish what it actually exercised before attaching it as evidence,
+  and treat any friction found there as the first real input to Phase 0, which
+  until now has been specified entirely from the inside.
+
+## 2026-09-22 — T-UPGRADE-01
+
+- Did: installing now refreshes the generated views, compiled output records
+  the version that wrote it, and `status` reports a mismatch.
+- Found by: the owner, using Prokron on a real project. They upgraded, opened
+  the dashboard, and the interactive task graph was not there. The runtime was
+  current; the page was the one the previous release had written.
+- Why no test caught it: every fixture in the installer suite installs into a
+  directory with no generated output. The upgrade-over-existing-output path had
+  never been exercised once, in any release. The suite tested installation and
+  called it upgrade.
+- Rule that caught the wrong thing: ADR-011 says installation preserves records
+  and does not upgrade guidance. Generated views are neither, and were
+  protected by a rule not written about them. Worth watching for elsewhere — a
+  conservative rule applied one category too wide is invisible until it costs
+  something.
+- Chose: refresh rather than print an instruction. The views are reproducible
+  from authority by definition, so regenerating them risks nothing that the
+  chronicle cannot rebuild. Printing a reminder would have left the same broken
+  page for anyone who did not read the output.
+- Chose: stamp only `project.json`, not all four generated files. One line of
+  churn per release rather than four files, and it is enough for `status` to
+  detect staleness for a reader who never reinstalls. The cost is that bumping
+  the version now changes compiled output, so the CI check from ADR-029 will
+  also catch a release that forgot to recompile.
+- Mine, and worth recording: while mutation-testing the fix I ran
+  `git checkout -- install.sh` to undo the mutation, which also discarded the
+  uncommitted fix. Caught it immediately and re-applied. A mutation test on an
+  uncommitted file needs a copy, not a checkout.
+- Worth noting: this is the second defect in two days found by running the tool
+  somewhere other than where it was built — the first was CI finding the
+  project name came from the directory. Both were invisible from inside.
+- Next: Phase 0 or Phase 3. Authority first.

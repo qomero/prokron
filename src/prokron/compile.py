@@ -11,6 +11,7 @@ import json
 from pathlib import Path
 
 from . import analytics, views
+from . import layout
 from .layout import AUTHORITY_DIR, COMPILED_DIR
 from .model import Project
 from .parse import (
@@ -76,6 +77,9 @@ def as_json(project: Project) -> dict[str, object]:
             "name": project.name,
             "currentPhase": project.current_phase,
             "generator": "prokron compile",
+            # Which version produced this, so a stale installation is visible
+            # to someone who never reinstalls (ADR-031).
+            "generatorVersion": layout.version(),
             "authority": AUTHORITY_DIR,
         },
         "phases": [

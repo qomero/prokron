@@ -603,3 +603,14 @@
 - AC: AC-T-NAME-01
 - Evidence: The compiled project name came from the directory the repository was cloned into. Continuous integration caught it on its first run: the same authority produced `Prokron` locally and `prokron` on the runner, and `STATE.md`, `project.json` and `dashboard.html` differed. A project now names itself with a `Project:` line in `PHASES.md`, and a chronicle without one falls back to the directory name, so nothing existing needs migrating. Loading the same chronicle from two differently named directories now yields the same name, asserted by a regression test that fails on the previous behaviour.
 - Governed by: ADR-030
+
+## T-UPGRADE-01: Refresh generated views when the tool is upgraded
+- Status: DONE
+- Phase: P-NONE
+- Validation: SYNTHETIC
+- Dependencies: T-CI-01
+- Owner: claude/primary
+- Claimed: 2026-09-22
+- AC: AC-T-UPGRADE-01
+- Evidence: Reported from real use: after upgrading, the dashboard was the one the previous release wrote, so a shipped feature looked missing. Reproduced against the published distribution before any change. Installing now refreshes the generated views when an installation already has them and the chronicle holds work, never on a fresh install; when authority does not validate it says so, names the command, and still succeeds. `project.json` records the version that compiled it and `status` reports a mismatch, which covers the reader who never reinstalls. The installer suite gained five assertions over the upgrade path it had never exercised, and mutation-verified that disabling the refresh fails them. 126 unit tests and the installer suite pass.
+- Governed by: ADR-031

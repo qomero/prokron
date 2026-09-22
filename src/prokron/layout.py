@@ -13,6 +13,10 @@ listed here. Prokron does not choose them.
 
 from __future__ import annotations
 
+from pathlib import Path
+
+FALLBACK_VERSION = "0.4.3"
+
 HOME_DIR = ".prokron"
 AUTHORITY_DIR = f"{HOME_DIR}/chronicle"
 COMPILED_DIR = f"{HOME_DIR}/compiled"
@@ -43,4 +47,19 @@ __all__ = [
     "V02_COMPILED_DIR",
     "V02_ENTRY_POINT",
     "V02_RUNTIME_DIR",
+    "version",
 ]
+
+
+def version() -> str:
+    """The version of the runtime that is executing, never the tracked project's.
+
+    Installed, this module sits in `.prokron/runtime/prokron/`, so VERSION is
+    one level up. In a source checkout it is at the repository root. A VERSION
+    belonging to the project being tracked is deliberately out of reach.
+    """
+    here = Path(__file__).resolve()
+    for candidate in (here.parents[1] / "VERSION", here.parents[2] / "VERSION"):
+        if candidate.is_file():
+            return candidate.read_text().strip() or FALLBACK_VERSION
+    return FALLBACK_VERSION

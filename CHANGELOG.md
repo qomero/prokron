@@ -4,6 +4,35 @@ Prokron records its own history in `.prokron/chronicle/JOURNAL.md` and its
 decisions in `.prokron/chronicle/ADR/`. This file is the short version, for
 people arriving from a release page.
 
+## 0.4.4 — 2026-09-22
+
+Upgrading left the old dashboard in place. Reported from real use.
+
+### Fixed
+
+- **Upgrading now refreshes the generated views.** Installing replaced the
+  runtime but left `.prokron/compiled/` alone, so an upgraded project ran a
+  current tool beside a page the previous release had written — and a shipped
+  feature looked missing. If you hit this, `prokron dashboard` fixes it; the
+  installer now does it for you.
+
+  The refresh runs only when an installation already has generated views and
+  the chronicle holds work, so a fresh install still creates compiled state
+  only when you compile. If authority does not validate, installation still
+  succeeds, says the refresh failed, and names the command. ADR-031.
+
+### Added
+
+- **Compiled output records the version that wrote it** (`generatorVersion` in
+  `project.json`), and `prokron status` reports when it differs from the
+  running tool. That covers the reader who never reinstalls.
+
+### Note
+
+No test could have caught this: every fixture installs into a directory with no
+generated output, so the upgrade path had never been exercised in any release.
+The suite now covers it.
+
 ## 0.4.3 — 2026-09-22
 
 CI found a determinism defect on its first run.
