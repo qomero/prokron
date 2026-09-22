@@ -2,11 +2,16 @@
 
 <!-- One or two sentences. The commit message carries the detail. -->
 
-## Chronicle
+## Contract
 
-- **Task:** <!-- T-... in .prokron/chronicle/TASKS.md -->
-- **Contract:** <!-- AC-T-... in .prokron/chronicle/ACCEPTANCE.md -->
-- **Decisions:** <!-- ADR-... if a material choice was made, or "none" -->
+<!--
+The acceptance criteria, written before the work: Given / When / Then, each
+with an evidence class. A maintainer records them in the project chronicle.
+-->
+
+## Decisions
+
+<!-- Any material choice, the options rejected, and why — or "none". -->
 
 ## Evidence
 
@@ -18,7 +23,5 @@ What you actually ran and what it showed, against the criterion it satisfies.
 ## Before requesting review
 
 - [ ] The contract was written before the work, and was not reworded to match what got built
-- [ ] `prokron validate` is clean
-- [ ] `.prokron/compiled/` is regenerated and committed
 - [ ] `python3 -m unittest discover -s tests` and `sh tests/install.sh` pass
 - [ ] Anything not yet built is described as not yet built

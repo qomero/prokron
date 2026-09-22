@@ -294,5 +294,4 @@ attestation, without a point-by-point comparison against an agent's account.
 
 - [README](../README.md) — what Prokron does, and how to install it
 - [Specification](SPEC.md) — records, lifecycle, invariants, scope, continuity pilot
-- [Chronicle guide](../.prokron/chronicle/README.md) — the read order an agent follows
-- [Decisions](../.prokron/chronicle/ADR/) — every choice this project has made, in order
+- [Chronicle guide](../templates/chronicle/README.md) — the read order an agent follows

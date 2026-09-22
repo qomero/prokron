@@ -1051,6 +1051,10 @@ class TestMergeGuidance(unittest.TestCase):
                 self.assertIn("whose work is current", text)
 
 
+@unittest.skipUnless(
+    (Path(__file__).resolve().parents[1] / layout.AUTHORITY_DIR / "TASKS.md").is_file(),
+    "this repository's chronicle is kept locally and not published (ADR-042)",
+)
 class TestThisRepository(unittest.TestCase):
     """Prokron's own chronicle is the acceptance evidence for Phase 2 closure.
 
