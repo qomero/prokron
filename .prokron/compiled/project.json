@@ -1656,7 +1656,8 @@
       "evidence": "139 unittest cases and the installer suite pass; mutation of each new validation rule and the dashboard label fails its tests; a real-repository pilot on pallets/flask produced 7 evidence-cited proposals with no task, intent, or journal change.",
       "decisions": [
         "ADR-037",
-        "ADR-038"
+        "ADR-038",
+        "ADR-039"
       ],
       "schedule": null,
       "ready": false,
@@ -5057,6 +5058,21 @@
       "source": {
         "file": "ADR/ADR-038.md",
         "anchor": "ADR-038"
+      }
+    },
+    {
+      "id": "ADR-039",
+      "title": "Propose changes from a cambos-td fork",
+      "status": "ACCEPTED",
+      "supersedes": [],
+      "affects": [
+        "T-BASELINE-01"
+      ],
+      "origin": "CONTEMPORANEOUS",
+      "evidence": null,
+      "source": {
+        "file": "ADR/ADR-039.md",
+        "anchor": "ADR-039"
       }
     }
   ],

@@ -39,3 +39,4 @@ editing history.
 - [ADR-032](ADR-032.md) — Releases are archived and citable (ACCEPTED)
 - [ADR-037](ADR-037.md) — Offer an opt-in, evidence-cited baseline of existing decisions (ACCEPTED)
 - [ADR-038](ADR-038.md) — Build the baseline ahead of the hierarchy on its own branch (ACCEPTED)
+- [ADR-039](ADR-039.md) — Propose changes from a cambos-td fork (ACCEPTED)

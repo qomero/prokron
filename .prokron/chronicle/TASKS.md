@@ -646,4 +646,4 @@
 - Claimed: 2026-09-23
 - AC: AC-T-BASELINE-01
 - Evidence: 139 unittest cases and the installer suite pass; mutation of each new validation rule and the dashboard label fails its tests; a real-repository pilot on pallets/flask produced 7 evidence-cited proposals with no task, intent, or journal change.
-- Governed by: ADR-037, ADR-038
+- Governed by: ADR-037, ADR-038, ADR-039
