@@ -186,6 +186,11 @@ actually needs.
 |---|---|---|
 | A new feature seems missing from the dashboard | The page was written by an older release | `prokron dashboard` |
 | `status` says views were written by another version | Same | `prokron compile && prokron graph && prokron dashboard` |
+| `Refusing to overwrite views written by prokron …` | A newer release compiled them; this installation is older | Reinstall to upgrade; `--force` only if you mean to downgrade them |
+| The installer lists files under `.prokron/upgrade/` | You had edited that guidance, so the new version was staged beside it | Merge what you want, then delete `.prokron/upgrade/` |
+| `stale-reference` warning | `HANDOFF.md` or `INTENT.md` names a file that moved or was deleted | Update the path in the handoff |
+| Merge conflict in `.prokron/compiled/` | Both branches recompiled | Take either side, then `prokron compile && prokron graph && prokron dashboard` |
+| Merge conflict in `INTENT.md` or `HANDOFF.md` | Both branches changed current state | Resolve by hand toward the branch whose work is current |
 | `prokron: command not found` | No launcher on `PATH` | `.prokron/prokron …`, or reinstall without `--no-link` |
 | `No .prokron/ in … or any parent directory` | Running outside an installed project | `cd` into it, or install there |
 | `status` reports an empty project | `existing` mode starts empty on purpose | Work normally; it records from now on. To capture decisions the code already depends on, ask for `/prokron-baseline` |

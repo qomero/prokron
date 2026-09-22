@@ -18,3 +18,11 @@ interruption, compaction, or any known or estimated agent or host context, token
 time, session, rate, or quota limit, including five-hour and seven-day windows.
 If the host exposes no meter, run it after meaningful milestones, before a
 long-running step, and before ending the session.
+
+After merging branches, run `.prokron/prokron compile` (and `graph` and
+`dashboard` if they are kept) rather than resolving conflicts in
+`.prokron/compiled/`; it is regenerated from authority. `JOURNAL.md` and the
+ADR index merge by union, so both sides' entries survive. If `INTENT.md` or
+`HANDOFF.md` conflict, resolve `INTENT.md` and `HANDOFF.md` by hand toward the
+branch whose work is current: keep at most one intent, and describe the other
+branch's unfinished work in the handoff rather than dropping it.

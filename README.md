@@ -495,17 +495,18 @@ originals are archived untouched beside the new ones.
 
 ### Updating an installation
 
-Reinstalling adds missing files; it **does not upgrade existing guidance**, and
-it prints a reminder when guidance is retained. From a current checkout, review
-and merge changes to:
+Run the same install command again. It installs the latest release and
+never touches a chronicle record. For guidance — the workflows in
+`.prokron/commands/`, the Claude Code and OpenCode commands, the skill,
+`.prokron/chronicle/README.md`, and the Prokron block in `AGENTS.md`:
 
-- `.prokron/commands/`, `.claude/commands/`, and `.opencode/commands/`;
-- `.agents/skills/prokron/SKILL.md`;
-- `templates/chronicle/README.md`, installed as `.prokron/chronicle/README.md`;
-- the Prokron block in `AGENTS.md`, preserving surrounding project rules.
+- anything unedited since the last install is replaced with the new version;
+- anything you edited is kept exactly, and the new version is written beside
+  it under `.prokron/upgrade/`. Merge what you want, then delete that folder.
 
-Keep customizations and every chronicle record. Never copy empty templates over
-project history.
+The installer lists every file it replaced or staged. It will not install an
+older runtime over a newer one unless you pass `--allow-downgrade`, and
+`--ref <tag>` installs a specific release.
 
 ## Documentation
 

@@ -117,11 +117,146 @@ for mode in existing new; do
   cmp "$fixture/saved-work" "$fixture/.prokron/commands/prokron-work.md"
   cmp "$fixture/saved-agents" "$fixture/AGENTS.md"
   cmp "$fixture/saved-claude" "$fixture/CLAUDE.md"
-  grep -Fq 'reinstall does not upgrade' "$fixture/output"
+  grep -Fq 'Guidance kept because it was edited' "$fixture/output"
+  grep -Fq '.prokron/commands/prokron-work.md' "$fixture/output"
+  test -f "$fixture/.prokron/upgrade/.prokron/commands/prokron-work.md"
   grep -Fq '$prokron resume' "$fixture/output"
 done
 test "$(grep -Fc '<!-- project-prokron:start -->' "$fixture/AGENTS.md")" -eq 1
 test "$(grep -Fxc '@AGENTS.md' "$fixture/CLAUDE.md")" -eq 1
+
+# Guidance keeps up with the runtime (ADR-040). A release that changes its
+# guidance replaces what nobody edited and stages what somebody did.
+make_source() {
+  # $1: a copy of this source whose guidance says something new.
+  mkdir -p "$1"
+  (cd "$root" && tar -cf - --exclude ./.git .) | (cd "$1" && tar -xf -)
+  for file in "$1"/.prokron/commands/prokron-*.md "$1"/.claude/commands/prokron-*.md \
+    "$1"/.opencode/commands/prokron-*.md "$1/.agents/skills/prokron/SKILL.md" \
+    "$1/templates/chronicle/README.md"; do
+    printf '\nNEW GUIDANCE %s\n' "$2" >> "$file"
+  done
+  awk -v tag="$2" '/<!-- project-prokron:end -->/ { print "NEW BLOCK " tag } { print }' \
+    "$1/AGENTS.md" > "$1/AGENTS.tmp" && mv "$1/AGENTS.tmp" "$1/AGENTS.md"
+}
+outside_block() {
+  awk '/<!-- project-prokron:start -->/ { on = 1 } !on { print } /<!-- project-prokron:end -->/ { on = 0 }' "$1"
+}
+records_of() {
+  for file in PHASES TASKS ACCEPTANCE INTENT HANDOFF JOURNAL; do
+    cksum < "$1/.prokron/chronicle/$file.md"
+  done
+  cksum < "$1/.prokron/chronicle/ADR/README.md"
+}
+guide="$fixture/guidance"
+mkdir -p "$guide"
+printf '# Before\n' > "$guide/AGENTS.md"
+"$root/install.sh" "$guide" --no-link >/dev/null
+test -f "$guide/.prokron/runtime/GUIDANCE"
+printf '\n# After\n' >> "$guide/AGENTS.md"
+printf '\n## T-001: Real work\n- Status: TODO\n- Phase: P-NONE\n- Validation: UNTESTED\n- Dependencies: none\n- AC: AC-T-001\n- Evidence:\n- Governed by: none\n' >> "$guide/.prokron/chronicle/TASKS.md"
+printf '\nCUSTOM WORK\n' >> "$guide/.prokron/commands/prokron-work.md"
+cp "$guide/.prokron/commands/prokron-work.md" "$fixture/custom-work"
+outside_block "$guide/AGENTS.md" > "$fixture/outside-before"
+records_of "$guide" > "$fixture/records-before"
+make_source "$fixture/source-two" two
+"$fixture/source-two/install.sh" "$guide" --no-link > "$guide/output"
+# Unedited guidance is replaced, and named.
+for command in init decide checkpoint resume baseline; do
+  cmp "$fixture/source-two/.prokron/commands/prokron-$command.md" "$guide/.prokron/commands/prokron-$command.md"
+done
+for command in init work decide checkpoint resume baseline; do
+  cmp "$fixture/source-two/.claude/commands/prokron-$command.md" "$guide/.claude/commands/prokron-$command.md"
+  cmp "$fixture/source-two/.opencode/commands/prokron-$command.md" "$guide/.opencode/commands/prokron-$command.md"
+done
+cmp "$fixture/source-two/.agents/skills/prokron/SKILL.md" "$guide/.agents/skills/prokron/SKILL.md"
+cmp "$fixture/source-two/templates/chronicle/README.md" "$guide/.prokron/chronicle/README.md"
+grep -Fq 'NEW BLOCK two' "$guide/AGENTS.md"
+test "$(grep -Fc '<!-- project-prokron:start -->' "$guide/AGENTS.md")" -eq 1
+grep -Fq 'Guidance upgraded' "$guide/output"
+grep -Fq '.claude/commands/prokron-init.md' "$guide/output"
+grep -Fq 'AGENTS.md (Prokron block)' "$guide/output"
+# Only the block moved; the project's own rules around it did not.
+outside_block "$guide/AGENTS.md" | cmp "$fixture/outside-before" -
+# Edited guidance stays exactly as it was, with the new version beside it.
+cmp "$fixture/custom-work" "$guide/.prokron/commands/prokron-work.md"
+cmp "$fixture/source-two/.prokron/commands/prokron-work.md" \
+  "$guide/.prokron/upgrade/.prokron/commands/prokron-work.md"
+grep -Fq 'Guidance kept because it was edited' "$guide/output"
+records_of "$guide" | cmp "$fixture/records-before" -
+
+# An edited Prokron block is kept and staged like any other edited guidance.
+awk '/<!-- project-prokron:end -->/ { print "MY OWN RULE" } { print }' "$guide/AGENTS.md" > "$guide/AGENTS.tmp"
+mv "$guide/AGENTS.tmp" "$guide/AGENTS.md"
+cp "$guide/AGENTS.md" "$fixture/custom-agents"
+make_source "$fixture/source-three" three
+"$fixture/source-three/install.sh" "$guide" --no-link > "$guide/output"
+cmp "$fixture/custom-agents" "$guide/AGENTS.md"
+cmp "$fixture/source-three/AGENTS.md" "$guide/.prokron/upgrade/AGENTS.md"
+grep -Fq 'NEW GUIDANCE three' "$guide/.prokron/commands/prokron-init.md"
+records_of "$guide" | cmp "$fixture/records-before" -
+
+# With no record of what was installed, a difference can only mean an edit.
+rm "$guide/.prokron/runtime/GUIDANCE"
+cp "$guide/.prokron/commands/prokron-init.md" "$fixture/unrecorded-init"
+make_source "$fixture/source-four" four
+"$fixture/source-four/install.sh" "$guide" --no-link > "$guide/output"
+cmp "$fixture/unrecorded-init" "$guide/.prokron/commands/prokron-init.md"
+cmp "$fixture/source-four/.prokron/commands/prokron-init.md" \
+  "$guide/.prokron/upgrade/.prokron/commands/prokron-init.md"
+records_of "$guide" | cmp "$fixture/records-before" -
+
+# An older runtime does not replace a newer one unless asked to.
+printf '999.0.0\n' > "$guide/.prokron/runtime/VERSION"
+snapshot() { (cd "$1" && find . -type f ! -name output -exec cksum {} + | LC_ALL=C sort); }
+snapshot "$guide" > "$fixture/before-downgrade"
+if "$root/install.sh" "$guide" --no-link > "$guide/output" 2>&1; then
+  echo "an older runtime replaced a newer one" >&2
+  exit 1
+fi
+grep -Fq 'Refusing to install' "$guide/output"
+snapshot "$guide" | cmp "$fixture/before-downgrade" -
+"$root/install.sh" "$guide" --no-link --allow-downgrade >/dev/null
+cmp "$root/VERSION" "$guide/.prokron/runtime/VERSION"
+records_of "$guide" | cmp "$fixture/records-before" -
+# `--ref` names what to download; it means nothing to a local source.
+if "$root/install.sh" "$guide" --no-link --ref v0.4.6 >/dev/null 2>&1; then
+  exit 1
+fi
+
+# A Git repository gets one marked .gitattributes block, and parallel appends
+# to the journal and the ADR index merge without conflict (ADR-041).
+test ! -e "$fixture/.gitattributes"
+repo="$fixture/gitrepo"
+mkdir -p "$repo"
+( cd "$repo" && git init -q -b main )
+printf '*.png binary\n' > "$repo/.gitattributes"
+"$root/install.sh" "$repo" --no-link >/dev/null
+"$root/install.sh" "$repo" --no-link >/dev/null
+test "$(grep -c '^# prokron:start' "$repo/.gitattributes")" -eq 1
+grep -Fxq '*.png binary' "$repo/.gitattributes"
+grep -Fxq '.prokron/chronicle/JOURNAL.md merge=union' "$repo/.gitattributes"
+grep -Fxq '.prokron/chronicle/ADR/README.md merge=union' "$repo/.gitattributes"
+grep -Fxq '.prokron/compiled/** linguist-generated=true' "$repo/.gitattributes"
+g() { git -C "$repo" -c user.name=test -c user.email=test@example.com "$@"; }
+g add -A && g commit -qm base
+g checkout -qb one
+printf '\n## 2026-01-01 — T-ONE\n\n- Did: one.\n' >> "$repo/.prokron/chronicle/JOURNAL.md"
+printf -- '- [ADR-001](ADR-001.md) — One (ACCEPTED)\n' >> "$repo/.prokron/chronicle/ADR/README.md"
+g commit -qam one
+g checkout -q main
+g checkout -qb two
+printf '\n## 2026-01-01 — T-TWO\n\n- Did: two.\n' >> "$repo/.prokron/chronicle/JOURNAL.md"
+printf -- '- [ADR-002](ADR-002.md) — Two (ACCEPTED)\n' >> "$repo/.prokron/chronicle/ADR/README.md"
+g commit -qam two
+g merge -q --no-edit one
+grep -Fq 'T-ONE' "$repo/.prokron/chronicle/JOURNAL.md"
+grep -Fq 'T-TWO' "$repo/.prokron/chronicle/JOURNAL.md"
+grep -Fq 'ADR-001' "$repo/.prokron/chronicle/ADR/README.md"
+grep -Fq 'ADR-002' "$repo/.prokron/chronicle/ADR/README.md"
+if grep -q '^<<<<<<<' "$repo/.prokron/chronicle/JOURNAL.md" "$repo/.prokron/chronicle/ADR/README.md"; then
+  exit 1
+fi
 
 mkdir "$fixture/new project"
 "$root/install.sh" new "$fixture/new project" --no-link > "$fixture/output-new"

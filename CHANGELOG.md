@@ -6,8 +6,32 @@ people arriving from a release page.
 
 ## Unreleased
 
+### Changed
+
+- **Reinstalling upgrades guidance.** The installer records a checksum of each
+  guidance file it writes. Unedited guidance is replaced on the next install;
+  edited guidance is kept and the new version staged under
+  `.prokron/upgrade/`. The Prokron block in `AGENTS.md` is handled the same
+  way without touching the rules around it. ADR-040.
+- **The one-line install installs the latest release**, not `main`, by running
+  that release's own installer. `--ref <tag|branch>` picks another, and an
+  older runtime no longer replaces a newer one without `--allow-downgrade`.
+
+- **An older runtime no longer rewrites a newer one's views.** `compile`,
+  `graph` and `dashboard` refuse unless given `--force`, and `status` says to
+  upgrade rather than recompile. ADR-041.
+- `status` counts done tasks that nobody has reviewed or verified.
+- A migrated v0.1 handoff now names `.prokron/compiled/STATE.md`, where
+  generated state has lived since ADR-024.
+
 ### Added
 
+- **Branch-safe records.** In a Git repository the installer maintains a
+  marked `.gitattributes` block: `JOURNAL.md` and the ADR index merge by
+  union, and compiled output is marked generated. The resume and checkpoint
+  workflows say how to settle `INTENT.md` and `HANDOFF.md` after a merge.
+- A `stale-reference` warning for backticked file paths in `HANDOFF.md` or
+  `INTENT.md` that no longer exist.
 - **`/prokron-baseline`**, an opt-in workflow for existing repositories. On
   the owner's request it proposes at most ten ADRs for decisions the code
   already depends on, each marked `Origin: RECONSTRUCTED` with an `Evidence:`

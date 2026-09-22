@@ -7,6 +7,10 @@ reviewer's preference never becomes a finding here.
 
 from __future__ import annotations
 
+import re
+from pathlib import Path
+
+from .layout import AUTHORITY_DIR
 from .model import (
     CRITERION_STATES,
     DECISION_ORIGINS,
@@ -47,6 +51,35 @@ def _cycles(project: Project) -> list[list[str]]:
         if state.get(task_id, 0) == 0:
             walk(task_id, [task_id])
     return found
+
+
+# A backticked, repository-relative file path: at least one directory, and a
+# last segment with an extension. Branch names (`feature/work`), commands, and
+# directories do not match, which keeps the check quiet about prose.
+_CITED_PATH = re.compile(r"`((?:[\w.\-]+/)+[\w\-][\w.\-]*\.[A-Za-z0-9]+)`")
+
+
+def stale_references(project: Project) -> list[Finding]:
+    """Paths the current-state documents cite that no longer exist.
+
+    Handoff and intent are prose, so nothing else resolves what they point at;
+    the continuity pilot found a handoff sending agents to a moved path. This
+    is the one check that reads the filesystem, and it only warns.
+    """
+    root = Path(project.root)
+    authority = root / AUTHORITY_DIR
+    findings: list[Finding] = []
+    for name, text in (("HANDOFF.md", project.handoff), ("INTENT.md", project.intent)):
+        seen: set[str] = set()
+        for cited in _CITED_PATH.findall(text):
+            if cited in seen or cited.startswith("../") or "//" in cited:
+                continue
+            seen.add(cited)
+            if not ((root / cited).exists() or (authority / cited).exists()):
+                findings.append(
+                    Finding("warning", "stale-reference", f"cites `{cited}`, which does not exist", name)
+                )
+    return findings
 
 
 def check(project: Project) -> list[Finding]:
@@ -243,6 +276,7 @@ def check(project: Project) -> list[Finding]:
             "PHASES.md",
         )
 
+    findings.extend(stale_references(project))
     return findings
 
 
