@@ -26,6 +26,11 @@
       "identifier": "https://github.com/qomero/prokron",
       "relation": "isSupplementTo",
       "scheme": "url"
+    },
+    {
+      "identifier": "https://doi.org/10.5281/zenodo.22897871",
+      "relation": "isVersionOf",
+      "scheme": "doi"
     }
   ]
 }

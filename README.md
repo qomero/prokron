@@ -4,6 +4,8 @@
 
 # Prokron
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.22897871.svg)](https://doi.org/10.5281/zenodo.22897871)
+
 **Prokron keeps people and AI agents working from the same project state.**
 
 Project management that a person and an AI can both read. Prokron is short for
@@ -468,7 +470,9 @@ For OpenCode setup, see its [providers](https://opencode.ai/docs/providers),
 ## Releases
 
 `VERSION` holds the current release and [`CHANGELOG.md`](CHANGELOG.md) summarises
-what changed. The full history lives in the chronicle itself:
+what changed. Every release from v0.4.6 is archived and citable:
+[`10.5281/zenodo.22897871`](https://doi.org/10.5281/zenodo.22897871) always resolves to the latest one, and
+[`CITATION.cff`](CITATION.cff) is what GitHub's *Cite this repository* reads. The full history lives in the chronicle itself:
 [decisions](.prokron/chronicle/ADR/) and [journal](.prokron/chronicle/JOURNAL.md).
 
 ### Upgrading from an earlier layout

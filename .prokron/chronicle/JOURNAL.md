@@ -860,3 +860,10 @@
   held to `VERSION` by a test after that drift shipped once; `CITATION.cff` got
   the same guard immediately rather than after it broke.
 - Next: Phase 0 or Phase 3. Authority first.
+
+- Landed: the deposit used the metadata we supplied rather than inferring any
+  of it — title, organisation authorship, Apache-2.0, all ten keywords. Version
+  identifier `10.5281/zenodo.22897872`, concept identifier
+  `10.5281/zenodo.22897871`. The badge and `CITATION.cff` point at the concept
+  identifier, which always resolves to the newest release; pointing at a
+  version identifier would have frozen the badge at 0.4.6.
