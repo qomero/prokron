@@ -194,6 +194,8 @@ def as_json(project: Project) -> dict[str, object]:
                 "status": decision.status,
                 "supersedes": decision.supersedes,
                 "affects": decision.affects,
+                "origin": decision.origin,
+                "evidence": decision.evidence,
                 "source": decision.source.as_json(),
             }
             for decision in project.decisions

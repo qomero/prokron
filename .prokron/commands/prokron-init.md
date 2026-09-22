@@ -17,4 +17,6 @@ product choices as ADRs.
 
 For an existing repository, leave tasks and history empty. Record only work and
 decisions made from this session onward. Do not inspect the repository to invent
-a historical chronicle.
+a historical chronicle. If the owner wants the decisions the code already
+depends on recorded, they can ask for `.prokron/commands/prokron-baseline.md`
+separately; initialization never runs it.

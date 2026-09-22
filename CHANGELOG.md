@@ -4,6 +4,22 @@ Prokron records its own history in `.prokron/chronicle/JOURNAL.md` and its
 decisions in `.prokron/chronicle/ADR/`. This file is the short version, for
 people arriving from a release page.
 
+## Unreleased
+
+### Added
+
+- **`/prokron-baseline`**, an opt-in workflow for existing repositories. On
+  the owner's request it proposes at most ten ADRs for decisions the code
+  already depends on, each marked `Origin: RECONSTRUCTED` with an `Evidence:`
+  field naming what it was inferred from. It creates no tasks, journal history
+  or intent, and `existing` initialization still starts empty. ADR-037.
+- Validation errors `reconstruction-without-evidence`,
+  `unconfirmed-reconstruction` (an `ACCEPTED` reconstruction naming no
+  authority) and `invalid-origin`.
+- Compiled decisions carry `origin` and `evidence`; context packets carry
+  `origin`. The dashboard gains a Decisions section and labels reconstructed
+  decisions there and in the task drill-down.
+
 ## 0.4.6 — 2026-09-22
 
 ### Added

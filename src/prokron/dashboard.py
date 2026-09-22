@@ -84,6 +84,9 @@ tbody tr:hover { background: color-mix(in srgb, var(--accent) 8%, transparent); 
 .pill.WIP { color: var(--warn); border-color: color-mix(in srgb, var(--warn) 40%, transparent); }
 .pill.RED, .pill.FAIL { color: var(--bad);
         border-color: color-mix(in srgb, var(--bad) 40%, transparent); }
+.pill.RECONSTRUCTED, .pill.PROPOSED { color: var(--warn);
+        border-color: color-mix(in srgb, var(--warn) 40%, transparent); }
+details > summary { cursor: pointer; color: var(--muted); font-size: 13px; padding: 4px 0 10px; }
 ul.plain { list-style: none; padding: 0; margin: 0; }
 ul.plain li { padding: 9px 0; border-bottom: 1px solid var(--line); }
 ul.plain li:last-child { border-bottom: 0; }
@@ -150,6 +153,7 @@ const NODE_MAP = JSON.parse(document.getElementById('node-map').textContent);
 const NODE_KEY = Object.fromEntries(
   Object.entries(NODE_MAP).map(([drawn, taskId]) => [taskId, drawn]));
 const byId = Object.fromEntries(DATA.tasks.map(t => [t.id, t]));
+const decisionById = Object.fromEntries(DATA.decisions.map(d => [d.id, d]));
 
 // Authored prose becomes markup here too, so it is escaped here too.
 const esc = value => String(value == null ? '' : value).replace(
@@ -183,7 +187,7 @@ function showTask(id) {
       ${contract.inherits.length ? `<dt>Inherited invariants</dt><dd>${contract.inherits.map(i => `<code>${esc(i)}</code>`).join(', ')}</dd>` : ''}
       ${obstacles.length ? `<dt>Obstacles</dt><dd>${obstacles.map(o => `${pill(o.type)} ${esc(o.detail)}`).join('<br>')}</dd>` : ''}
       <dt>Evidence</dt><dd>${task.evidence ? esc(task.evidence) : '<span class="note">None recorded</span>'}</dd>
-      ${task.decisions.length ? `<dt>Decisions</dt><dd>${task.decisions.map(d => `<code>${esc(d)}</code>`).join(', ')}</dd>` : ''}
+      ${task.decisions.length ? `<dt>Decisions</dt><dd>${task.decisions.map(d => `<code>${esc(d)}</code>${decisionById[d] && decisionById[d].origin === 'RECONSTRUCTED' ? ' ' + pill('RECONSTRUCTED') : ''}`).join(', ')}</dd>` : ''}
       <dt>Schedule</dt><dd>${task.schedule ? esc(JSON.stringify(task.schedule)) : '<span class="note">Unscheduled</span>'}</dd>
       <dt>Source</dt><dd><code>${esc(DATA.project.authority)}/${esc(task.source.file)} → ${esc(task.source.anchor)}</code></dd>
     </dl>`;
@@ -540,6 +544,32 @@ def render(project: Project, report: Report, compiled: dict) -> str:
         for state, count in sorted(metrics["validationBreakdown"].items())
     )
 
+    # A reconstructed decision was inferred after the fact (ADR-037). It is
+    # labelled wherever it appears, so it is never read as a record of a
+    # decision the project watched being made.
+    def decision_row(decision: dict) -> str:
+        reconstructed = decision["origin"] == "RECONSTRUCTED"
+        return (
+            f'<li><code>{esc(decision["id"])}</code> '
+            f'<span class="pill {esc(decision["status"])}">{esc(decision["status"])}</span>'
+            + (' <span class="pill RECONSTRUCTED">RECONSTRUCTED</span>' if reconstructed else "")
+            + f' {esc(decision["title"])}'
+            + (
+                f'<br><span class="note">Inferred from {esc(decision["evidence"] or "nothing cited")}</span>'
+                if reconstructed
+                else ""
+            )
+            + "</li>"
+        )
+
+    all_decisions = compiled["decisions"]
+    reconstructed_count = sum(1 for d in all_decisions if d["origin"] == "RECONSTRUCTED")
+    decisions = "".join(decision_row(d) for d in all_decisions)
+    decision_summary = (
+        f'{len(all_decisions)} {"decision" if len(all_decisions) == 1 else "decisions"}'
+        + (f" · {reconstructed_count} reconstructed" if reconstructed_count else "")
+    )
+
     tabs = "".join(
         f'<button data-diagram="{name}" aria-selected="{str(index == 0).lower()}">{label}</button>'
         for index, (name, label) in enumerate(
@@ -628,6 +658,10 @@ def render(project: Project, report: Report, compiled: dict) -> str:
   <h2>Validation</h2>
   <table><thead><tr><th>Strength</th><th>Tasks</th></tr></thead>
   <tbody>{validation_rows}</tbody></table>
+
+  <h2>Decisions</h2>
+  <details{" open" if reconstructed_count else ""}><summary>{decision_summary}</summary>
+  <ul class="plain">{decisions or '<li class="note">No decisions recorded.</li>'}</ul></details>
 
   <h2>All tasks</h2>
   <table><thead><tr><th>Task</th><th>Title</th><th>Phase</th><th>Status</th><th>Validation</th></tr></thead>

@@ -369,7 +369,7 @@ def context(project: Project, task_id: str, role: str = "builder") -> dict[str, 
             for inherited in project.invariants_for(task)
         ],
         "decisions": [
-            {"id": d.id, "title": d.title}
+            {"id": d.id, "title": d.title, "origin": d.origin}
             for d in project.decisions
             if d.id in task.decisions
         ],

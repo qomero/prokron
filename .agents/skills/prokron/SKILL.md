@@ -1,6 +1,6 @@
 ---
 name: prokron
-description: Maintain or resume a repository's Prokron project chronicle. Use for Prokron init, work, decision, checkpoint, and resume requests.
+description: Maintain or resume a repository's Prokron project chronicle. Use for Prokron init, work, decision, checkpoint, resume, and baseline requests.
 ---
 
 # Prokron
@@ -8,11 +8,12 @@ description: Maintain or resume a repository's Prokron project chronicle. Use fo
 Everything Prokron owns is inside `.prokron/`. Read
 `.prokron/chronicle/README.md`. Run `.prokron/prokron status` for compiled
 state and `.prokron/prokron validate` after editing authority. Interpret the
-first argument as `init`, `work`, `decide`, `checkpoint`, or `resume`, then
+first argument as `init`, `work`, `decide`, `checkpoint`, `resume`, or `baseline`, then
 follow the matching `.prokron/commands/prokron-<argument>.md` workflow. Pass
 remaining arguments through:
 `init` receives the entry mode, `work` the requested task, and `decide` the
-decision details. Repeated `init` preserves populated records and resumes work.
+decision details. Repeated `init` preserves populated records and resumes work. Run `baseline`
+only when the owner explicitly asks for it.
 
 Maintain the chronicle without waiting for an explicit Prokron request. Create
 or claim every new task before implementation, give it a phase and an acceptance

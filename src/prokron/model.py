@@ -15,6 +15,9 @@ EVIDENCE_CLASSES = ("TEST", "MUTATION", "INSPECTION", "RUNTIME", "MANUAL")
 CRITERION_STATES = ("PASS", "FAIL", "NOT_RUN")
 PHASE_STATUSES = ("PLANNED", "ACTIVE", "EXIT_PENDING", "COMPLETE")
 GATE_STATUSES = ("GREEN", "RED")
+# A decision is recorded when it is made, or reconstructed afterwards from what
+# the repository already depends on (ADR-037). Absent means contemporaneous.
+DECISION_ORIGINS = ("CONTEMPORANEOUS", "RECONSTRUCTED")
 NO_PHASE = "P-NONE"
 
 OBSTACLE_TYPES = (
@@ -148,6 +151,13 @@ class Decision:
     supersedes: list[str]
     affects: list[str]
     source: Source
+    origin: str = "CONTEMPORANEOUS"
+    evidence: str | None = None
+    authority: str | None = None
+
+    @property
+    def reconstructed(self) -> bool:
+        return self.origin == "RECONSTRUCTED"
 
 
 @dataclass

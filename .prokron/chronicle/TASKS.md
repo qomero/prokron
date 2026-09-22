@@ -636,3 +636,14 @@
 - AC: AC-T-DOI-01
 - Evidence: `.zenodo.json` and `CITATION.cff` carry the title, description, licence, keywords and authorship the archive should record, rather than leaving it to infer them. Both parse. Authorship is the organisation, because a personal name and ORCID were not confirmed and are the author's to give. A regression test asserts the version in `CITATION.cff` matches `VERSION`, which is the same drift class the README test already guards.
 - Governed by: ADR-032
+
+## T-BASELINE-01: Offer an opt-in baseline of existing decisions
+- Status: DONE
+- Phase: P-NONE
+- Validation: SYNTHETIC
+- Dependencies: none
+- Owner: claude/baseline
+- Claimed: 2026-09-23
+- AC: AC-T-BASELINE-01
+- Evidence: 139 unittest cases and the installer suite pass; mutation of each new validation rule and the dashboard label fails its tests; a real-repository pilot on pallets/flask produced 7 evidence-cited proposals with no task, intent, or journal change.
+- Governed by: ADR-037, ADR-038, ADR-039
