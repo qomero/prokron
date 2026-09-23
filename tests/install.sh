@@ -12,7 +12,7 @@ printf '# Keep agent rules\n' > "$fixture/AGENTS.md"
 printf '# Keep Claude rules\n' > "$fixture/CLAUDE.md"
 "$root/install.sh" existing "$fixture" --no-link > "$fixture/output"
 
-for file in README PHASES TASKS ACCEPTANCE INTENT HANDOFF JOURNAL; do
+for file in README PHASES TASKS ACCEPTANCE INTENT HANDOFF JOURNAL TRACE; do
   test -f "$fixture/.prokron/chronicle/$file.md"
 done
 test -f "$fixture/.prokron/chronicle/ADR/README.md"

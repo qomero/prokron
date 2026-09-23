@@ -115,6 +115,8 @@ Each record answers one question a project keeps being asked.
 | What is stopping progress? | **Obstacles**, computed — dependency, acceptance, gate, phase, validation | computed |
 | Why did we choose this? | **Decisions** — append-only, superseded rather than rewritten | `ADR/` |
 | What happened recently? | **Journal** — progress, what was left mid-air, and why | `JOURNAL.md` |
+| Is this product work or support work? | **Domain** — execution advances the project; operations maintains its environment and never counts as progress | `TASKS.md` |
+| What ran, failed, or changed along the way? | **Trace** — tool calls, mini-actions, mutations, failures, retries | `TRACE.md` |
 | What does the next participant need? | **Handoff** — the baton, overwritten each checkpoint | `HANDOFF.md` |
 | Why do we believe any of this? | **Evidence**, recorded against the criterion it satisfies | `ACCEPTANCE.md` |
 
@@ -327,6 +329,7 @@ T-PILOT-01 — Run the continuity pilot
 | `prokron status` | Where the project stands, what is ready, what blocks it. |
 | `prokron explain <task>` | Why one task exists, its criteria, blockers, and evidence. |
 | `prokron context <task>` | The minimal packet an agent needs to start that task. |
+| `prokron domains` | How each task's execution/operations domain was decided, and which need one. |
 | `prokron validate` | Broken dependencies, dangling references, authority conflicts. |
 | `prokron compile` | Rebuilds `.prokron/compiled/` from the authored documents. |
 | `prokron graph` | The six Mermaid views of the same state. |
@@ -379,10 +382,11 @@ authoritative.
 | **`ACCEPTANCE.md`** | The bar: what must be demonstrated before work counts as done. |
 | **`ADR/`** | The reasoning: append-only decisions and their supersession chain. |
 | `PHASES.md` | The arc: maturity stages, exit conditions, exit authority, and gates. |
-| `TASKS.md` | The work: phase, owner, dependencies, status, validation, evidence. |
+| `TASKS.md` | The work: phase, domain (execution or operations), owner, dependencies, status, validation, evidence. |
 | `INTENT.md` | The focus: zero or one active task and its exact execution point. |
 | `HANDOFF.md` | The baton: what the next person or agent needs right now. |
 | `JOURNAL.md` | The diary: progress, validation, what was left mid-air, and why. |
+| `TRACE.md` | The operations trace: tool calls, commands, mini-actions, changes, failures, retries. |
 
 `.prokron/compiled/` holds the generated views: a state snapshot, the task
 graph, a `project.json` for other tools, Mermaid diagrams, and the dashboard.
@@ -401,9 +405,9 @@ into why the model is shaped this way.
 
 ## What is verified, and what is not
 
-**Implemented and tested.** The compiler and its eight commands, acceptance
+**Implemented and tested.** The compiler and its nine commands, acceptance
 contracts with evidence, phases, gates, computed obstacles, the critical path,
-the dashboard, and the context packet. 153 unit tests plus an installer
+the dashboard, the execution/operations split, and the context packet. 186 unit tests plus an installer
 regression suite, and deleting the compiled directory reproduces every generated
 file byte for byte:
 

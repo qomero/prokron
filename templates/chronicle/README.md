@@ -35,21 +35,29 @@ question that an authored document answers.
 ## Authority
 
 - `PHASES.md` is phase outcome, entry, exit, exit authority, and status.
-- `TASKS.md` is task identity, phase, dependency, ownership, execution state,
-  validation state, contract reference, and evidence.
+- `TASKS.md` is task identity, phase, domain, dependency, ownership, execution
+  state, validation state, contract reference, and evidence.
 - `ACCEPTANCE.md` is the completion contract. A task is not done because someone
   says it is done; it is done when its frozen contract has sufficient evidence.
 - `ADR/` is accepted decision authority, one file per ADR, append-only.
 - `INTENT.md` is overwritten and holds zero or one current task.
 - `HANDOFF.md` is overwritten and holds current implementation continuity.
 - `JOURNAL.md` is append-only history and holds no authority.
+- `TRACE.md` is append-only operational evidence: tool calls, commands,
+  mini-actions, mutations, failures, retries, and validation runs. It holds no
+  authority and never counts as progress.
 - `.prokron/compiled/STATE.md` and `.prokron/compiled/TASK_GRAPH.md` are
   views. They report authority and never override it.
 
 ## Working rules
 
 1. Record every new work request as a task before implementation without waiting
-   for a Prokron command. Give it a phase, or mark it `P-NONE`.
+   for a Prokron command. Give it a phase, or mark it `P-NONE`, and a
+   `Domain:` — `execution` for work that advances the project itself,
+   `operations` for work that maintains the environment it is built in
+   (tooling, upgrades, CI, housekeeping). Changing a task's domain is a
+   material decision: record it in the journal, or in an ADR when it changes
+   what the project counts as progress.
 2. Work on one task at a time. Mark it `WIP`, record owner and claim date, and
    keep the exact execution point in `INTENT.md`.
 3. Hard dependencies come from `TASKS.md`. Label suggested ordering as a
@@ -66,7 +74,9 @@ question that an authored document answers.
 8. Update `HANDOFF.md` and append a `JOURNAL.md` entry before leaving work
    mid-air. `Left mid-air` and `Next` must be explicit even when the answer is
    "nothing."
-9. Keep entries concise. Put product rules in the specification and durable
+9. Append an event to `TRACE.md` when an action could later explain a failure,
+   a blocked gate, or a regression. Never record secrets or private reasoning.
+10. Keep entries concise. Put product rules in the specification and durable
    implementation choices in ADRs, not in the session diary.
 
 ## Checkpoint trigger

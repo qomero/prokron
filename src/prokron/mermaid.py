@@ -36,20 +36,34 @@ def _label(text: str) -> str:
 
 
 def task_graph(project: Project, report: Report) -> str:
+    """Execution grouped by phase, operations in one group of its own.
+
+    Operations tasks keep their shape for status but carry a distinct class,
+    so a cross-domain edge reads as one. Trace events are never drawn: the
+    graph is the plan, not a record of every action (ADR-045).
+    """
     lines = ["flowchart LR"]
+
+    def node(task) -> str:
+        open_bracket, close_bracket = _SHAPE.get(task.status, _SHAPE["TODO"])
+        return (
+            f"        {node_id(task.id)}{open_bracket}"
+            f'"{_label(task.id)}<br/>{_label(task.title)}"{close_bracket}'
+        )
+
     for phase in [*project.phases, None]:
         phase_id = phase.id if phase else "P-NONE"
-        tasks = project.tasks_in(phase_id)
+        tasks = project.execution_in(phase_id)
         if not tasks:
             continue
         title = f"{phase.id} {phase.name}" if phase else "Phase-independent"
         lines.append(f'    subgraph {node_id(phase_id)}["{_label(title)}"]')
-        for task in tasks:
-            open_bracket, close_bracket = _SHAPE.get(task.status, _SHAPE["TODO"])
-            lines.append(
-                f"        {node_id(task.id)}{open_bracket}"
-                f'"{_label(task.id)}<br/>{_label(task.title)}"{close_bracket}'
-            )
+        lines.extend(node(task) for task in tasks)
+        lines.append("    end")
+    operations = project.operations_tasks
+    if operations:
+        lines.append('    subgraph project_operations["Project operations"]')
+        lines.extend(node(task) for task in operations)
         lines.append("    end")
     for task in project.tasks:
         for dependency in task.dependencies:
@@ -58,13 +72,20 @@ def task_graph(project: Project, report: Report) -> str:
     lines.append("    classDef done fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20;")
     lines.append("    classDef wip fill:#fff8e1,stroke:#f9a825,color:#7f6000;")
     lines.append("    classDef blocked fill:#ffebee,stroke:#c62828,color:#8e0000;")
+    lines.append(
+        "    classDef ops fill:#eef1f6,stroke:#5f6f86,stroke-dasharray:4 3,color:#2b3a4f;"
+    )
+    execution = project.execution_tasks
     for status, style in (("DONE", "done"), ("WIP", "wip")):
-        members = [node_id(t.id) for t in project.tasks if t.status == status]
+        members = [node_id(t.id) for t in execution if t.status == status]
         if members:
             lines.append(f"    class {','.join(members)} {style};")
-    blocked = [node_id(task_id) for task_id in report.blocked]
+    execution_ids = {t.id for t in execution}
+    blocked = [node_id(task_id) for task_id in report.blocked if task_id in execution_ids]
     if blocked:
         lines.append(f"    class {','.join(blocked)} blocked;")
+    if operations:
+        lines.append(f"    class {','.join(node_id(t.id) for t in operations)} ops;")
     return "\n".join(lines) + "\n"
 
 

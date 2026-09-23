@@ -106,7 +106,18 @@ prokron context T-002 --role reviewer   # the reviewer's packet, with the findin
 Emits the intent, phase, task, dependencies and whether they are met, the
 acceptance criteria and their states, inherited invariants, governing
 decisions, evidence and handoff — and nothing about any other task. Paste it
-into an agent that has never seen the repository and it can start.
+into an agent that has never seen the repository and it can start. It also
+carries the task's domain, any operations work it waits on, and the trace
+events that name it.
+
+```sh
+prokron domains          # how every task's domain was decided
+prokron domains --json   # the same, for tools
+```
+
+Lists tasks as explicit or inferred execution, explicit operations, or
+ambiguous, names the ambiguous ones, and says whether `TRACE.md` holds any
+tool calls, mini-actions, failures, retries, or mutations. It reads only.
 
 ### Checking and rebuilding
 
@@ -131,16 +142,47 @@ prokron compile && prokron graph && prokron dashboard
 
 `prokron dashboard --open` opens it in a browser.
 
-The page has six tabs. **Overview** opens first: the current phase, what is in
-flight, the main blocker, and the next gate, then progress and phases.
-**Execution** holds in-flight and ready work, obstacles grouped by type, and the
-critical path. **Graph** has the six diagrams and the schedule. **Governance**
-has gates and validation strength. **Decisions** lists every ADR, searchable.
+The page has seven tabs. **Overview** opens first: the current phase, what is
+in flight, the main blocker, and the next gate, then execution progress and
+phases. **Execution** holds in-flight and ready work, obstacles grouped by type,
+execution failures with the operational evidence behind them, and the critical
+path. **Graph** has the six diagrams and the schedule; dashed nodes are
+operations. **Operations** is the review surface for support work: open
+operations tasks and their traces, failures and warnings, tool calls,
+mini-actions, changes, retries, and a timeline. **Governance** has gates and
+validation strength. **Decisions** lists every ADR, searchable.
 **All Tasks** is the full registry with search and filters. The URL hash names
 the tab (`#execution`), so a reload or a shared link opens the same view. The
 Light / Dark control remembers your choice in the browser; until you choose,
 the page follows your system setting. None of this is project state: the page
 still writes nothing.
+
+### Execution and operations
+
+Every task is either **execution** — work that advances the project itself —
+or **operations** — upgrading Prokron, CI, tooling, housekeeping, anything that
+maintains the environment the project is built in. Declare it on the task:
+
+```text
+## T-205: Upgrade Prokron and refresh the dashboard
+- Status: TODO
+- Phase: P-NONE
+- Domain: operations
+```
+
+Progress, phases, gates, the critical path, and the Overview describe execution
+only. An operations task that an execution task depends on shows up as that
+task's external blocker, labelled as operations, with a link to its trace.
+
+Tasks in a phase count as execution without saying so. A phase-independent task
+with no `Domain:` is counted as execution and `validate` warns about it.
+`prokron domains` lists every task by how its domain was decided and names
+the ones that need a `Domain:`.
+
+`TRACE.md` holds operational events — tool calls, commands, mini-actions,
+mutations, failures, retries — that an agent records when they could explain a
+problem later. They appear under Operations and in the task dialog, and never
+count as progress.
 
 ### Moving an older installation
 
@@ -216,6 +258,8 @@ actually needs.
 | `status` says views were written by another version | Same | `prokron compile && prokron graph && prokron dashboard` |
 | `Refusing to overwrite views written by prokron …` | A newer release compiled them; this installation is older | Reinstall to upgrade; `--force` only if you mean to downgrade them |
 | The installer lists files under `.prokron/upgrade/` | You had edited that guidance, so the new version was staged beside it | Merge what you want, then delete `.prokron/upgrade/` |
+| `ambiguous-domain` warning | A phase-independent task has no `Domain:` | Add `- Domain: execution` or `- Domain: operations`; `prokron domains` lists them |
+| A maintenance task disappeared from the Overview | It is declared `operations`, so it no longer competes with product work | Find it under Operations; it appears on the Overview only if execution waits on it |
 | `stale-reference` warning | `HANDOFF.md` or `INTENT.md` names a file that moved or was deleted | Update the path in the handoff |
 | Merge conflict in `.prokron/compiled/` | Both branches recompiled | Take either side, then `prokron compile && prokron graph && prokron dashboard` |
 | Merge conflict in `INTENT.md` or `HANDOFF.md` | Both branches changed current state | Resolve by hand toward the branch whose work is current |

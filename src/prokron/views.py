@@ -47,7 +47,7 @@ def state(project: Project, report: Report) -> str:
     lines.append(f"- Project: {project.name}")
     lines.append(f"- Current phase: {project.current_phase or 'none'}")
     lines.append(
-        f"- Tasks: {metrics['taskCompletion']['done']} of "
+        f"- Execution tasks: {metrics['taskCompletion']['done']} of "
         f"{metrics['taskCompletion']['total']} done"
     )
     lines.append(
@@ -68,7 +68,7 @@ def state(project: Project, report: Report) -> str:
         progress = report.phase_progress[phase.id]
         authority = f", exit authority {phase.exit_authority}" if phase.exit_authority else ""
         lines.append(
-            f"- {phase.id} {phase.name}: {progress} tasks, {phase.status}{authority}"
+            f"- {phase.id} {phase.name}: {progress} execution tasks, {phase.status}{authority}"
         )
 
     lines += ["", "## Gates", ""]
@@ -77,18 +77,41 @@ def state(project: Project, report: Report) -> str:
     if not project.gates:
         lines.append("- None recorded.")
 
-    lines += ["", "## Work", ""]
-    lines.append(f"- In flight: {', '.join(report.wip) or 'none'}")
-    lines.append(f"- Ready: {', '.join(report.ready) or 'none'}")
-    lines.append(f"- Blocked: {', '.join(report.blocked) or 'none'}")
+    execution = {t.id for t in project.execution_tasks}
+    lines += ["", "## Execution", ""]
+    lines.append(f"- In flight: {', '.join(report.in_flight) or 'none'}")
+    lines.append(f"- Ready: {', '.join(t for t in report.ready if t in execution) or 'none'}")
+    lines.append(f"- Blocked: {', '.join(t for t in report.blocked if t in execution) or 'none'}")
     if report.critical_path:
         lines.append(f"- Critical path: {' → '.join(report.critical_path)}")
+    blocker = report.main_blocker
+    if blocker:
+        label = " (project operations)" if blocker["domain"] == "operations" else ""
+        lines.append(f"- Main blocker: {blocker['id']}{label} blocks {blocker['blocking']} ({blocker['reason']})")
+    for task_id, blockers in sorted(report.external_blockers.items()):
+        lines.append(f"- {task_id} waits on operations: {', '.join(blockers)}")
 
     lines += ["", "## Obstacles", ""]
-    for obstacle in report.obstacles:
+    execution_obstacles = [o for o in report.obstacles if o.domain == "execution"]
+    for obstacle in execution_obstacles:
         lines.append(f"- {obstacle.type}: {obstacle.detail}")
-    if not report.obstacles:
+    if not execution_obstacles:
         lines.append("- None. Everything open is startable.")
+
+    operations = report.operations_metrics()
+    lines += ["", "## Operations", ""]
+    lines.append(
+        f"- Tasks: {operations['tasks']['open']} open, {operations['tasks']['active']} active, "
+        f"{operations['tasks']['blocked']} blocked, {operations['tasks']['done']} done"
+    )
+    events = operations["events"]
+    lines.append(
+        f"- Events: {events['total']} recorded, {events['failures']} failed, "
+        f"{events['unresolvedFailures']} unresolved, {events['retries']} retries, "
+        f"{events['mutations']} mutations"
+    )
+    for obstacle in (o for o in report.obstacles if o.domain == "operations"):
+        lines.append(f"- {obstacle.type}: {obstacle.detail}")
 
     lines += [
         "",
@@ -120,6 +143,7 @@ def task_graph(project: Project, report: Report) -> str:
         eligible = "yes" if task.id in report.ready else "no"
         lines.append(f"- {task.id} [{task.status}] {task.title}")
         lines.append(f"  - phase: {task.phase}")
+        lines.append(f"  - domain: {task.domain} ({task.domain_source})")
         lines.append(f"  - depends on: {', '.join(task.dependencies) or 'none'}")
         lines.append(f"  - unlocks: {', '.join(unlocks) or 'none'}")
         lines.append(f"  - eligible: {eligible}")

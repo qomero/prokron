@@ -14,6 +14,9 @@ from .layout import AUTHORITY_DIR
 from .model import (
     CRITERION_STATES,
     DECISION_ORIGINS,
+    DOMAINS,
+    EVENT_OUTCOMES,
+    EVENT_TYPES,
     EVIDENCE_CLASSES,
     GATE_STATUSES,
     NO_PHASE,
@@ -79,6 +82,95 @@ def stale_references(project: Project) -> list[Finding]:
                 findings.append(
                     Finding("warning", "stale-reference", f"cites `{cited}`, which does not exist", name)
                 )
+    return findings
+
+
+# Values that look like credentials. A trace is evidence for review; it must
+# never become the place a token is published (ADR-045).
+_SECRET = re.compile(
+    r"(ghp_|gho_|ghs_|github_pat_|xox[abprs]-|AKIA[0-9A-Z]{16}|sk-[A-Za-z0-9_\-]{16,}"
+    r"|-----BEGIN [A-Z ]*PRIVATE KEY|\b(?:password|passwd|secret|token|api[_-]?key)\s*[=:]\s*\S+)",
+    re.IGNORECASE,
+)
+_TIME = re.compile(r"^\d{4}-\d{2}-\d{2}([T ]\d{2}:\d{2}(:\d{2})?(\.\d+)?(Z|[+-]\d{2}:?\d{2})?)?$")
+
+
+def domain_findings(project: Project) -> list[Finding]:
+    """Domain validity and execution structure (ADR-045)."""
+    findings: list[Finding] = []
+    exit_authorities = {p.exit_authority: p.id for p in project.phases if p.exit_authority}
+    for task in project.tasks:
+        where = f"{task.source.file}#{task.id}"
+        if task.declared_domain and task.declared_domain not in DOMAINS:
+            findings.append(Finding(
+                "error", "invalid-domain",
+                f"'{task.declared_domain}' is not a domain; use execution or operations", where,
+            ))
+        elif task.domain_source == "unresolved":
+            findings.append(Finding(
+                "warning", "ambiguous-domain",
+                "phase-independent task with no Domain; counted as execution until one is declared",
+                where,
+            ))
+        if not task.execution and not task.phase_independent:
+            findings.append(Finding(
+                "warning", "operations-in-phase",
+                f"operations task names phase {task.phase}; it is not counted in that phase's progress",
+                where,
+            ))
+        if not task.execution and task.id in exit_authorities:
+            findings.append(Finding(
+                "warning", "operations-exit-authority",
+                f"operations task is the exit authority of {exit_authorities[task.id]}", where,
+            ))
+    return findings
+
+
+def trace_findings(project: Project) -> list[Finding]:
+    """Trace consistency. Strict about the trace's own structure, lenient about
+    what it names, so a project can start recording without its history first
+    being perfect."""
+    findings: list[Finding] = []
+    ids: set[str] = set()
+    known = (
+        {t.id for t in project.tasks}
+        | {g.id for g in project.gates}
+        | {p.id for p in project.phases}
+        | {d.id for d in project.decisions}
+        | set(project.contracts)
+        | {c.id for contract in project.contracts.values() for c in contract.criteria}
+    )
+    event_ids = {e.id for e in project.events}
+    for event in project.events:
+        where = f"{event.source.file}#{event.id}"
+        if event.id in ids:
+            findings.append(Finding("error", "duplicate-event", f"event {event.id} is defined more than once", where))
+        ids.add(event.id)
+        if event.type not in EVENT_TYPES:
+            findings.append(Finding("error", "invalid-event-type", f"'{event.type}' is not an event type", where))
+        if event.outcome not in EVENT_OUTCOMES:
+            findings.append(Finding("error", "invalid-event-outcome", f"'{event.outcome}' is not an outcome", where))
+        for field_name, reference in (("Parent", event.parent), ("Retry of", event.retry_of)):
+            if reference and reference not in event_ids:
+                findings.append(Finding(
+                    "error", "unknown-event-reference", f"{field_name} names {reference}, which is not an event", where,
+                ))
+            if reference == event.id:
+                findings.append(Finding("error", "self-referencing-event", f"{field_name} names the event itself", where))
+        if event.task and event.task not in {t.id for t in project.tasks}:
+            findings.append(Finding("warning", "unknown-event-task", f"names task {event.task}, which does not exist", where))
+        for reference in event.affects:
+            if reference not in known:
+                findings.append(Finding("warning", "unknown-event-affects", f"affects {reference}, which is not in the chronicle", where))
+        if event.time and not _TIME.match(event.time):
+            findings.append(Finding("warning", "invalid-event-time", f"'{event.time}' is not an ISO date or time", where))
+        text = " ".join(filter(None, (
+            event.title, event.tool, event.target, event.error, event.artifact, event.evidence, event.agent,
+        )))
+        if _SECRET.search(text):
+            findings.append(Finding(
+                "warning", "possible-secret", "event text looks like it contains a credential; remove it", where,
+            ))
     return findings
 
 
@@ -276,6 +368,8 @@ def check(project: Project) -> list[Finding]:
             "PHASES.md",
         )
 
+    findings.extend(domain_findings(project))
+    findings.extend(trace_findings(project))
     findings.extend(stale_references(project))
     return findings
 

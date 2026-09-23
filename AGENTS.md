@@ -34,7 +34,8 @@ Recognize these workflows:
 
 Maintain the chronicle automatically; do not wait for a Prokron command. Before
 starting newly requested work, create or claim its task, give it a phase from
-`PHASES.md` or mark it `P-NONE`, write its acceptance contract in
+`PHASES.md` or mark it `P-NONE` and a `Domain:` of `execution` or `operations`,
+write its acceptance contract in
 `ACCEPTANCE.md`, and set the single `INTENT.md` entry. When a material project
 choice is made, accepted, or acted on, append its ADR to `.prokron/chronicle/ADR/`
 immediately and link affected tasks. Supersede decisions instead of overwriting

@@ -16,8 +16,8 @@ decision details. Repeated `init` preserves populated records and resumes work. 
 only when the owner explicitly asks for it.
 
 Maintain the chronicle without waiting for an explicit Prokron request. Create
-or claim every new task before implementation, give it a phase and an acceptance
-contract, and append an ADR to `.prokron/chronicle/ADR/` as soon as a material
+or claim every new task before implementation, give it a phase, a `Domain:`
+(`execution` or `operations`), and an acceptance contract, and append an ADR to `.prokron/chronicle/ADR/` as soon as a material
 decision is made or acted on. Keep the single intent at the exact execution point. A task is
 done only when its frozen contract in `ACCEPTANCE.md` has sufficient evidence.
 

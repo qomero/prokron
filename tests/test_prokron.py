@@ -668,8 +668,9 @@ class TestDashboard(FixtureCase):
 
     def test_shows_every_required_section(self) -> None:
         for heading in (
-            "Progress", "Phases", "Gates", "In flight", "Ready", "Obstacles",
+            "Phases", "Gates", "In flight", "Ready", "Obstacles",
             "Critical path", "Views", "Schedule", "Validation", "Decisions", "All tasks",
+            "Execution progress", "Active operations", "Timeline",
         ):
             self.assertIn(f">{heading}<", self.html)
 
@@ -751,14 +752,15 @@ class TestDashboardTabs(FixtureCase):
         body = self.html.split(f'id="panel-{name}"', 1)[1]
         return re.split(r'<section class="panel"|<footer>', body, maxsplit=1)[0]
 
-    def test_six_top_level_tabs_in_order_with_overview_first(self) -> None:
+    def test_seven_top_level_tabs_in_order_with_overview_first(self) -> None:
         tabs = re.findall(r'role="tab" id="tab-(\w+)"[^>]*aria-selected="(\w+)"[^>]*>([^<]+)<', self.html)
         self.assertEqual(
             [(name, label) for name, _, label in tabs],
             [("overview", "Overview"), ("execution", "Execution"), ("graph", "Graph"),
-             ("governance", "Governance"), ("decisions", "Decisions"), ("tasks", "All Tasks")],
+             ("operations", "Operations"), ("governance", "Governance"),
+             ("decisions", "Decisions"), ("tasks", "All Tasks")],
         )
-        self.assertEqual([selected for _, selected, _ in tabs], ["true"] + ["false"] * 5)
+        self.assertEqual([selected for _, selected, _ in tabs], ["true"] + ["false"] * 6)
         for name, _, _ in tabs:
             self.assertIn(f'id="panel-{name}" role="tabpanel" aria-labelledby="tab-{name}"', self.html)
         self.assertIn("root.setAttribute('data-tab', known.indexOf(tab) >= 0 ? tab : 'overview')", self.html)
@@ -766,12 +768,14 @@ class TestDashboardTabs(FixtureCase):
 
     def test_only_the_selected_panel_is_displayed(self) -> None:
         self.assertIn("html.js .panel { display: none; }", self.html)
-        for name in ("overview", "execution", "graph", "governance", "decisions", "tasks"):
+        for name in ("overview", "execution", "graph", "operations", "governance", "decisions", "tasks"):
             self.assertIn(f'html.js[data-tab="{name}"] #panel-{name}', self.html)
 
     def test_sections_live_under_their_tabs(self) -> None:
         placement = {
-            "overview": ("Progress", "Phases"),
+            "overview": ("Execution progress", "Phases"),
+            "operations": ("Summary", "Active operations", "Failures and warnings", "Tool calls",
+                           "Mini-actions", "Changes and mutations", "Retries", "Timeline"),
             "execution": ("In flight", "Ready", "Obstacles", "Critical path"),
             "graph": ("Views", "Schedule"),
             "governance": ("Gates", "Validation"),
@@ -788,37 +792,21 @@ class TestDashboardTabs(FixtureCase):
         strip = overview.split('<div class="focus">', 1)[1].split("<h2>", 1)[0]
         # P1 is ACTIVE, nothing is WIP, T-TWO is ready and is the exit authority.
         self.assertIn("<code>P1</code> · Foundation", strip)
-        self.assertIn("Nothing in flight", strip)
+        self.assertIn("No execution work in flight", strip)
         self.assertIn('Ready to start: <button type="button" class="tasklink" data-task="T-TWO">', strip)
         self.assertIn("Exit authority for P1", strip)
         self.assertIn("Gate A", strip)
-        blocker = dashboard._main_blocker(self.compiled)
-        self.assertIsNotNone(blocker)
-        self.assertIn(blocker["subject"], strip)
-        self.assertIn(dashboard.esc(blocker["detail"]), strip)
-
-    def test_the_main_blocker_prefers_the_work_in_hand(self) -> None:
-        compiled = {
-            "wip": ["T-B"], "criticalPath": ["T-B", "T-C"],
-            "obstacles": [
-                {"type": "PHASE_BLOCKER", "subject": "P2", "blockers": [], "detail": "phase"},
-                {"type": "DEPENDENCY_BLOCKER", "subject": "T-C", "blockers": ["T-B"], "detail": "dep"},
-                {"type": "ACCEPTANCE_BLOCKER", "subject": "T-B", "blockers": [], "detail": "acc"},
-            ],
-        }
-        self.assertEqual(dashboard._main_blocker(compiled)["detail"], "acc")
-        # With nothing in hand, type decides: a phase blocker before a dependency.
-        compiled["wip"], compiled["criticalPath"] = [], []
-        compiled["obstacles"] = compiled["obstacles"][:2]
-        self.assertEqual(dashboard._main_blocker(compiled)["detail"], "phase")
-        self.assertIsNone(dashboard._main_blocker({"wip": [], "criticalPath": [], "obstacles": []}))
+        # The selection comes from analytics; the page only shows it.
+        blocker = self.compiled["execution"]["mainBlocker"]
+        self.assertEqual((blocker["kind"], blocker["id"]), ("GATE", "Gate A"))
+        self.assertIn("blocking P1 exit", strip)
 
     def test_progress_and_phases_show_compiled_figures(self) -> None:
         overview = self.panel("overview")
         done = self.compiled["metrics"]["taskCompletion"]
         self.assertIn(f'{done["done"]} <span class="note">/ {done["total"]}</span>', overview)
         for phase in self.compiled["phases"]:
-            self.assertIn(f'{phase["progress"]["done"]} / {phase["progress"]["total"]} tasks', overview)
+            self.assertIn(f'{phase["progress"]["done"]} / {phase["progress"]["total"]} execution tasks', overview)
         self.assertIn('class="phase current"', overview)
 
     def test_the_critical_path_is_a_chain_in_compiled_order(self) -> None:
@@ -898,6 +886,330 @@ class TestDashboardTabs(FixtureCase):
     def test_the_footer_still_says_it_is_derived(self) -> None:
         self.assertIn("This page is derived and read-only", self.html)
         self.assertIn("it reports authority and cannot change it", self.html)
+
+
+def _domain_task(task_id, status="TODO", phase="P1", domain=None, deps=(), title=None, contract=True):
+    lines = [f"## {task_id}: {title or 'Work ' + task_id}", f"- Status: {status}", f"- Phase: {phase}"]
+    if domain:
+        lines.append(f"- Domain: {domain}")
+    lines += [
+        "- Validation: SYNTHETIC" if status == "DONE" else "- Validation: UNTESTED",
+        f"- Dependencies: {', '.join(deps) or 'none'}",
+    ]
+    if contract:
+        lines.append(f"- AC: AC-{task_id}")
+    lines.append("- Evidence: done" if status == "DONE" else "- Evidence:")
+    return "\n".join(lines) + "\n"
+
+
+def _domain_contract(task_id, state="PASS"):
+    return f"\n## AC-{task_id} — Work\n\n- `AC-{task_id}-01` — Given work, When checked, Then it holds. `TEST` · `{state}`\n"
+
+
+class DomainCase(unittest.TestCase):
+    """Builds small projects to pin execution/operations semantics (ADR-045)."""
+
+    GATE = ""
+    EXIT = "T-1"
+
+    def build(self, tasks: list[str], contracts: dict[str, str], trace: str | None = None,
+              gate: str | None = None, exit_authority: str | None = None):
+        self.dir = Path(tempfile.mkdtemp(prefix="prokron-domain-"))
+        self.addCleanup(shutil.rmtree, self.dir, True)
+        authority = self.dir / layout.AUTHORITY_DIR
+        (authority / "ADR").mkdir(parents=True)
+        phases = (
+            "# Phases\n\n## P1 — Product\n\nOutcome:\nIt ships.\n\nEntry:\n- none\n\nExit:\n- done\n\n"
+            f"Exit authority:\n{exit_authority or self.EXIT}\n\nStatus:\nACTIVE\n"
+        )
+        if gate:
+            phases += f"\n---\n\n# Gates\n\n{gate}\n"
+        (authority / "PHASES.md").write_text(phases)
+        (authority / "TASKS.md").write_text("# Tasks\n\n" + "\n".join(tasks))
+        (authority / "ACCEPTANCE.md").write_text(
+            "# Acceptance\n" + "".join(_domain_contract(t, st) for t, st in contracts.items())
+        )
+        (authority / "INTENT.md").write_text("# Intent\n\nNone.\n")
+        (authority / "HANDOFF.md").write_text("# Handoff\n\nNone.\n")
+        if trace is not None:
+            (authority / "TRACE.md").write_text("# Trace\n\n" + trace)
+        self.project = compiler.load(self.dir)
+        self.report = analytics.report(self.project)
+        self.compiled = compiler.as_json(self.project)
+        return self.project
+
+    def codes(self) -> list[str]:
+        return [f.code for f in validate.check(self.project)]
+
+    def html(self) -> str:
+        return dashboard.render(self.project, self.report, self.compiled)
+
+
+class TestDomainResolution(DomainCase):
+    def test_declared_structural_and_unresolved(self) -> None:
+        gate = "## Gate A — Held\n\nHeld.\n\nBlocks: P1 exit\nVerified by: `AC-T-GATE`\nStatus: GREEN\n"
+        self.build([
+            _domain_task("T-1", phase="P1"),
+            _domain_task("T-EXIT", phase="P-NONE"),
+            _domain_task("T-GATE", phase="P-NONE"),
+            _domain_task("T-O1", phase="P-NONE", domain="operations"),
+            _domain_task("T-LOOSE", phase="P-NONE"),
+            _domain_task("T-UP", phase="P-NONE", title="Upgrade Prokron and refresh dashboard"),
+        ], {t: "NOT_RUN" for t in ("T-1", "T-EXIT", "T-GATE", "T-O1", "T-LOOSE", "T-UP")},
+            gate=gate, exit_authority="T-EXIT")
+        resolved = {t.id: (t.domain, t.domain_source) for t in self.project.tasks}
+        self.assertEqual(resolved, {
+            "T-1": ("execution", "phase"),
+            "T-EXIT": ("execution", "exit-authority"),
+            "T-GATE": ("execution", "gate"),
+            "T-O1": ("operations", "declared"),
+            "T-LOOSE": ("execution", "unresolved"),
+            # A title never decides: this is unresolved, not operations.
+            "T-UP": ("execution", "unresolved"),
+        })
+        warned = [f.where for f in validate.check(self.project) if f.code == "ambiguous-domain"]
+        self.assertEqual(warned, ["TASKS.md#T-LOOSE", "TASKS.md#T-UP"])
+
+    def test_an_invalid_domain_is_an_error(self) -> None:
+        self.build([_domain_task("T-1", domain="support")], {"T-1": "NOT_RUN"})
+        self.assertIn("invalid-domain", [f.code for f in validate.errors(validate.check(self.project))])
+        self.assertIn(self.project.task("T-1").domain, ("execution", "operations"))
+
+    def test_the_resolver_reads_no_titles_or_ids(self) -> None:
+        source = (Path(__file__).resolve().parents[1] / "src/prokron/domain.py").read_text()
+        code = source.split('"""', 2)[2]
+        self.assertNotIn(".title", code)
+        self.assertNotIn("startswith", code)
+
+
+class TestExecutionOperationsCases(DomainCase):
+    def test_case_a_a_side_task_does_not_take_the_focus(self) -> None:
+        self.build([
+            _domain_task("T-1", "WIP"),
+            _domain_task("T-2", deps=["T-1"]),
+            _domain_task("T-O1", "WIP", phase="P-NONE", domain="operations"),
+        ], {"T-1": "NOT_RUN", "T-2": "NOT_RUN", "T-O1": "NOT_RUN"}, exit_authority="T-2")
+        self.assertEqual(self.report.in_flight, ["T-1"])
+        self.assertNotIn("T-O1", self.report.critical_path)
+        self.assertEqual(self.compiled["metrics"]["taskCompletion"]["total"], 2)
+        self.assertEqual(self.compiled["operations"]["active"], ["T-O1"])
+        self.assertIn('id="op-T-O1"', self.html())
+
+    def test_case_b_a_blocked_operations_task_is_not_the_main_blocker(self) -> None:
+        self.build([
+            _domain_task("T-1", "WIP"),
+            _domain_task("T-O0", phase="P-NONE", domain="operations"),
+            _domain_task("T-O1", phase="P-NONE", domain="operations", deps=["T-O0"]),
+        ], {"T-1": "NOT_RUN", "T-O0": "NOT_RUN", "T-O1": "NOT_RUN"})
+        self.assertIn("T-O1", self.report.blocked)
+        self.assertIsNone(self.report.main_blocker)
+
+    def test_case_c_operations_blocks_execution_without_becoming_it(self) -> None:
+        self.build([
+            _domain_task("T-1", deps=["T-O1"]),
+            _domain_task("T-O1", phase="P-NONE", domain="operations"),
+        ], {"T-1": "NOT_RUN", "T-O1": "NOT_RUN"})
+        self.assertEqual(self.report.critical_path, ["T-1"])
+        self.assertEqual(self.report.external_blockers, {"T-1": ["T-O1"]})
+        blocker = self.report.main_blocker
+        self.assertEqual((blocker["id"], blocker["domain"], blocker["blocking"]), ("T-O1", "operations", "T-1"))
+        self.assertEqual(self.project.task("T-O1").domain, "operations")
+        page = self.html()
+        overview = page.split('id="panel-overview"', 1)[1].split('<section class="panel"', 1)[0]
+        self.assertIn("Project operations", overview)
+        self.assertIn('data-focus="op-T-O1"', overview)
+        self.assertIn('id="op-T-O1"', page)
+
+    def test_case_d_phase_counts_exclude_operations(self) -> None:
+        tasks = [_domain_task(f"T-{i}", "DONE" if i <= 8 else "TODO") for i in range(1, 11)]
+        tasks += [_domain_task(f"T-O{i}", "TODO", phase="P1", domain="operations") for i in range(1, 4)]
+        states = {f"T-{i}": "PASS" if i <= 8 else "NOT_RUN" for i in range(1, 11)}
+        states.update({f"T-O{i}": "NOT_RUN" for i in range(1, 4)})
+        self.build(tasks, states, exit_authority="T-10")
+        self.assertEqual(str(self.report.phase_progress["P1"]), "8 / 10")
+        self.assertEqual(self.compiled["phases"][0]["progress"]["total"], 10)
+        self.assertEqual(self.compiled["metrics"]["taskCompletion"], {"done": 8, "total": 10, "fraction": 0.8})
+        self.assertEqual(self.codes().count("operations-in-phase"), 3)
+        phase_blocker = [o for o in self.report.obstacles if o.type == "PHASE_BLOCKER"][0]
+        self.assertEqual(phase_blocker.blockers, ["T-9", "T-10"])
+
+    def test_case_e_housekeeping_leaves_a_ready_gate_ready(self) -> None:
+        gate = "## Gate A — Held\n\nHeld.\n\nBlocks: P1 exit\nVerified by: `AC-T-1`\nStatus: GREEN\n"
+        self.build([
+            _domain_task("T-1", "DONE"),
+            _domain_task("T-O5", phase="P-NONE", domain="operations", title="Clean up the README"),
+        ], {"T-1": "PASS", "T-O5": "NOT_RUN"}, gate=gate)
+        gate_view = self.report.next_gate
+        self.assertTrue(gate_view["gates"][0]["ready"])
+        self.assertEqual(gate_view["externalBlockers"], [])
+        self.assertTrue(gate_view["ready"])
+        self.assertIsNone(self.report.main_blocker)
+
+    def test_case_f_operations_that_verify_a_gate_block_it(self) -> None:
+        gate = "## Gate A — Runtime\n\nRuntime migrated.\n\nBlocks: P1 exit\nVerified by: `AC-T-O6`\nStatus: GREEN\n"
+        self.build([
+            _domain_task("T-1", "DONE"),
+            _domain_task("T-O6", phase="P-NONE", domain="operations", title="Runtime migration"),
+        ], {"T-1": "PASS", "T-O6": "NOT_RUN"}, gate=gate)
+        gate_view = self.report.next_gate
+        self.assertFalse(gate_view["gates"][0]["ready"])
+        self.assertFalse(gate_view["ready"])
+        self.assertEqual(gate_view["externalBlockers"], [{"id": "T-O6", "domain": "operations", "via": "Gate A"}])
+        self.assertEqual(str(self.report.phase_progress["P1"]), "1 / 1")
+        self.assertIn('data-focus="op-T-O6"', self.html())
+
+    def test_case_f_through_the_exit_authority(self) -> None:
+        self.build([
+            _domain_task("T-1", deps=["T-O6"]),
+            _domain_task("T-O6", phase="P-NONE", domain="operations"),
+        ], {"T-1": "NOT_RUN", "T-O6": "NOT_RUN"})
+        self.assertEqual(self.report.next_gate["externalBlockers"][0]["id"], "T-O6")
+        self.assertEqual(self.report.main_blocker["reason"], "phase exit")
+
+    TRACE_G = (
+        "## EV-10: Generate client plan schema\n- Type: action\n- Time: 2026-09-23T14:20:00Z\n"
+        "- Task: T-O2\n- Outcome: success\n\n"
+        "## EV-11: Run schema generator\n- Type: tool-call\n- Time: 2026-09-23T14:22:00Z\n- Task: T-O2\n"
+        "- Tool: shell\n- Outcome: failure\n- Error: generated schema is empty\n- Parent: EV-10\n"
+        "- Affects: T-8\n- Artifact: schema.json\n"
+    )
+
+    def test_case_g_a_failed_tool_call_explains_an_execution_failure(self) -> None:
+        self.build([
+            _domain_task("T-8", "WIP"),
+            _domain_task("T-O2", "WIP", phase="P-NONE", domain="operations"),
+        ], {"T-8": "FAIL", "T-O2": "NOT_RUN"}, trace=self.TRACE_G, exit_authority="T-8")
+        self.assertEqual(self.project.task("T-8").domain, "execution")
+        self.assertIsNone(self.project.task("EV-11"))
+        self.assertNotIn("EV-11", self.report.critical_path)
+        failure = self.report.execution_failures[0]
+        self.assertEqual(failure["task"], "T-8")
+        self.assertEqual(failure["failedEvents"], ["EV-11"])
+        self.assertEqual(self.compiled["operations"]["unresolvedFailures"], ["EV-11"])
+        page = self.html()
+        execution_panel = page.split('id="panel-execution"', 1)[1].split('<section class="panel"', 1)[0]
+        self.assertIn('data-focus="event-EV-11"', execution_panel)
+        operations_panel = page.split('id="panel-operations"', 1)[1].split('<section class="panel"', 1)[0]
+        self.assertIn('id="event-EV-11"', operations_panel)
+        self.assertIn("generated schema is empty", operations_panel)
+        self.assertNotIn("EV-11", mermaid.task_graph(self.project, self.report))
+        self.assertEqual(validate.errors(validate.check(self.project)), [])
+
+    def test_case_h_a_mini_action_mutation_stays_in_the_trace(self) -> None:
+        trace = ("## EV-4: Edit provider config\n- Type: mutation\n- Time: 2026-09-23T09:00:00Z\n"
+                 "- Target: config/provider.json\n- Outcome: success\n- Affects: T-9\n")
+        self.build([_domain_task("T-9", "WIP")], {"T-9": "FAIL"}, trace=trace, exit_authority="T-9")
+        self.assertEqual(self.report.execution_failures[0]["relatedEvents"], ["EV-4"])
+        self.assertEqual(str(self.report.phase_progress["P1"]), "0 / 1")
+        timeline = self.html().split('id="timeline"', 1)[1]
+        self.assertIn('id="event-EV-4"', timeline)
+        self.assertEqual(self.compiled["operations"]["metrics"]["events"]["mutations"], 1)
+
+    def test_the_blocker_prefers_startable_critical_path_work(self) -> None:
+        # T-EXIT waits on a blocked task, a ready side task, and the ready head
+        # of the critical path; the critical-path head is the obstruction.
+        self.build([
+            _domain_task("T-A"), _domain_task("T-B", deps=["T-A"]),
+            _domain_task("T-SIDE"), _domain_task("T-HEAD"),
+            _domain_task("T-N1", deps=["T-HEAD"]), _domain_task("T-N2", deps=["T-N1"]),
+            _domain_task("T-N3", deps=["T-N2"]),
+            _domain_task("T-EXIT", deps=["T-B", "T-SIDE", "T-HEAD"]),
+        ], {t: "NOT_RUN" for t in ("T-A", "T-B", "T-SIDE", "T-HEAD", "T-N1", "T-N2", "T-N3", "T-EXIT")},
+            exit_authority="T-EXIT")
+        self.assertEqual(self.report.critical_path[0], "T-HEAD")
+        self.assertEqual(self.report.main_blocker["id"], "T-HEAD")
+
+    def test_case_i_selection_is_deterministic(self) -> None:
+        tasks = [
+            _domain_task("T-1", "WIP"), _domain_task("T-2", deps=["T-1", "T-O1"]),
+            _domain_task("T-O1", "WIP", phase="P-NONE", domain="operations"),
+            _domain_task("T-3", "WIP", phase="P-NONE"),
+        ]
+        states = {"T-1": "NOT_RUN", "T-2": "NOT_RUN", "T-O1": "NOT_RUN", "T-3": "NOT_RUN"}
+        self.build(tasks, states, trace=self.TRACE_G.replace("T-O2", "T-O1").replace("T-8", "T-2"),
+                   exit_authority="T-2")
+        first = (json.dumps(self.compiled, sort_keys=True), self.html())
+        for _ in range(3):
+            project = compiler.load(self.dir)
+            report = analytics.report(project)
+            compiled = compiler.as_json(project)
+            again = (json.dumps(compiled, sort_keys=True), dashboard.render(project, report, compiled))
+            self.assertEqual(first, again)
+        # Current-phase execution first, then the unphased execution task.
+        self.assertEqual(self.report.in_flight, ["T-1", "T-3"])
+
+
+class TestTraceValidation(DomainCase):
+    def trace(self, text: str) -> list[str]:
+        self.build([_domain_task("T-1", "WIP")], {"T-1": "NOT_RUN"}, trace=text)
+        return self.codes()
+
+    def test_structure_errors(self) -> None:
+        codes = self.trace(
+            "## EV-1: One\n- Type: tool-call\n- Outcome: success\n\n"
+            "## EV-1: Again\n- Type: magic\n- Outcome: maybe\n- Parent: EV-9\n- Retry of: EV-1\n"
+        )
+        for code in ("duplicate-event", "invalid-event-type", "invalid-event-outcome",
+                     "unknown-event-reference", "self-referencing-event"):
+            self.assertIn(code, codes)
+
+    def test_reference_warnings_are_not_errors(self) -> None:
+        self.trace("## EV-1: One\n- Type: note\n- Task: T-404\n- Affects: Gate Z\n- Time: yesterday\n")
+        found = validate.check(self.project)
+        self.assertEqual(validate.errors(found), [])
+        self.assertEqual(
+            sorted(f.code for f in found),
+            ["invalid-event-time", "unknown-event-affects", "unknown-event-task"],
+        )
+
+    def test_an_apparent_secret_is_flagged(self) -> None:
+        codes = self.trace("## EV-1: Push\n- Type: command\n- Error: remote rejected token=ghp_abcdefghijklmnop1234\n")
+        self.assertIn("possible-secret", codes)
+
+    def test_a_successful_retry_resolves_a_failure(self) -> None:
+        self.build([_domain_task("T-1", "WIP")], {"T-1": "NOT_RUN"}, trace=(
+            "## EV-1: Build\n- Type: command\n- Outcome: failure\n\n"
+            "## EV-2: Build again\n- Type: retry\n- Retry of: EV-1\n- Outcome: failure\n\n"
+            "## EV-3: Build a third time\n- Type: retry\n- Retry of: EV-2\n- Outcome: success\n\n"
+            "## EV-4: Lint\n- Type: command\n- Outcome: failure\n"
+        ))
+        self.assertEqual(analytics.unresolved_failures(self.project), ["EV-4"])
+        self.assertEqual(self.compiled["operations"]["metrics"]["events"]["retries"], 2)
+
+    def test_a_project_without_a_trace_has_no_events(self) -> None:
+        self.build([_domain_task("T-1")], {"T-1": "NOT_RUN"})
+        self.assertEqual(self.project.events, [])
+        self.assertIn("No operational events are recorded", self.html())
+
+
+class TestDomainsReport(DomainCase):
+    def test_it_classifies_and_changes_nothing(self) -> None:
+        self.build([
+            _domain_task("T-1"), _domain_task("T-O1", phase="P-NONE", domain="operations"),
+            _domain_task("T-2", phase="P-NONE", domain="execution"), _domain_task("T-3", phase="P-NONE"),
+        ], {t: "NOT_RUN" for t in ("T-1", "T-O1", "T-2", "T-3")})
+        before = {p: p.read_bytes() for p in (self.dir / layout.AUTHORITY_DIR).rglob("*") if p.is_file()}
+        buffer = io.StringIO()
+        with redirect_stdout(buffer):
+            self.assertEqual(cli.main(["-C", str(self.dir), "domains", "--json"]), 0)
+        report = json.loads(buffer.getvalue())
+        self.assertEqual(report["domains"]["explicitExecution"], ["T-2"])
+        self.assertEqual(report["domains"]["explicitOperations"], ["T-O1"])
+        self.assertEqual(report["domains"]["inferredExecution"], ["T-1"])
+        self.assertEqual(report["domains"]["inferredOperations"], [])
+        self.assertEqual(report["domains"]["ambiguous"], ["T-3"])
+        self.assertFalse(report["trace"]["recorded"])
+        after = {p: p.read_bytes() for p in (self.dir / layout.AUTHORITY_DIR).rglob("*") if p.is_file()}
+        self.assertEqual(before, after)
+
+    def test_status_names_an_operations_blocker(self) -> None:
+        self.build([_domain_task("T-1", deps=["T-O1"]), _domain_task("T-O1", phase="P-NONE", domain="operations")],
+                   {"T-1": "NOT_RUN", "T-O1": "NOT_RUN"})
+        buffer = io.StringIO()
+        with redirect_stdout(buffer):
+            cli.main(["-C", str(self.dir), "status"])
+        self.assertIn("Blocker   T-O1 · project operations → T-1 (phase exit)", buffer.getvalue())
+        self.assertIn("operations   1 open", buffer.getvalue())
 
 
 class TestViews(FixtureCase):

@@ -17,7 +17,7 @@ import json
 import re
 
 from .analytics import Report
-from .model import STATUSES, VALIDATIONS, Project
+from .model import DOMAINS, EVENT_TYPES, STATUSES, VALIDATIONS, Project
 from . import mermaid
 
 MERMAID_CDN = "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"
@@ -107,6 +107,7 @@ html.js .panel { display: none; }
 html.js[data-tab="overview"] #panel-overview,
 html.js[data-tab="execution"] #panel-execution,
 html.js[data-tab="graph"] #panel-graph,
+html.js[data-tab="operations"] #panel-operations,
 html.js[data-tab="governance"] #panel-governance,
 html.js[data-tab="decisions"] #panel-decisions,
 html.js[data-tab="tasks"] #panel-tasks { display: block; }
@@ -165,6 +166,26 @@ td.num { font-variant-numeric: tabular-nums; text-align: right; white-space: now
 .pill.RECONSTRUCTED, .pill.PROPOSED { color: var(--warn);
         border-color: color-mix(in srgb, var(--warn) 40%, transparent); }
 .pill.current { color: var(--accent); border-color: var(--accent); }
+/* Operations is labelled wherever it appears, in its own calm colour: it is
+   not a warning, it is a different kind of work (ADR-045). */
+:root { --ops: #4f6a8a; }
+:root[data-theme="dark"] { --ops: #9db4d3; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme]) { --ops: #9db4d3; } }
+.pill.domain-operations, .pill.operations { color: var(--ops);
+        border-color: color-mix(in srgb, var(--ops) 45%, transparent); border-style: dashed; }
+.tasklink.ops code { color: var(--ops); }
+.tracelink { color: var(--ops); font-size: 13px; text-decoration: none; }
+.tracelink:hover { text-decoration: underline; }
+.external { margin-top: 4px; width: 100%; font-size: 13px; color: var(--muted); }
+.lead { font-size: 14px; margin: 18px 0 0; max-width: 820px; }
+ul.events li.event { padding: 8px 0; }
+.evhead { display: flex; gap: 6px; flex-wrap: wrap; align-items: baseline; }
+.evmeta { color: var(--muted); font-size: 13px; margin-top: 3px; overflow-wrap: anywhere; }
+.everror { color: var(--bad); font-size: 13px; margin-top: 3px; overflow-wrap: anywhere; }
+.opbody { padding: 0 16px 10px; }
+details.group.op > summary { font-weight: 400; }
+.flash { animation: flash 1.6s ease-out 1; }
+@keyframes flash { from { background: color-mix(in srgb, var(--ops) 22%, transparent); } to { background: transparent; } }
 
 .tasklink { border: 0; background: none; padding: 0; cursor: pointer; text-align: left;
             color: var(--ink); }
@@ -294,6 +315,7 @@ const NODE_KEY = Object.fromEntries(
   Object.entries(NODE_MAP).map(([drawn, taskId]) => [taskId, drawn]));
 const byId = Object.fromEntries(DATA.tasks.map(t => [t.id, t]));
 const decisionById = Object.fromEntries(DATA.decisions.map(d => [d.id, d]));
+const eventById = Object.fromEntries(DATA.operations.events.map(e => [e.id, e]));
 
 // Authored prose becomes markup here too, so it is escaped here too.
 const esc = value => String(value == null ? '' : value).replace(
@@ -319,6 +341,7 @@ function showTask(id) {
     <h3>${esc(task.id)} — ${esc(task.title)}</h3>
     <p class="sub">${pill(task.status)} ${pill(task.validation)}
        <span class="pill">${esc(task.phase)}</span>
+       <span class="pill ${esc(task.domain)}">${esc(task.domain)}</span>
        ${task.owner ? `<span class="pill">${esc(task.owner)}</span>` : ''}</p>
     <dl>
       <dt>Dependencies</dt><dd>${deps}</dd>
@@ -326,7 +349,10 @@ function showTask(id) {
       <dt>Acceptance — ${esc(task.ac || 'none')}</dt><dd><ul class="plain">${criteria}</ul></dd>
       ${contract.inherits.length ? `<dt>Inherited invariants</dt><dd>${contract.inherits.map(i => `<code>${esc(i)}</code>`).join(', ')}</dd>` : ''}
       ${obstacles.length ? `<dt>Obstacles</dt><dd>${obstacles.map(o => `${pill(o.type)} ${esc(o.detail)}`).join('<br>')}</dd>` : ''}
+      <dt>Domain</dt><dd>${esc(task.domain)} <span class="note">(${esc(task.domainSource)})</span></dd>
+      ${task.externalBlockers.length ? `<dt>External blockers · project operations</dt><dd>${task.externalBlockers.map(o => `<code>${esc(o)}</code> ${pill(byId[o] ? byId[o].status : 'MISSING')}`).join('<br>')}</dd>` : ''}
       <dt>Evidence</dt><dd>${task.evidence ? esc(task.evidence) : '<span class="note">None recorded</span>'}</dd>
+      ${task.events.length ? `<dt>Operational events</dt><dd>${task.events.map(e => { const ev = eventById[e]; return ev ? `<code>${esc(e)}</code> ${pill(ev.type)} ${pill(ev.outcome)} ${esc(ev.title)}` : `<code>${esc(e)}</code>`; }).join('<br>')}</dd>` : ''}
       ${task.decisions.length ? `<dt>Decisions</dt><dd>${task.decisions.map(d => `<code>${esc(d)}</code>${decisionById[d] && decisionById[d].origin === 'RECONSTRUCTED' ? ' ' + pill('RECONSTRUCTED') : ''}`).join(', ')}</dd>` : ''}
       <dt>Schedule</dt><dd>${task.schedule ? esc(JSON.stringify(task.schedule)) : '<span class="note">Unscheduled</span>'}</dd>
       <dt>Source</dt><dd><code>${esc(DATA.project.authority)}/${esc(task.source.file)} → ${esc(task.source.anchor)}</code></dd>
@@ -654,7 +680,7 @@ function graphShown() {
 // Which tab is open is presentation state. It lives in the URL hash, so a
 // reload or a shared link opens the same view, and it never touches authority.
 
-const TOP = ['overview', 'execution', 'graph', 'governance', 'decisions', 'tasks'];
+const TOP = ['overview', 'execution', 'graph', 'operations', 'governance', 'decisions', 'tasks'];
 const topTabs = [...document.querySelectorAll('.toptabs [role="tab"]')];
 
 function selectTab(name, { focus = false, record = true } = {}) {
@@ -737,10 +763,12 @@ const taskSearch = document.getElementById('task-search');
 const taskPhase = document.getElementById('task-phase');
 const taskStatus = document.getElementById('task-status');
 const taskValidation = document.getElementById('task-validation');
-filterable(taskRows, [taskSearch, taskPhase, taskStatus, taskValidation],
+const taskDomain = document.getElementById('task-domain');
+filterable(taskRows, [taskSearch, taskDomain, taskPhase, taskStatus, taskValidation],
   document.getElementById('task-shown'), row => {
     const q = taskSearch.value.trim().toLowerCase();
     return (!q || row.dataset.text.includes(q))
+      && (!taskDomain.value || row.dataset.domain === taskDomain.value)
       && (!taskPhase.value || row.dataset.phase === taskPhase.value)
       && (!taskStatus.value || row.dataset.status === taskStatus.value)
       && (!taskValidation.value || row.dataset.validation === taskValidation.value);
@@ -762,6 +790,35 @@ chips.forEach(chip => chip.addEventListener('click', () => {
   chips.forEach(other => other.setAttribute('aria-pressed', String(other === chip)));
   runAdrs();
 }));
+
+const timelineItems = [...document.querySelectorAll('#timeline li.event')];
+const timelineChips = [...document.querySelectorAll('#timeline-chips button')];
+let timelineFilter = '';
+const runTimeline = filterable(timelineItems, [], document.getElementById('timeline-shown'),
+  item => !timelineFilter || item.dataset.type === timelineFilter);
+timelineChips.forEach(chip => chip.addEventListener('click', () => {
+  timelineFilter = chip.dataset.filter;
+  timelineChips.forEach(other => other.setAttribute('aria-pressed', String(other === chip)));
+  runTimeline();
+}));
+
+// A link into the operations trace opens that tab and brings the operation or
+// event into view. It moves the reader; it changes nothing.
+document.addEventListener('click', event => {
+  const link = event.target.closest('a[data-focus]');
+  if (!link) return;
+  event.preventDefault();
+  const dialog = document.getElementById('detail');
+  if (dialog.open) dialog.close();
+  selectTab('operations');
+  const target = document.getElementById(link.dataset.focus);
+  if (!target) return;
+  if (target.tagName === 'DETAILS') target.open = true;
+  const holder = target.closest('details');
+  if (holder) holder.open = true;
+  target.scrollIntoView({ block: 'center' });
+  target.classList.remove('flash'); void target.offsetWidth; target.classList.add('flash');
+});
 """
 
 
@@ -774,15 +831,32 @@ def _metric_card(label: str, progress: dict) -> str:
     )
 
 
+def _count_card(label: str, value: object, note: str = "", alert: bool = False) -> str:
+    return (
+        f'<div class="card{" alert" if alert else ""}"><div class="k">{esc(label)}</div>'
+        f'<div class="v">{esc(value)}</div>'
+        + (f'<div class="more">{esc(note)}</div>' if note else "")
+        + "</div>"
+    )
+
+
 def _pill(value: object, extra: str = "") -> str:
     classes = f"pill {esc(value)} {extra}".strip()
     return f'<span class="{classes}">{esc(value)}</span>'
+
+
+def _domain_pill(domain: str) -> str:
+    return (
+        '<span class="pill domain-operations">Project operations</span>'
+        if domain == "operations" else ""
+    )
 
 
 TOP_TABS = (
     ("overview", "Overview"),
     ("execution", "Execution"),
     ("graph", "Graph"),
+    ("operations", "Operations"),
     ("governance", "Governance"),
     ("decisions", "Decisions"),
     ("tasks", "All Tasks"),
@@ -797,8 +871,12 @@ _OBSTACLE_GROUPS = (
     ("VALIDATION_GAP", "Validation gaps"),
     ("SCHEDULE_BLOCKER", "Schedule blockers"),
 )
-_OBSTACLE_RANK = {kind: rank for rank, (kind, _) in enumerate(_OBSTACLE_GROUPS)}
-_OBSTACLE_RANK["DEPENDENCY_BLOCKER"] = len(_OBSTACLE_GROUPS)
+
+_EVENT_SECTIONS = (
+    ("tool-calls", "Tool calls", ("tool-call", "command")),
+    ("mini-actions", "Mini-actions", ("action",)),
+    ("mutations", "Changes and mutations", ("mutation",)),
+)
 
 # Head script: runs before the stylesheet paints, so the page never flashes
 # the wrong theme or the wrong tab. Everything it sets is presentation state.
@@ -811,39 +889,15 @@ _BOOT = """(function () {
   }
   root.setAttribute('data-theme', theme);
   var tab = location.hash.slice(1);
-  var known = ['overview', 'execution', 'graph', 'governance', 'decisions', 'tasks'];
+  var known = ['overview', 'execution', 'graph', 'operations', 'governance', 'decisions', 'tasks'];
   root.setAttribute('data-tab', known.indexOf(tab) >= 0 ? tab : 'overview');
 })();"""
 
 
-def _phase_gates(compiled: dict, phase_id: str) -> list[dict]:
-    """Gates whose `Blocks` names this phase, read from compiled state."""
-    return [
-        gate
-        for gate in compiled["gates"]
-        if any(phase_id in re.split(r"[^A-Za-z0-9\-]+", entry) for entry in gate["blocks"])
-    ]
-
-
-def _main_blocker(compiled: dict) -> dict | None:
-    """The obstacle on the work in hand, else the most direct one.
-
-    A selection from compiled obstacles, never a new one: the work in flight
-    and the head of the critical path come first, then obstacle type.
-    """
-    focus = set(compiled["wip"]) | set(compiled["criticalPath"][:1])
-    ranked = sorted(
-        enumerate(compiled["obstacles"]),
-        key=lambda item: (
-            item[1]["subject"] not in focus,
-            _OBSTACLE_RANK.get(item[1]["type"], 99),
-            item[0],
-        ),
-    )
-    return ranked[0][1] if ranked else None
-
-
 def render(project: Project, report: Report, compiled: dict) -> str:
+    """Lay out the compiled project. Every selection — what is in flight, what
+    blocks, which gate is next, which domain a task belongs to — was made by
+    analytics and arrives in `compiled`; nothing here decides it (ADR-045)."""
     metrics = compiled["metrics"]
     diagrams = mermaid.render_all(project, report)
     # The drawing names its nodes by a sanitized identifier. The map back to
@@ -852,6 +906,9 @@ def render(project: Project, report: Report, compiled: dict) -> str:
     node_map = {mermaid.node_id(task.id): task.id for task in project.tasks}
     tasks = {task["id"]: task for task in compiled["tasks"]}
     phases = {phase["id"]: phase for phase in compiled["phases"]}
+    execution = compiled["execution"]
+    operations = compiled["operations"]
+    events = {event["id"]: event for event in operations["events"]}
     current_id = compiled["project"]["currentPhase"]
     current = phases.get(current_id) if current_id else None
 
@@ -862,8 +919,14 @@ def render(project: Project, report: Report, compiled: dict) -> str:
         if task is None:
             return f"<code>{esc(task_id)}</code>"
         return (
-            f'<button type="button" class="tasklink" data-task="{esc(task_id)}">'
-            f"<code>{esc(task_id)}</code> {esc(task['title'])}</button>"
+            f'<button type="button" class="tasklink{" ops" if task["domain"] == "operations" else ""}"'
+            f' data-task="{esc(task_id)}"><code>{esc(task_id)}</code> {esc(task["title"])}</button>'
+        )
+
+    def trace_link(task_id: str, label: str = "Open its operations trace") -> str:
+        return (
+            f'<a class="tracelink" href="#operations" data-focus="op-{esc(task_id)}">'
+            f"{esc(label)} →</a>"
         )
 
     def task_rows(ids: list[str], registry: bool = False) -> str:
@@ -874,7 +937,7 @@ def render(project: Project, report: Report, compiled: dict) -> str:
                 continue
             filters = (
                 f' data-phase="{esc(task["phase"])}" data-status="{esc(task["status"])}"'
-                f' data-validation="{esc(task["validation"])}"'
+                f' data-validation="{esc(task["validation"])}" data-domain="{esc(task["domain"])}"'
                 f' data-text="{esc((task["id"] + " " + task["title"]).lower())}"'
                 if registry
                 else ""
@@ -883,71 +946,121 @@ def render(project: Project, report: Report, compiled: dict) -> str:
                 f'<tr data-task="{esc(task["id"])}" tabindex="0"{filters}>'
                 f'<td><code>{esc(task["id"])}</code></td>'
                 f"<td>{esc(task['title'])}</td><td>{esc(task['phase'])}</td>"
+                f'<td>{_pill(task["domain"], "domain")}</td>'
                 f"<td>{_pill(task['status'])}</td><td>{_pill(task['validation'])}</td></tr>"
             )
-        return rows or '<tr><td colspan="5" class="note">Nothing here.</td></tr>'
+        return rows or '<tr><td colspan="6" class="note">Nothing here.</td></tr>'
 
     table_head = (
-        "<thead><tr><th>Task</th><th>Title</th><th>Phase</th><th>Status</th>"
-        "<th>Validation</th></tr></thead>"
+        "<thead><tr><th>Task</th><th>Title</th><th>Phase</th><th>Domain</th>"
+        "<th>Status</th><th>Validation</th></tr></thead>"
     )
 
+    def event_item(event: dict) -> str:
+        meta = []
+        if event["task"]:
+            meta.append(f"from {ref(event['task'])}")
+        for label, key in (("tool", "tool"), ("target", "target"), ("agent", "agent"),
+                           ("artifact", "artifact")):
+            if event[key]:
+                meta.append(f"{label} <code>{esc(event[key])}</code>")
+        if event["retryOf"]:
+            meta.append(f"retry of <code>{esc(event['retryOf'])}</code>")
+        if event["parent"]:
+            meta.append(f"under <code>{esc(event['parent'])}</code>")
+        affects = " ".join(
+            ref(a) if a in tasks else f"<code>{esc(a)}</code>" for a in event["affects"]
+        )
+        unresolved = event["id"] in operations["unresolvedFailures"]
+        return (
+            f'<li class="event" id="event-{esc(event["id"])}" data-type="{esc(event["type"])}">'
+            f'<div class="evhead"><code>{esc(event["id"])}</code> {_pill(event["type"])} '
+            f'{_pill(event["outcome"], {"failure": "FAIL", "success": "PASS"}.get(event["outcome"], ""))}'
+            + (' <span class="pill FAIL">unresolved</span>' if unresolved else "")
+            + f' <strong>{esc(event["title"])}</strong>'
+            + (f' <span class="note">{esc(event["time"])}</span>' if event["time"] else "")
+            + "</div>"
+            + (f'<div class="evmeta">{" · ".join(meta)}</div>' if meta else "")
+            + (f'<div class="everror">{esc(event["error"])}</div>' if event["error"] else "")
+            + (f'<div class="evmeta">affects {affects}</div>' if affects else "")
+            + (f'<div class="evmeta">evidence {esc(event["evidence"])}</div>' if event["evidence"] else "")
+            + "</li>"
+        )
+
+    def event_list(items: list[dict], empty: str) -> str:
+        if not items:
+            return f'<p class="note">{esc(empty)}</p>'
+        return f'<ul class="plain events">{"".join(event_item(e) for e in items)}</ul>'
+
     # --- Overview: the focus strip ------------------------------------------
-    # Future derived signals (attention, risk) belong beside these values; the
-    # cards hold none today because the compiled project carries none.
+    # Primary cards describe execution. Operations appears here only when it
+    # blocks execution. Future derived signals (attention, risk) belong beside
+    # these values; the compiled project carries none today.
     if current:
         phase_card = (
             f'<div class="v"><code>{esc(current["id"])}</code> · {esc(current["name"])}</div>'
             f'<div class="more">{_pill(current["status"])} '
-            f'{current["progress"]["done"]} / {current["progress"]["total"]} tasks done</div>'
+            f'{current["progress"]["done"]} / {current["progress"]["total"]} execution tasks done</div>'
         )
     else:
         phase_card = '<div class="v">No phase is active</div>'
 
-    wip = compiled["wip"]
-    upcoming = [t for t in compiled["criticalPath"] if t not in wip and t in tasks]
-    if wip:
-        active_card = f'<div class="v">{ref(wip[0])}</div>'
-        if len(wip) > 1:
-            active_card += f'<div class="more">and {len(wip) - 1} more in flight</div>'
-    elif compiled["ready"]:
+    in_flight = execution["inFlight"]
+    ready_execution = [t for t in compiled["ready"] if tasks.get(t, {}).get("domain") == "execution"]
+    upcoming = [t for t in compiled["criticalPath"] if t not in in_flight and t in tasks]
+    if in_flight:
+        active_card = f'<div class="v">{ref(in_flight[0])}</div>'
+        if len(in_flight) > 1:
+            active_card += f'<div class="more">and {len(in_flight) - 1} more in flight</div>'
+    elif ready_execution:
         active_card = (
-            '<div class="v">Nothing in flight</div>'
-            f'<div class="more">Ready to start: {ref(compiled["ready"][0])}</div>'
+            '<div class="v">No execution work in flight</div>'
+            f'<div class="more">Ready to start: {ref(ready_execution[0])}</div>'
         )
     else:
-        active_card = '<div class="v">Nothing in flight</div>'
+        active_card = '<div class="v">No execution work in flight</div>'
     if upcoming:
         active_card += f'<div class="more">Next on the critical path: {ref(upcoming[0])}</div>'
 
-    blocker = _main_blocker(compiled)
-    if blocker:
+    blocker = execution["mainBlocker"]
+    if blocker and blocker["kind"] == "TASK":
         blocker_card = (
-            f'<div class="v">{ref(blocker["subject"])}</div>'
-            f'<div class="more">{_pill(blocker["type"])} {esc(blocker["detail"])}</div>'
+            f'<div class="v">{ref(blocker["id"])}</div>'
+            f'<div class="more">{_domain_pill(blocker["domain"])} {_pill(blocker["status"])} '
+            f'blocking {ref(blocker["blocking"])} · {esc(blocker["reason"])}</div>'
+            + (f'<div class="more">{trace_link(blocker["id"])}</div>' if blocker["domain"] == "operations" else "")
         )
-        if len(compiled["obstacles"]) > 1:
-            blocker_card += (
-                f'<div class="more">{len(compiled["obstacles"]) - 1} more obstacles under Execution</div>'
-            )
+    elif blocker:
+        blocker_card = (
+            f'<div class="v">{esc(blocker["id"])}</div>'
+            f'<div class="more">{_pill(blocker["status"])} blocking {esc(blocker["blocking"])} exit</div>'
+        )
     else:
-        blocker_card = '<div class="v">No obstacles</div>'
+        blocker_card = '<div class="v">Nothing is blocking execution</div>'
 
-    if current:
-        exit_task = tasks.get(current["exitAuthority"] or "")
-        gate_card = (
-            f'<div class="v">{ref(current["exitAuthority"])}</div>'
-            + (
-                f'<div class="more">Exit authority for {esc(current["id"])} · {_pill(exit_task["status"])}</div>'
-                if exit_task
-                else f'<div class="more">{esc(current["id"])} names no exit authority</div>'
-            )
+    gate = execution["nextGate"]
+    if gate:
+        gate_card = f'<div class="v">{ref(gate["exitAuthority"])}</div>'
+        gate_card += (
+            f'<div class="more">Exit authority for {esc(gate["phase"])}'
+            + (f' · {_pill(gate["exitAuthorityStatus"])}' if gate["exitAuthorityStatus"] else "")
+            + "</div>"
         )
-        phase_gates = _phase_gates(compiled, current["id"])
-        if phase_gates:
+        if gate["gates"]:
             gate_card += '<div class="more">' + " ".join(
-                f'{_pill(g["status"])} {esc(g["id"])}' for g in phase_gates
+                f'{_pill(g["status"])} {esc(g["id"])}' for g in gate["gates"]
             ) + "</div>"
+        gate_card += (
+            '<div class="more">Ready to exit</div>' if gate["ready"] else
+            f'<div class="more">{len(gate["unfinishedExecution"])} execution tasks open'
+            + (f' · {len(gate["unmetCriteria"])} exit criteria unmet' if gate["unmetCriteria"] else "")
+            + "</div>"
+        )
+        for external in gate["externalBlockers"]:
+            gate_card += (
+                f'<div class="more">{_domain_pill(external["domain"])} {ref(external["id"])} '
+                f'holds up {esc(external["via"])} · {trace_link(external["id"], "trace")}</div>'
+            )
     else:
         gate_card = '<div class="v">No phase exit pending</div>'
 
@@ -977,12 +1090,25 @@ def render(project: Project, report: Report, compiled: dict) -> str:
         + (' <span class="pill current">Current</span>' if phase["id"] == current_id else "")
         + "</header>"
         f'<div class="outcome">{esc(phase["outcome"])}</div>'
-        f'<div class="mono">{phase["progress"]["done"]} / {phase["progress"]["total"]} tasks'
+        f'<div class="mono">{phase["progress"]["done"]} / {phase["progress"]["total"]} execution tasks'
         + (f' · exit authority {esc(phase["exitAuthority"])}' if phase["exitAuthority"] else "")
         + f'</div><div class="bar"><i style="width:{round(phase["progress"]["fraction"] * 100)}%"></i></div>'
         "</article>"
         for phase in compiled["phases"]
     ) or '<p class="note">No phases recorded.</p>'
+
+    external_overview = ""
+    if execution["externalBlockers"]:
+        external_overview = (
+            "<h2>Operations holding up execution</h2><div class=\"box\"><ul class=\"plain\">"
+            + "".join(
+                f"<li>{ref(task_id)} waits on "
+                + ", ".join(f'{_domain_pill("operations")} {ref(o)}' for o in blockers)
+                + f' · {trace_link(blockers[0], "trace")}</li>'
+                for task_id, blockers in sorted(execution["externalBlockers"].items())
+            )
+            + "</ul></div>"
+        )
 
     # --- Execution ---------------------------------------------------------
     def obstacle_item(item: dict) -> str:
@@ -991,13 +1117,14 @@ def render(project: Project, report: Report, compiled: dict) -> str:
             f'<span class="note">{esc(item["detail"])}</span></li>'
         )
 
+    execution_obstacles = [o for o in compiled["obstacles"] if o.get("domain", "execution") == "execution"]
     blocked = set(compiled["blocked"])
     groups = []
     for kind, label in _OBSTACLE_GROUPS:
-        items = [o for o in compiled["obstacles"] if o["type"] == kind]
+        items = [o for o in execution_obstacles if o["type"] == kind]
         if items:
             groups.append((label, items, True, ""))
-    dependency = [o for o in compiled["obstacles"] if o["type"] == "DEPENDENCY_BLOCKER"]
+    dependency = [o for o in execution_obstacles if o["type"] == "DEPENDENCY_BLOCKER"]
     direct = [o for o in dependency if any(b not in blocked for b in o["blockers"])]
     downstream = [o for o in dependency if o not in direct]
     if direct:
@@ -1008,7 +1135,7 @@ def render(project: Project, report: Report, compiled: dict) -> str:
             '<p class="note">Each of these clears once the obstacles above do.</p>',
         ))
     known_kinds = {kind for kind, _ in _OBSTACLE_GROUPS} | {"DEPENDENCY_BLOCKER"}
-    other = [o for o in compiled["obstacles"] if o["type"] not in known_kinds]
+    other = [o for o in execution_obstacles if o["type"] not in known_kinds]
     if other:
         groups.append(("Other obstacles", other, True, ""))
     obstacles = "".join(
@@ -1016,16 +1143,42 @@ def render(project: Project, report: Report, compiled: dict) -> str:
         f'<span class="count">{len(items)}</span></summary>{note}'
         f'<ul class="plain">{"".join(obstacle_item(o) for o in items)}</ul></details>'
         for label, items, opened, note in groups
-    ) or '<p class="note">No obstacles. Everything open is startable.</p>'
+    ) or '<p class="note">No execution obstacles. Everything open is startable.</p>'
 
     critical = "".join(
         f'<li class="{"done" if tasks.get(t, {}).get("status") == "DONE" else ""}">'
-        f'{_pill(tasks[t]["status"]) if t in tasks else ""} {ref(t)}</li>'
+        f'{_pill(tasks[t]["status"]) if t in tasks else ""} {ref(t)}'
+        + "".join(
+            f'<div class="external">external blocker {_domain_pill("operations")} {ref(o)}</div>'
+            for o in execution["externalBlockers"].get(t, [])
+        )
+        + "</li>"
         for t in compiled["criticalPath"]
     )
     critical = (
         f'<ol class="chain">{critical}</ol>' if critical
-        else '<p class="note">No open work.</p>'
+        else '<p class="note">No open execution work.</p>'
+    )
+
+    failures = "".join(
+        f"<li>{ref(f['task'])}"
+        + (f' · failed criteria {esc(", ".join(f["failedCriteria"]))}' if f["failedCriteria"] else "")
+        + (
+            '<div class="evmeta">related operational evidence: '
+            + ", ".join(
+                f'<a class="tracelink" href="#operations" data-focus="event-{esc(e)}"><code>{esc(e)}</code></a>'
+                + (f' {_pill(events[e]["type"])}' if e in events else "")
+                for e in f["relatedEvents"]
+            )
+            + "</div>"
+            if f["relatedEvents"] else '<div class="evmeta">no operational evidence recorded</div>'
+        )
+        + "</li>"
+        for f in execution["failures"]
+    )
+    failures_section = (
+        f'<h2>Execution failures</h2><div class="box"><ul class="plain">{failures}</ul></div>'
+        if failures else ""
     )
 
     # --- Graph -------------------------------------------------------------
@@ -1045,14 +1198,95 @@ def render(project: Project, report: Report, compiled: dict) -> str:
     scheduled = len(compiled["schedule"]["scheduled"])
     unscheduled = len(compiled["schedule"]["unscheduled"])
 
+    # --- Operations --------------------------------------------------------
+    om = operations["metrics"]
+    all_events = sorted(operations["events"], key=lambda e: (e["time"] or "", e["id"]))
+    affects_execution = set(om["affectingExecution"])
+    summary = "".join([
+        _count_card("Active operations", om["tasks"]["active"], f'{om["tasks"]["open"]} open'),
+        _count_card("Blocked operations", om["tasks"]["blocked"], alert=bool(om["tasks"]["blocked"])),
+        _count_card("Affecting execution", len(om["affectingExecution"]),
+                    f'{len(om["affectingCriticalPath"])} on the critical path · {len(om["affectingGate"])} on the next gate',
+                    alert=bool(om["affectingExecution"])),
+        _count_card("Events recorded", om["events"]["total"]),
+        _count_card("Failures", om["events"]["failures"], f'{om["events"]["unresolvedFailures"]} unresolved',
+                    alert=bool(om["events"]["unresolvedFailures"])),
+        _count_card("Retries", om["events"]["retries"]),
+        _count_card("Mutations", om["events"]["mutations"]),
+    ])
+
+    def operation_row(task_id: str) -> str:
+        task = tasks[task_id]
+        blocking = sorted(t for t, blockers in execution["externalBlockers"].items() if task_id in blockers)
+        trace = [events[e] for e in task["events"] if e in events]
+        latest = max(trace, key=lambda e: (e["time"] or "", e["id"])) if trace else None
+        return (
+            f'<details class="group op" id="op-{esc(task_id)}"{" open" if blocking else ""}>'
+            f'<summary>{_pill(task["status"])} <code>{esc(task_id)}</code> {esc(task["title"])}'
+            + (' <span class="pill FAIL">blocks execution</span>' if blocking else "")
+            + f'<span class="count">{len(trace)} event{"" if len(trace) == 1 else "s"}</span></summary>'
+            f'<div class="opbody"><div class="evmeta">'
+            + " · ".join(filter(None, [
+                f'owner {esc(task["owner"])}' if task["owner"] else "",
+                f'phase {esc(task["phase"])}' if task["phase"] != "P-NONE" else "",
+                f'claimed {esc(task["claimed"])}' if task["claimed"] else "",
+                f'latest {esc(latest["title"])}' if latest else "",
+                f'<button type="button" class="tasklink" data-task="{esc(task_id)}">details</button>',
+            ]))
+            + "</div>"
+            + (f'<div class="evmeta">blocks {" ".join(ref(b) for b in blocking)}</div>' if blocking else "")
+            + event_list(trace, "No events recorded for this task.")
+            + "</div></details>"
+        )
+
+    open_ops = [t for t in operations["tasks"] if tasks[t]["status"] != "DONE"]
+    open_ops.sort(key=lambda t: (t not in affects_execution, tasks[t]["status"] != "WIP", operations["tasks"].index(t)))
+    done_ops = [t for t in operations["tasks"] if tasks[t]["status"] == "DONE"]
+    active_ops = "".join(operation_row(t) for t in open_ops) or '<p class="note">No open operations tasks.</p>'
+    if done_ops:
+        active_ops += (
+            f'<details class="group"><summary>Completed operations<span class="count">{len(done_ops)}</span></summary>'
+            + "".join(operation_row(t) for t in done_ops) + "</details>"
+        )
+
+    ops_obstacles = [o for o in compiled["obstacles"] if o.get("domain") == "operations"]
+    failed_events = [e for e in all_events if e["type"] == "failure" or e["outcome"] == "failure"]
+    warnings = event_list(failed_events, "No failed events recorded.")
+    if ops_obstacles:
+        warnings += '<ul class="plain">' + "".join(obstacle_item(o) for o in ops_obstacles) + "</ul>"
+
+    retries = [e for e in all_events if e["retryOf"] or e["type"] == "retry"]
+    sections = "".join(
+        f"<h2>{esc(label)}</h2>"
+        + event_list([e for e in all_events if e["type"] in kinds], f"No {label.lower()} recorded.")
+        for key, label, kinds in _EVENT_SECTIONS
+    )
+    present_types = [t for t in EVENT_TYPES if any(e["type"] == t for e in all_events)]
+    timeline_chips = "".join(
+        f'<button type="button" data-filter="{esc(v)}" aria-pressed="{str(v == "").lower()}">{esc(l)}</button>'
+        for v, l in [("", "All")] + [(t, t) for t in present_types]
+    ) if len(present_types) > 1 else ""
+    no_trace = (
+        '<p class="note">No operational events are recorded. Tool calls, mini-actions, failures, '
+        "retries and mutations appear here once agents append them to "
+        f'<code>{esc(compiled["project"]["authority"])}/TRACE.md</code>; nothing is reconstructed '
+        "from the journal.</p>"
+    ) if not all_events else ""
+
     # --- Governance --------------------------------------------------------
+    gate_verifiers = {g["id"]: g for g in (gate["gates"] if gate else [])}
     gates = "".join(
-        f'<li>{_pill(gate["status"])} <strong>{esc(gate["id"])}</strong> — {esc(gate["name"])}'
-        + (f' <span class="note">blocks {esc(", ".join(gate["blocks"]))}</span>' if gate["blocks"] else "")
-        + f'<br><span class="note">{esc(gate["description"])}</span></li>'
-        for gate in compiled["gates"]
+        f'<li>{_pill(g["status"])} <strong>{esc(g["id"])}</strong> — {esc(g["name"])}'
+        + (f' <span class="note">blocks {esc(", ".join(g["blocks"]))}</span>' if g["blocks"] else "")
+        + f'<br><span class="note">{esc(g["description"])}</span>'
+        + "".join(
+            f'<div class="evmeta">open verifier {_domain_pill(v["domain"])} {ref(v["id"])}</div>'
+            for v in gate_verifiers.get(g["id"], {}).get("openVerifiers", [])
+        )
+        + "</li>"
+        for g in compiled["gates"]
     ) or '<li class="note">No gates recorded.</li>'
-    total_tasks = len(compiled["tasks"])
+    total_tasks = metrics["domainBreakdown"]["execution"]
     validation_rows = "".join(
         f"<tr><td>{_pill(state)}</td><td class=\"num\">{count}</td>"
         f'<td class="num">{(count / total_tasks * 100) if total_tasks else 0:.0f}%</td>'
@@ -1120,6 +1354,8 @@ def render(project: Project, report: Report, compiled: dict) -> str:
     present_validations = [
         v for v in VALIDATIONS if any(t["validation"] == v for t in compiled["tasks"])
     ]
+    present_domains = [d for d in DOMAINS if any(t["domain"] == d for t in compiled["tasks"])]
+    total_all = len(compiled["tasks"])
 
     def select(element_id: str, label: str, values: list[str]) -> str:
         options = "".join(f'<option value="{esc(v)}">{esc(v)}</option>' for v in values)
@@ -1141,20 +1377,23 @@ def render(project: Project, report: Report, compiled: dict) -> str:
             f' aria-labelledby="tab-{name}" tabindex="0">{body}</section>'
         )
 
+    exec_in_flight = in_flight
     overview = panel("overview", f"""
   {focus}
-  <h2>Progress</h2>
+  {external_overview}
+  <h2>Execution progress</h2>
   <div class="grid">{cards}</div>
   <h2>Phases</h2>
   <div class="phases">{phase_cards}</div>
 """)
-    execution = panel("execution", f"""
+    execution_panel = panel("execution", f"""
   <h2>In flight</h2>
-  <div class="tablewrap"><table>{table_head}<tbody>{task_rows(compiled["wip"])}</tbody></table></div>
+  <div class="tablewrap"><table>{table_head}<tbody>{task_rows(exec_in_flight)}</tbody></table></div>
   <h2>Ready</h2>
-  <div class="tablewrap"><table>{table_head}<tbody>{task_rows(compiled["ready"])}</tbody></table></div>
+  <div class="tablewrap"><table>{table_head}<tbody>{task_rows(ready_execution)}</tbody></table></div>
   <h2>Obstacles</h2>
   {obstacles}
+  {failures_section}
   <h2>Critical path</h2>
   {critical}
 """)
@@ -1177,6 +1416,7 @@ def render(project: Project, report: Report, compiled: dict) -> str:
     Mermaid could not be loaded, so diagram source is shown instead. The page and
     every number on it work offline.
   </p>
+  <p class="note">Dashed nodes in the task graph are project operations; everything else is execution.</p>
   <h2>Schedule</h2>
   <p class="note">
     {scheduled} {"task carries" if scheduled == 1 else "tasks carry"} real schedule
@@ -1184,13 +1424,34 @@ def render(project: Project, report: Report, compiled: dict) -> str:
     ordering is shown separately from calendar dates, and no duration is inferred.
   </p>
 """)
+    operations_panel = panel("operations", f"""
+  <p class="note lead">Operations maintains and inspects the environment execution happens in. It
+  never counts as project progress, and it stays reviewable because it can explain why execution
+  is blocked, failing, or wrong.</p>
+  <h2>Summary</h2>
+  <div class="grid">{summary}</div>
+  {no_trace}
+  <h2>Active operations</h2>
+  {active_ops}
+  <h2>Failures and warnings</h2>
+  {warnings}
+  {sections}
+  <h2>Retries</h2>
+  {event_list(retries, "No retries recorded.")}
+  <h2>Timeline</h2>
+  <div class="controls">
+    <div class="chips" id="timeline-chips" role="group" aria-label="Filter timeline">{timeline_chips}</div>
+    <span class="shown" id="timeline-shown" aria-live="polite">{len(all_events)} events</span>
+  </div>
+  <div class="box" id="timeline">{event_list(all_events, "No events recorded.")}</div>
+""")
     governance = panel("governance", f"""
   <h2>Gates</h2>
   <div class="box"><ul class="plain">{gates}</ul></div>
   <h2>Validation</h2>
   <div class="tablewrap"><table><thead><tr><th>Strength</th><th>Tasks</th><th>Share</th><th></th></tr></thead>
   <tbody>{validation_rows}</tbody></table></div>
-  <p class="note">Validation strength is separate from completion: a task can be DONE and still UNTESTED.</p>
+  <p class="note">Execution tasks only. Validation strength is separate from completion: a task can be DONE and still UNTESTED.</p>
 """)
     decisions = panel("decisions", f"""
   <h2>Decisions</h2>
@@ -1205,10 +1466,11 @@ def render(project: Project, report: Report, compiled: dict) -> str:
   <h2>All tasks</h2>
   <div class="controls">
     <input type="search" id="task-search" placeholder="Search task ID or title…" aria-label="Search tasks">
+    {select("task-domain", "Domain", present_domains)}
     {select("task-phase", "Phase", present_phases)}
     {select("task-status", "Status", present_statuses)}
     {select("task-validation", "Validation", present_validations)}
-    <span class="shown" id="task-shown" aria-live="polite">{total_tasks} of {total_tasks}</span>
+    <span class="shown" id="task-shown" aria-live="polite">{total_all} of {total_all}</span>
   </div>
   <div class="tablewrap tall"><table id="task-registry">{table_head}
   <tbody>{task_rows([t.id for t in project.tasks], registry=True)}</tbody></table></div>
@@ -1230,7 +1492,7 @@ def render(project: Project, report: Report, compiled: dict) -> str:
       <h1>{esc(project.name)}</h1>
       <p class="sub">
         Current phase <strong>{esc(compiled["project"]["currentPhase"] or "none")}</strong> ·
-        {metrics["taskCompletion"]["done"]} of {metrics["taskCompletion"]["total"]} tasks done ·
+        {metrics["taskCompletion"]["done"]} of {metrics["taskCompletion"]["total"]} execution tasks done ·
         compiled from <code>{esc(compiled["project"]["authority"])}/</code>
       </p>
     </div>
@@ -1242,8 +1504,9 @@ def render(project: Project, report: Report, compiled: dict) -> str:
 
   <nav class="toptabs" role="tablist" aria-label="Report sections">{tab_buttons}</nav>
 {overview}
-{execution}
+{execution_panel}
 {graph}
+{operations_panel}
 {governance}
 {decisions}
 {registry}
