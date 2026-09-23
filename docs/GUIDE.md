@@ -28,12 +28,27 @@ command works from any subdirectory.
 | A new project, from a product specification | `… \| sh -s -- new` |
 | Install into another directory | `sh install.sh /path/to/project` |
 | Skip the `PATH` launcher | `… \| sh -s -- --no-link` |
+| A specific release, or unreleased `main` | `… \| sh -s -- --ref v0.5.0` · `--ref main` |
+| Go back to an older release on purpose | `… \| sh -s -- --ref v0.4.6 --allow-downgrade` |
 
 Without the launcher, every `prokron` below is `.prokron/prokron`. Both always
 work; the launcher just saves typing.
 
+The one-line install fetches the latest published release, not `main`, and
+runs that release's own installer, so everyone who installs on the same day
+gets the same thing.
+
 **Upgrading** is the same command. It replaces the tool, preserves every
-record, refreshes the generated views, and tells you what it preserved.
+record, and refreshes the generated views. Guidance — workflows, host
+commands, the skill, the chronicle README, and the Prokron block in
+`AGENTS.md` — is replaced if you never edited it; if you did, yours is kept and
+the new version is written under `.prokron/upgrade/` for you to merge. The
+output lists both. It refuses to install an older runtime over a newer one
+unless you pass `--allow-downgrade`.
+
+In a Git repository the installer also keeps a marked block in `.gitattributes`
+so `JOURNAL.md` and the ADR index merge cleanly when two branches both append
+to them.
 
 ---
 
@@ -103,7 +118,9 @@ prokron dashboard    # rebuild the browsable page
 ```
 
 `validate` takes `--quiet` for errors only. `compile` takes `--force` to
-compile despite validation errors, which you want roughly never.
+compile despite validation errors, which you want roughly never. `compile`,
+`graph` and `dashboard` also refuse to overwrite views a newer release wrote;
+`--force` overrides that too.
 
 `compile` does not write the diagrams or the page — `graph` and `dashboard`
 do. After editing the chronicle by hand, the full refresh is:

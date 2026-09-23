@@ -54,8 +54,8 @@ claims.
 - **Deterministic.** The same authored documents produce the same output every
   time. No model provider, no network, no wall-clock in a computed value.
 - **Authority is `.prokron/chronicle/`** in every installed project.
-  `.prokron/compiled/` is generated and disposable. Never hand-edit it, and never let a generated view decide a
-  question an authored document answers.
+  `.prokron/compiled/` is generated and disposable. Never hand-edit it, and
+  never let a generated view decide a question an authored document answers.
 - **Do not invent facts.** A duration only when someone recorded one, a date
   only when someone set one, `UNKNOWN` the rest of the time.
 - **Records are append-only where it matters.** Journal entries and ADRs stay.

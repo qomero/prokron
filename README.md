@@ -231,7 +231,9 @@ gh api -H 'Accept: application/vnd.github.raw+json' 'repos/qomero/prokron/conten
 ```
 
 Every form takes an optional `new` or `existing`, an optional target
-directory, and `--no-link`.
+directory, and `--no-link`. A download installs the latest published release;
+`--ref <tag|branch>` picks another, and `--allow-downgrade` permits installing
+an older runtime over a newer one.
 
 </details>
 

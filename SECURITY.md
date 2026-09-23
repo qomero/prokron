@@ -16,9 +16,12 @@ A proof of concept is welcome; an exploit is not required.
 Prokron is a local, deterministic tool with no network calls and no
 dependencies, so the interesting surface is narrow and specific:
 
-- **The installer.** `install.sh` is fetched over HTTPS and piped to a shell.
-  Anything that lets it write outside the paths it declares, follow a link out
-  of the target repository, or replace a file it did not write.
+- **The installer.** `install.sh` is fetched over HTTPS and piped to a shell,
+  downloads a release, and runs that release's own `install.sh`. Anything that
+  lets it run code from anything but the named release, write outside the
+  paths it declares (`.prokron/`, the host command files, `AGENTS.md`,
+  `CLAUDE.md`, and a marked block in `.gitattributes`), follow a link out of
+  the target repository, or replace guidance a person edited.
 - **Generated output.** The dashboard embeds authored project text. Anything
   that turns that text into executable markup rather than rendering it as text.
   This has been a real defect before and carries regression tests.
