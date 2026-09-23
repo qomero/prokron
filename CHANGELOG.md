@@ -4,7 +4,7 @@ Prokron records its own history in `.prokron/chronicle/JOURNAL.md` and its
 decisions in `.prokron/chronicle/ADR/`. This file is the short version, for
 people arriving from a release page.
 
-## Unreleased
+## 0.6.0 — 2026-09-23
 
 ### Changed
 
