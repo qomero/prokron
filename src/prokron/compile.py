@@ -10,7 +10,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from . import analytics, views
+from . import analytics, domain, views
 from . import layout
 from .layout import AUTHORITY_DIR, COMPILED_DIR
 from .model import Project
@@ -21,6 +21,7 @@ from .parse import (
     parse_phases,
     parse_project_name,
     parse_tasks,
+    parse_trace,
     read_text,
 )
 
@@ -58,7 +59,9 @@ def load(root: Path) -> Project:
         decisions=parse_decisions(authority / "ADR"),
         intent=read_text(authority / "INTENT.md"),
         handoff=read_text(authority / "HANDOFF.md"),
+        events=parse_trace(authority / "TRACE.md"),
     )
+    domain.resolve(project)
     # A phase whose work is finished but whose exit has not been accepted is
     # still where the project stands. Reporting "none" would lose that.
     for status in ("ACTIVE", "EXIT_PENDING"):
@@ -101,6 +104,8 @@ def as_json(project: Project) -> dict[str, object]:
                 "id": task.id,
                 "title": task.title,
                 "phase": task.phase,
+                "domain": task.domain,
+                "domainSource": task.domain_source,
                 "status": task.status,
                 "validation": task.validation,
                 "deps": task.dependencies,
@@ -113,6 +118,8 @@ def as_json(project: Project) -> dict[str, object]:
                 "schedule": task.schedule.as_json(),
                 "ready": task.id in report.ready,
                 "blocked": task.id in report.blocked,
+                "externalBlockers": report.external_blockers.get(task.id, []),
+                "events": analytics.events_for(project, task.id),
                 "source": task.source.as_json(),
             }
             for task in project.tasks
@@ -207,6 +214,22 @@ def as_json(project: Project) -> dict[str, object]:
             "unscheduled": report.unscheduled,
         },
         "metrics": report.metrics(),
+        # What the report leads with, selected here rather than in any
+        # renderer, so every view agrees on it (ADR-045).
+        "execution": {
+            "inFlight": report.in_flight,
+            "mainBlocker": report.main_blocker,
+            "nextGate": report.next_gate,
+            "externalBlockers": report.external_blockers,
+            "failures": report.execution_failures,
+        },
+        "operations": {
+            "metrics": report.operations_metrics(),
+            "tasks": [t.id for t in project.operations_tasks],
+            "active": [t.id for t in project.operations_tasks if t.status == "WIP"],
+            "events": [e.as_json() for e in project.events],
+            "unresolvedFailures": analytics.unresolved_failures(project),
+        },
         "ready": report.ready,
         "blocked": report.blocked,
         "wip": report.wip,
@@ -220,6 +243,7 @@ def as_json(project: Project) -> dict[str, object]:
                 "ADR/",
                 "INTENT.md",
                 "HANDOFF.md",
+                "TRACE.md",
             ],
         },
     }

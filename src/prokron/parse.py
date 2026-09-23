@@ -20,6 +20,7 @@ from .model import (
     Schedule,
     Source,
     Task,
+    TraceEvent,
 )
 
 
@@ -112,6 +113,7 @@ def parse_tasks(path: Path) -> list[Task]:
                 decisions=_list(fields.get("Governed by")),
                 schedule=schedule,
                 source=Source(name, task_id),
+                declared_domain=(fields.get("Domain") or "").strip().lower() or None,
             )
         )
     return tasks
@@ -318,6 +320,44 @@ def parse_decisions(directory: Path) -> list[Decision]:
             )
         )
     return decisions
+
+
+def parse_trace(path: Path) -> list[TraceEvent]:
+    """Operational events from TRACE.md. The file is optional: a project that
+    has never recorded an event simply has none."""
+    if not path.is_file():
+        return []
+    name = path.name
+    events: list[TraceEvent] = []
+    for heading, body in _sections(path.read_text(), "##"):
+        match = re.match(r"(EV-[A-Za-z0-9.\-]+): (.+)", heading)
+        if not match:
+            raise ParseError(name, heading, "event heading must read '## EV-<id>: <summary>'")
+        event_id = match.group(1)
+        fields = _fields(body)
+        if "Type" not in fields:
+            raise ParseError(name, event_id, "missing required field 'Type'")
+        events.append(
+            TraceEvent(
+                id=event_id,
+                title=match.group(2).strip(),
+                type=fields["Type"].strip().lower(),
+                time=_named(fields.get("Time")),
+                task=_named(fields.get("Task")),
+                agent=_named(fields.get("Agent")),
+                tool=_named(fields.get("Tool")),
+                target=_named(fields.get("Target")),
+                outcome=(_named(fields.get("Outcome")) or "unknown").lower(),
+                error=_named(fields.get("Error")),
+                retry_of=_named(fields.get("Retry of")),
+                parent=_named(fields.get("Parent")),
+                affects=_list(fields.get("Affects")),
+                artifact=_named(fields.get("Artifact")),
+                evidence=_named(fields.get("Evidence")),
+                source=Source(name, event_id),
+            )
+        )
+    return events
 
 
 def read_text(path: Path) -> str:

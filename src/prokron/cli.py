@@ -87,8 +87,11 @@ def cmd_validate(root: Path, args: argparse.Namespace) -> int:
     if warnings and not args.quiet:
         print(f"{len(warnings)} warning{'s' if len(warnings) != 1 else ''}:")
         _report_findings(warnings)
-    if not findings:
-        print(f"{root.name}: authority is consistent.")
+    # Warnings are worth seeing but do not make authority inconsistent; an
+    # upgraded project with undeclared task domains is still valid (ADR-045).
+    if not errors:
+        suffix = f" ({len(warnings)} warning{'s' if len(warnings) != 1 else ''})" if warnings else ""
+        print(f"{root.name}: authority is consistent{suffix}.")
     return 1 if errors else 0
 
 
@@ -170,7 +173,7 @@ def cmd_status(root: Path, args: argparse.Namespace) -> int:
         )
     print(
         f"  tasks        {metrics['taskCompletion']['done']} / "
-        f"{metrics['taskCompletion']['total']}"
+        f"{metrics['taskCompletion']['total']} execution"
     )
     print(
         f"  acceptance   {metrics['acceptanceCompletion']['done']} / "
@@ -201,11 +204,27 @@ def cmd_status(root: Path, args: argparse.Namespace) -> int:
     independent = metrics["phaseIndependent"]
     if independent:
         print(f"  {'no phase':<12} {independent} task{'' if independent == 1 else 's'}")
-    print(f"\n  WIP       {', '.join(report.wip) or 'none'}")
-    print(f"  Ready     {', '.join(report.ready) or 'none'}")
-    print(f"  Blocked   {', '.join(report.blocked) or 'none'}")
+    operations = report.operations_metrics()
+    if operations["tasks"]["total"] or operations["events"]["total"]:
+        o = operations["tasks"]
+        e = operations["events"]
+        print(
+            f"  operations   {o['open']} open · {o['active']} active · {o['blocked']} blocked"
+            f" · {e['total']} events · {e['unresolvedFailures']} unresolved failures"
+        )
+    execution = {t.id for t in project.execution_tasks}
+    ops_wip = [t for t in report.wip if t not in execution]
+    print(f"\n  WIP       {', '.join(report.in_flight) or 'none'}")
+    if ops_wip:
+        print(f"  Ops WIP   {', '.join(ops_wip)}")
+    print(f"  Ready     {', '.join(t for t in report.ready if t in execution) or 'none'}")
+    print(f"  Blocked   {', '.join(t for t in report.blocked if t in execution) or 'none'}")
     if report.critical_path:
         print(f"  Next      {report.critical_path[0]} (critical path)")
+    blocker = report.main_blocker
+    if blocker:
+        label = " · project operations" if blocker["domain"] == "operations" else ""
+        print(f"  Blocker   {blocker['id']}{label} → {blocker['blocking']} ({blocker['reason']})")
     if report.obstacles:
         print(f"\n  {len(report.obstacles)} obstacles:")
         for obstacle in report.obstacles[: args.limit]:
@@ -255,6 +274,85 @@ def cmd_context(root: Path, args: argparse.Namespace) -> int:
     except KeyError:
         return _fail(f"No such task: {args.task}")
     print(json.dumps(packet, indent=2))
+    return 0
+
+
+def domain_report(project: Project) -> dict[str, object]:
+    """How every task's domain was decided, and what operational history
+    exists. Reads only; classifying a task is an edit to TASKS.md."""
+    groups: dict[str, list[str]] = {
+        "explicitExecution": [], "explicitOperations": [], "inferredExecution": [],
+        "inferredOperations": [], "ambiguous": [], "invalid": [],
+    }
+    for task in project.tasks:
+        if task.declared_domain and task.domain_source != "declared":
+            groups["invalid"].append(task.id)
+        if task.domain_source == "declared":
+            groups["explicitExecution" if task.execution else "explicitOperations"].append(task.id)
+        elif task.domain_source == "unresolved":
+            groups["ambiguous"].append(task.id)
+        else:
+            groups["inferredExecution"].append(task.id)
+    events = project.events
+    kinds = {
+        "tool calls": [e for e in events if e.type in ("tool-call", "command")],
+        "mini-actions": [e for e in events if e.type == "action"],
+        "failures": [e for e in events if e.failed],
+        "retries": [e for e in events if e.retry_of or e.type == "retry"],
+        "mutations": [e for e in events if e.type == "mutation"],
+        "timeline": [e for e in events if e.time],
+    }
+    return {
+        "domains": groups,
+        "inferredBy": {
+            t.id: t.domain_source for t in project.tasks
+            if t.domain_source in ("phase", "exit-authority", "gate")
+        },
+        "trace": {
+            "recorded": bool(events),
+            "counts": {name: len(found) for name, found in kinds.items()},
+        },
+    }
+
+
+def cmd_domains(root: Path, args: argparse.Namespace) -> int:
+    project = _load(root)
+    result = domain_report(project)
+    if args.json:
+        print(json.dumps(result, indent=2))
+        return 0
+    groups = result["domains"]
+    labels = (
+        ("explicitExecution", "explicit execution"),
+        ("explicitOperations", "explicit operations"),
+        ("inferredExecution", "inferred execution"),
+        ("inferredOperations", "inferred operations"),
+        ("ambiguous", "ambiguous — needs a Domain"),
+        ("invalid", "invalid Domain value"),
+    )
+    print(f"{project.name} — task domains")
+    for key, label in labels:
+        print(f"  {label:<30} {len(groups[key])}")
+    print(
+        "\n  Operations is never inferred: nothing in a task's structure shows it\n"
+        "  maintains the environment rather than the product, so it is declared."
+    )
+    if groups["ambiguous"]:
+        print("\n  Needs classification (add `- Domain: execution` or `operations`):")
+        for task_id in groups["ambiguous"]:
+            task = project.task(task_id)
+            print(f"    {task_id:<18} {task.status:<5} {task.title}")
+    trace = result["trace"]
+    print("\n  Operational trace (TRACE.md)")
+    if not trace["recorded"]:
+        print(
+            "    No events recorded. Tool calls, mini-actions, failures, retries and\n"
+            "    mutations appear only from when agents start appending to TRACE.md;\n"
+            "    nothing is reconstructed from the journal."
+        )
+    else:
+        for name, count in trace["counts"].items():
+            print(f"    {name:<14} {count}")
     return 0
 
 
@@ -336,6 +434,12 @@ def build_parser() -> argparse.ArgumentParser:
     move.add_argument("--apply", action="store_true", help="perform it; otherwise report only")
     move.add_argument("--phase", default="P-NONE", help="phase to assign migrated tasks")
     move.set_defaults(handler=cmd_migrate)
+
+    domains = subparsers.add_parser(
+        "domains", help="report how each task's execution/operations domain was decided"
+    )
+    domains.add_argument("--json", action="store_true")
+    domains.set_defaults(handler=cmd_domains)
 
     packet = subparsers.add_parser("context", help="emit an agent context packet")
     packet.add_argument("task")

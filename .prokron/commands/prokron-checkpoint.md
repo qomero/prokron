@@ -11,7 +11,8 @@ Prepare the chronicle for another person or agent:
 4. Rewrite `HANDOFF.md` with the current position, what is true now, what is not
    done, and the next action.
 5. Append a `JOURNAL.md` entry containing work done, validation, learning,
-   unfinished work, and the exact next action.
+   unfinished work, and the exact next action, and any `TRACE.md` events
+   not yet recorded for failures, retries, or mutations that matter.
 
 Run this automatically, early enough to complete it, before a handoff,
 interruption, compaction, or any known or estimated agent or host context, token,

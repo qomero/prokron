@@ -19,6 +19,18 @@ GATE_STATUSES = ("GREEN", "RED")
 # the repository already depends on (ADR-037). Absent means contemporaneous.
 DECISION_ORIGINS = ("CONTEMPORANEOUS", "RECONSTRUCTED")
 NO_PHASE = "P-NONE"
+# Every task is either work that advances the project itself, or work that
+# maintains the environment it is built in (ADR-045). There is no third value.
+DOMAINS = ("execution", "operations")
+# How a task's domain was decided: authored, or inferred from structure. A
+# task with no structural evidence is `unresolved`; it counts as execution and
+# validation says so, rather than a guess being made from its title.
+DOMAIN_SOURCES = ("declared", "phase", "exit-authority", "gate", "unresolved")
+# Operational trace events (TRACE.md). An event is evidence, never a task.
+EVENT_TYPES = (
+    "tool-call", "command", "action", "mutation", "failure", "retry", "validation", "note",
+)
+EVENT_OUTCOMES = ("success", "failure", "partial", "unknown")
 
 OBSTACLE_TYPES = (
     "DEPENDENCY_BLOCKER",
@@ -102,10 +114,17 @@ class Task:
     decisions: list[str]
     schedule: Schedule
     source: Source
+    declared_domain: str | None = None
+    domain: str = "execution"
+    domain_source: str = "unresolved"
 
     @property
     def done(self) -> bool:
         return self.status == "DONE"
+
+    @property
+    def execution(self) -> bool:
+        return self.domain == "execution"
 
     @property
     def phase_independent(self) -> bool:
@@ -161,11 +180,49 @@ class Decision:
 
 
 @dataclass
+class TraceEvent:
+    """One operational event: a tool call, command, mini-action, mutation,
+    failure, retry, or validation run. Evidence about work, not work."""
+
+    id: str
+    title: str
+    type: str
+    time: str | None
+    task: str | None
+    agent: str | None
+    tool: str | None
+    target: str | None
+    outcome: str
+    error: str | None
+    retry_of: str | None
+    parent: str | None
+    affects: list[str]
+    artifact: str | None
+    evidence: str | None
+    source: Source
+
+    @property
+    def failed(self) -> bool:
+        return self.outcome == "failure" or self.type == "failure"
+
+    def as_json(self) -> dict[str, object]:
+        return {
+            "id": self.id, "title": self.title, "type": self.type, "time": self.time,
+            "task": self.task, "agent": self.agent, "tool": self.tool,
+            "target": self.target, "outcome": self.outcome, "error": self.error,
+            "retryOf": self.retry_of, "parent": self.parent, "affects": self.affects,
+            "artifact": self.artifact, "evidence": self.evidence,
+            "source": self.source.as_json(),
+        }
+
+
+@dataclass
 class Obstacle:
     type: str
     subject: str
     blockers: list[str]
     detail: str
+    domain: str = "execution"
 
     def as_json(self) -> dict[str, object]:
         return {
@@ -173,6 +230,7 @@ class Obstacle:
             "subject": self.subject,
             "blockers": self.blockers,
             "detail": self.detail,
+            "domain": self.domain,
         }
 
 
@@ -205,6 +263,19 @@ class Project:
     decisions: list[Decision] = field(default_factory=list)
     intent: str = ""
     handoff: str = ""
+    events: list[TraceEvent] = field(default_factory=list)
+
+    @property
+    def execution_tasks(self) -> list[Task]:
+        return [t for t in self.tasks if t.execution]
+
+    @property
+    def operations_tasks(self) -> list[Task]:
+        return [t for t in self.tasks if not t.execution]
+
+    def execution_in(self, phase_id: str) -> list[Task]:
+        """A phase's own work: its execution tasks, never its operations."""
+        return [t for t in self.tasks if t.phase == phase_id and t.execution]
 
     def task(self, task_id: str) -> Task | None:
         for task in self.tasks:

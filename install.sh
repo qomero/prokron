@@ -247,7 +247,7 @@ done
 had_chronicle=0
 [ ! -d "$target/$chronicle" ] || had_chronicle=1
 # Records are the project's own: a template is only ever a starting point.
-for file in PHASES TASKS ACCEPTANCE INTENT HANDOFF JOURNAL; do
+for file in PHASES TASKS ACCEPTANCE INTENT HANDOFF JOURNAL TRACE; do
   copy_new "$source_dir/templates/chronicle/$file.md" "$target/$chronicle/$file.md"
 done
 copy_new "$source_dir/templates/chronicle/ADR/README.md" "$target/$chronicle/ADR/README.md"
@@ -267,7 +267,7 @@ install_guidance "$source_dir/.agents/skills/prokron/SKILL.md" \
 # The runtime is code, not a record: replace it on every install so a repository
 # never runs a stale compiler against a current chronicle.
 mkdir -p "$target/$runtime/prokron"
-for module in __init__ layout model parse validate analytics views compile migrate \
+for module in __init__ layout model parse domain validate analytics views compile migrate \
   mermaid dashboard cli; do
   cp "$source_dir/src/prokron/$module.py" "$target/$runtime/prokron/$module.py"
 done

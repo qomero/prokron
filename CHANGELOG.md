@@ -4,6 +4,37 @@ Prokron records its own history in `.prokron/chronicle/JOURNAL.md` and its
 decisions in `.prokron/chronicle/ADR/`. This file is the short version, for
 people arriving from a release page.
 
+## Unreleased
+
+### Changed
+
+- **Execution and operations are separate domains.** Every task resolves to
+  `execution` or `operations`, declared with `Domain:` or inferred as
+  execution from phase membership, exit authority, or gate verification —
+  never from a title. Phases, gates, the critical path, completion,
+  acceptance and validation figures, work in flight, and the main blocker are
+  computed from execution only, so completion and validation figures can
+  differ from 0.6.0 for the same records. An operations task that execution
+  depends on is reported as an external blocker and keeps its domain.
+  ADR-045.
+- The main blocker, work in flight, and next gate are selected by analytics
+  and carried in `project.json` under `execution`; the dashboard no longer
+  chooses them.
+- `validate` reports "consistent" when there are warnings but no errors.
+
+### Added
+
+- **`TRACE.md`**, an append-only record of operational events — tool calls,
+  commands, mini-actions, mutations, failures, retries — with validation of
+  its structure and a warning for anything that looks like a credential.
+- **An Operations tab**: summary, open operations with their traces, failures
+  and warnings, tool calls, mini-actions, changes, retries, and a timeline.
+  Execution failures link to the events that name them.
+- `prokron domains`: how each task's domain was decided, which tasks need a
+  `Domain:`, and what operational history exists. Read-only.
+- The task graph groups operations tasks in their own dashed group; All Tasks
+  filters by domain; the task dialog shows domain and related events.
+
 ## 0.6.0 — 2026-09-23
 
 ### Changed

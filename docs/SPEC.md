@@ -35,12 +35,13 @@ one compiled `compiled/` directory. Only the first is authoritative.
 | File in `.prokron/chronicle/` | Role |
 |---|---|
 | `PHASES.md` | Phase outcome, entry, exit, exit authority, status, and gates; optionally the project's own name |
-| `TASKS.md` | Canonical tasks, phase, dependencies, ownership, contract reference, and evidence |
+| `TASKS.md` | Canonical tasks, phase, domain, dependencies, ownership, contract reference, and evidence |
 | `ACCEPTANCE.md` | Completion contracts, evidence classes, and change requests |
 | `ADR/` | Append-only decision history and supersession lineage, one file per ADR |
 | `INTENT.md` | Zero or one task currently being attempted |
 | `HANDOFF.md` | Current implementation continuity, overwritten each checkpoint |
 | `JOURNAL.md` | Append-only session diary and handoff history |
+| `TRACE.md` | Append-only operational events: tool calls, commands, mini-actions, mutations, failures, retries, validation runs |
 
 | File in `.prokron/compiled/` | Role |
 |---|---|
@@ -61,6 +62,65 @@ makes compiled output identical in two differently named checkouts (ADR-030).
 The product specification records intended behavior. The chronicle records
 current project truth. When they disagree, the agent surfaces and reconciles
 the difference.
+
+### 2.1 Execution and operations
+
+Every task belongs to exactly one of two domains (ADR-045).
+
+**Project execution** is work that directly advances the project toward its
+intended deliverables and gates: phase work, product tasks, research a product
+decision needs, acceptance, the critical path, gates, and phase exit
+authorities. It answers *what must happen for the project itself to advance?*
+
+**Project operations** is supporting activity that maintains, operates,
+inspects, debugs, or changes the environment execution happens in: upgrading
+Prokron, CI and tooling, repository housekeeping, dashboard refreshes, internal
+automation, migrations unrelated to product capability. It answers *what
+happened around execution, and could any of it explain the current state?*
+
+A task declares its domain with `- Domain: execution` or `- Domain: operations`.
+Without one, structure decides only in execution's favour: a task that belongs
+to a phase, is a phase's exit authority, or has a contract a gate is verified
+by is execution. Anything else resolves to execution and validation reports it
+as `ambiguous-domain` until someone declares it. Nothing is ever inferred from a
+title or an identifier. `prokron domains` lists how every task was resolved.
+
+Phases, gates, the critical path, completion, acceptance and validation figures,
+work in flight, and the main blocker are all computed from execution. An
+operations task that names a phase is associated with it but never counted in
+it.
+
+**Operations can block execution without becoming execution.** When an
+execution task depends on an operations task, or a gate is verified by an
+operations task's contract, the operations task is reported as that work's
+external blocker and keeps its domain. It never becomes a critical-path node.
+
+A few consequences are deliberate:
+
+- Not every task that matters belongs on the critical path.
+- Not every active task represents project progress.
+- Not every blocked task is a blocker: the main blocker is a dependency that
+  important execution work waits on, not a task that happens to be blocked.
+- Not every operational action deserves to become a task.
+- Tool calls and mini-actions may be essential evidence even when they do not
+  count toward progress.
+
+### 2.2 Operational trace
+
+`TRACE.md` holds structured operational events, `## EV-<id>: <summary>`, with a
+required `Type` (`tool-call`, `command`, `action`, `mutation`, `failure`,
+`retry`, `validation`, `note`) and optional `Time`, `Task`, `Agent`, `Tool`,
+`Target`, `Outcome`, `Error`, `Retry of`, `Parent`, `Affects`, `Artifact`, and
+`Evidence`. An event is evidence about work, never a task: it is not planned,
+not counted, and never drawn as a graph node. A failed event is unresolved
+until a successful retry, direct or chained, answers it.
+
+Prokron records nothing on its own. Agents append events under the work and
+checkpoint workflows when an action could later explain a failure, a blocked
+gate, or a regression. Events summarize; they never carry secrets, tokens,
+credentials, hidden instructions, or private reasoning, and validation warns
+when an event looks like it does. A project has operational history only from
+when it starts writing `TRACE.md`; nothing is reconstructed from the journal.
 
 ## 3. Entry modes
 
@@ -227,6 +287,16 @@ provider credentials and model selection remain in the agent host.
 - A changed decision gets a new, superseding ADR.
 - State and intent describe the present and are overwritten as truth changes.
 - Entries use stable IDs and absolute dates.
+- **Report salience is domain-aware.** A task's urgency, recency, blocked
+  state, acceptance status, operational activity, or local priority does not
+  make it prominent in an execution report unless it belongs to execution or
+  has an explicit dependency that materially affects execution.
+- **Operational activity remains inspectable** even though it never counts as
+  progress: operations tasks, tool calls, mini-actions, failures, retries, and
+  mutations stay reviewable because they can explain defects, regressions,
+  blocked execution, or incorrect outcomes.
+- Changing a task's domain is a recorded change to `TASKS.md`, explained in
+  the journal or, when it changes what counts as progress, an ADR.
 
 ## 8. Scope
 

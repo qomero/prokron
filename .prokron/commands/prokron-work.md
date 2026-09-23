@@ -5,8 +5,8 @@ Run `.prokron/prokron status` for the current position, or read
 unavailable. Select the requested task, or one ready task if none was named.
 Use `.prokron/prokron explain <task>` rather than re-deriving its state by
 hand. If the requested work has no task yet, create it before implementation
-without waiting for a Prokron command, give it a phase, and write its
-acceptance contract. Read that
+without waiting for a Prokron command, give it a phase and a `Domain:`
+(`execution` or `operations`), and write its acceptance contract. Read that
 task, its contract, and its governing ADRs, then inspect only the specification
 and code needed for the task.
 
@@ -16,4 +16,8 @@ through an accepted Acceptance Change Request. Keep intent at the exact executio
 before a long-running step. When a material choice is made, accepted, or acted
 on, append its ADR immediately and link affected tasks. As truth changes, update the
 task, its criterion states and evidence, the compiled views, the handoff, and the
-journal rather than postponing record keeping.
+journal rather than postponing record keeping. Append an event to `TRACE.md`
+for a tool call, command, mutation, failure, or retry that could later explain
+an execution failure, a blocked gate, or a regression, naming the task it came
+from and what it affects. Summarize; never record secrets, credentials, or
+private reasoning.
