@@ -131,6 +131,17 @@ prokron compile && prokron graph && prokron dashboard
 
 `prokron dashboard --open` opens it in a browser.
 
+The page has six tabs. **Overview** opens first: the current phase, what is in
+flight, the main blocker, and the next gate, then progress and phases.
+**Execution** holds in-flight and ready work, obstacles grouped by type, and the
+critical path. **Graph** has the six diagrams and the schedule. **Governance**
+has gates and validation strength. **Decisions** lists every ADR, searchable.
+**All Tasks** is the full registry with search and filters. The URL hash names
+the tab (`#execution`), so a reload or a shared link opens the same view. The
+Light / Dark control remembers your choice in the browser; until you choose,
+the page follows your system setting. None of this is project state: the page
+still writes nothing.
+
 ### Moving an older installation
 
 ```sh

@@ -4,6 +4,28 @@ Prokron records its own history in `.prokron/chronicle/JOURNAL.md` and its
 decisions in `.prokron/chronicle/ADR/`. This file is the short version, for
 people arriving from a release page.
 
+## Unreleased
+
+### Changed
+
+- **The dashboard is six tabs.** Overview (the default) opens with the current
+  phase, the work in flight, the main blocker and the next gate; Execution,
+  Graph, Governance, Decisions and All Tasks hold the rest. Obstacles are
+  grouped, with dependency blockers waiting on blocked work collapsed; the
+  critical path is a vertical chain; decisions and tasks are searchable and
+  filterable. The tab lives in the URL hash. The embedded project data is
+  unchanged. ADR-044.
+- **Light and Dark themes**, chosen explicitly and remembered in the browser,
+  with the system setting as the fallback.
+
+### Fixed
+
+- In the graph, the zoom buttons and clicking a task node did nothing in
+  Chromium browsers: the canvas captured the pointer and the click never
+  reached them.
+- Redrawing a diagram (switching views, or now the theme) measured labels at
+  the current zoom and drew them that much too small.
+
 ## 0.5.0 — 2026-09-23
 
 ### Changed

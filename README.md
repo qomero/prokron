@@ -330,7 +330,7 @@ T-PILOT-01 — Run the continuity pilot
 | `prokron validate` | Broken dependencies, dangling references, authority conflicts. |
 | `prokron compile` | Rebuilds `.prokron/compiled/` from the authored documents. |
 | `prokron graph` | The six Mermaid views of the same state. |
-| `prokron dashboard` | The local page above: phases, gates, obstacles, graph, drill-down. |
+| `prokron dashboard` | The local page above, in six tabs: overview, execution, graph, governance, decisions, all tasks. |
 | `prokron migrate` | Moves a chronicle written under an earlier layout into the current one. |
 
 ## How it works
