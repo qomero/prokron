@@ -209,8 +209,8 @@ def _handoff_from_state(state: str) -> str:
         "Current implementation continuity. Overwritten, never appended.\n\n"
         "## Migrated from STATE.md\n\n"
         "The v0.1 chronicle kept risks, position and next steps in `STATE.md`.\n"
-        "`.prokron/STATE.md` is now generated from compiled facts, so this prose —\n"
-        "which is judgement, not derivation — was moved here rather than lost.\n"
+        f"`{layout.COMPILED_DIR}/STATE.md` is now generated from compiled facts, so this\n"
+        "prose — which is judgement, not derivation — was moved here rather than lost.\n"
         "Rewrite it as an ordinary handoff when convenient.\n\n"
         "---\n\n" + state.strip() + "\n"
     )

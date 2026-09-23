@@ -5,7 +5,10 @@ mode=existing
 target=.
 target_set=0
 link=1
-retained=0
+ref=
+allow_downgrade=${PROKRON_ALLOW_DOWNGRADE:-0}
+upgraded=
+staged=
 
 # Everything Prokron installs lives in one directory (ADR-024). The only paths
 # written outside it are the ones an agent host reads by fixed address, and the
@@ -21,13 +24,20 @@ while [ $# -gt 0 ]; do
   case $1 in
     new|existing) mode=$1 ;;
     --no-link) link=0 ;;
+    --allow-downgrade) allow_downgrade=1 ;;
+    --ref)
+      [ $# -ge 2 ] && [ -n "$2" ] || { echo "--ref needs a tag or branch" >&2; exit 2; }
+      ref=$2
+      shift
+      ;;
+    --ref=*) ref=${1#--ref=} ;;
     -h|--help)
-      echo "Usage: install.sh [new|existing] [target-directory] [--no-link]"
+      echo "Usage: install.sh [new|existing] [target-directory] [--no-link] [--ref <tag|branch>] [--allow-downgrade]"
       exit 0
       ;;
     -*)
       echo "Unknown option: $1" >&2
-      echo "Usage: install.sh [new|existing] [target-directory] [--no-link]" >&2
+      echo "Usage: install.sh [new|existing] [target-directory] [--no-link] [--ref <tag|branch>] [--allow-downgrade]" >&2
       exit 2
       ;;
     *)
@@ -35,7 +45,7 @@ while [ $# -gt 0 ]; do
       # mode, and silently installing somewhere unintended is the worst answer.
       if [ "$target_set" -eq 1 ]; then
         echo "Unexpected argument: $1" >&2
-        echo "Usage: install.sh [new|existing] [target-directory] [--no-link]" >&2
+        echo "Usage: install.sh [new|existing] [target-directory] [--no-link] [--ref <tag|branch>] [--allow-downgrade]" >&2
         exit 2
       fi
       target=$1
@@ -77,25 +87,80 @@ cleanup() {
 }
 trap cleanup EXIT HUP INT TERM
 
+if [ -n "$source_dir" ] && [ -n "$ref" ]; then
+  echo "--ref applies only when the installer downloads Prokron; this one runs from $source_dir" >&2
+  exit 2
+fi
+
+# The default is the latest published release, not `main`, so two people who
+# install on different days get the same runtime (ADR-040).
+use_gh=0
+if command -v gh >/dev/null 2>&1 && gh auth status >/dev/null 2>&1; then
+  use_gh=1
+fi
+downloaded=0
 if [ -z "$source_dir" ]; then
   temp_dir=$(mktemp -d "${TMPDIR:-/tmp}/prokron.XXXXXX")
   command -v tar >/dev/null 2>&1 || { echo "tar is required" >&2; exit 1; }
-  if command -v gh >/dev/null 2>&1 && gh auth status >/dev/null 2>&1; then
-    gh api repos/qomero/prokron/tarball/main > "$temp_dir/prokron.tar.gz"
-  else
+  if [ "$use_gh" -eq 0 ]; then
     command -v curl >/dev/null 2>&1 || { echo "curl is required" >&2; exit 1; }
-    curl -fsSL "https://github.com/qomero/prokron/archive/refs/heads/main.tar.gz" \
+  fi
+  if [ -z "$ref" ]; then
+    if [ "$use_gh" -eq 1 ]; then
+      ref=$(gh api repos/qomero/prokron/releases/latest --jq .tag_name 2>/dev/null || true)
+    else
+      latest=$(curl -fsSLI -o /dev/null -w '%{url_effective}' \
+        https://github.com/qomero/prokron/releases/latest 2>/dev/null || true)
+      case $latest in */releases/tag/*) ref=${latest##*/} ;; esac
+    fi
+    if [ -z "$ref" ]; then
+      echo "No published release was found; installing main." >&2
+      ref=main
+    fi
+  fi
+  if [ "$use_gh" -eq 1 ]; then
+    gh api "repos/qomero/prokron/tarball/$ref" > "$temp_dir/prokron.tar.gz"
+  else
+    curl -fsSL "https://github.com/qomero/prokron/archive/$ref.tar.gz" \
       -o "$temp_dir/prokron.tar.gz"
   fi
   mkdir "$temp_dir/source"
   tar -xzf "$temp_dir/prokron.tar.gz" -C "$temp_dir/source"
   set -- "$temp_dir/source"/*
   source_dir=$1
+  downloaded=1
 fi
 
 if [ ! -f "$source_dir/templates/chronicle/README.md" ]; then
   echo "Downloaded Prokron source is incomplete" >&2
   exit 1
+fi
+
+# An older runtime replacing a newer one silently loses whatever the newer one
+# understood, so it takes an explicit flag (ADR-040).
+version_older() {
+  # True when $1 sorts strictly before $2 as a dotted version.
+  [ "$1" != "$2" ] || return 1
+  lowest=$(printf '%s\n%s\n' "$1" "$2" | sort -t. -k1,1n -k2,2n -k3,3n | head -n 1)
+  [ "$lowest" = "$1" ]
+}
+incoming=$(cat "$source_dir/VERSION" 2>/dev/null || echo 0)
+present=$(cat "$target/.prokron/runtime/VERSION" 2>/dev/null || true)
+if [ -n "$present" ] && version_older "$incoming" "$present" && [ "$allow_downgrade" != 1 ]; then
+  echo "Refusing to install prokron $incoming over the newer $present already in $target." >&2
+  echo "Pass --allow-downgrade if that is intended." >&2
+  exit 1
+fi
+
+# A downloaded release installs itself, exactly as it shipped: its own
+# installer knows its own files (ADR-040).
+if [ "$downloaded" -eq 1 ]; then
+  printf 'Installing prokron %s (%s)\n' "$incoming" "$ref"
+  set -- "$mode" "$target"
+  [ "$link" -eq 1 ] || set -- "$@" --no-link
+  status=0
+  PROKRON_ALLOW_DOWNGRADE=$allow_downgrade sh "$source_dir/install.sh" "$@" || status=$?
+  exit "$status"
 fi
 
 copy_new() {
@@ -107,8 +172,67 @@ copy_new() {
   elif [ ! -e "$target_file" ]; then
     mkdir -p "$(dirname "$target_file")"
     cp "$source_file" "$target_file"
-  elif ! cmp -s "$source_file" "$target_file"; then
-    retained=1
+  fi
+}
+
+# Guidance is what Prokron tells people and agents to do. The runtime is
+# replaced on every install, so guidance must keep up with it — without ever
+# overwriting what a person edited (ADR-040). The previous install recorded a
+# checksum of each guidance file it wrote; a file that still matches was never
+# touched and is replaced, and one that differs is kept and the new version is
+# staged beside it for review.
+manifest="$target/$runtime/GUIDANCE"
+previous=
+if [ -f "$manifest" ] && [ ! -L "$manifest" ]; then
+  previous=$(cat "$manifest")
+fi
+recorded=
+
+sum_of() {
+  cksum < "$1" | awk '{ print $1 "-" $2 }'
+}
+
+previous_sum() {
+  printf '%s\n' "$previous" | awk -v key="$1" '$2 == key { print $1; exit }'
+}
+
+record() {
+  recorded="$recorded$1 $2
+"
+}
+
+stage() {
+  # $1 source, $2 key: the new version, at the key's path under upgrade/.
+  mkdir -p "$(dirname "$target/$home/upgrade/$2")"
+  cp "$1" "$target/$home/upgrade/$2"
+  staged="$staged  $2
+"
+}
+
+install_guidance() {
+  source_file=$1
+  key=$2
+  target_file="$target/$key"
+  if [ -L "$target_file" ] || { [ -e "$target_file" ] && [ ! -f "$target_file" ]; }; then
+    echo "Cannot install: $target_file is not a regular file" >&2
+    exit 1
+  elif [ ! -e "$target_file" ]; then
+    mkdir -p "$(dirname "$target_file")"
+    cp "$source_file" "$target_file"
+    record "$(sum_of "$source_file")" "$key"
+  elif cmp -s "$source_file" "$target_file"; then
+    record "$(sum_of "$target_file")" "$key"
+  else
+    was=$(previous_sum "$key")
+    if [ -n "$was" ] && [ "$was" = "$(sum_of "$target_file")" ]; then
+      cp "$source_file" "$target_file"
+      record "$(sum_of "$source_file")" "$key"
+      upgraded="$upgraded  $key
+"
+    else
+      stage "$source_file" "$key"
+      [ -z "$was" ] || record "$was" "$key"
+    fi
   fi
 }
 
@@ -122,24 +246,23 @@ for path in "$home" "$chronicle" "$chronicle/ADR" "$commands" "$runtime" \
 done
 had_chronicle=0
 [ ! -d "$target/$chronicle" ] || had_chronicle=1
-for file in README PHASES TASKS ACCEPTANCE INTENT HANDOFF JOURNAL; do
+# Records are the project's own: a template is only ever a starting point.
+for file in PHASES TASKS ACCEPTANCE INTENT HANDOFF JOURNAL; do
   copy_new "$source_dir/templates/chronicle/$file.md" "$target/$chronicle/$file.md"
 done
 copy_new "$source_dir/templates/chronicle/ADR/README.md" "$target/$chronicle/ADR/README.md"
-# Differences in project records are expected, not an upgrade warning.
-retained=0
-cmp -s "$source_dir/templates/chronicle/README.md" "$target/$chronicle/README.md" || retained=1
+install_guidance "$source_dir/templates/chronicle/README.md" "$chronicle/README.md"
 
 for command in init work decide checkpoint resume baseline; do
-  copy_new "$source_dir/.prokron/commands/prokron-$command.md" \
-    "$target/$commands/prokron-$command.md"
-  copy_new "$source_dir/.claude/commands/prokron-$command.md" \
-    "$target/.claude/commands/prokron-$command.md"
-  copy_new "$source_dir/.opencode/commands/prokron-$command.md" \
-    "$target/.opencode/commands/prokron-$command.md"
+  install_guidance "$source_dir/.prokron/commands/prokron-$command.md" \
+    "$commands/prokron-$command.md"
+  install_guidance "$source_dir/.claude/commands/prokron-$command.md" \
+    ".claude/commands/prokron-$command.md"
+  install_guidance "$source_dir/.opencode/commands/prokron-$command.md" \
+    ".opencode/commands/prokron-$command.md"
 done
-copy_new "$source_dir/.agents/skills/prokron/SKILL.md" \
-  "$target/.agents/skills/prokron/SKILL.md"
+install_guidance "$source_dir/.agents/skills/prokron/SKILL.md" \
+  ".agents/skills/prokron/SKILL.md"
 
 # The runtime is code, not a record: replace it on every install so a repository
 # never runs a stale compiler against a current chronicle.
@@ -209,13 +332,84 @@ if [ -d "$target/$home/compiled" ] && grep -q '^## T-' "$target/$chronicle/TASKS
   fi
 fi
 
+# The Prokron block in AGENTS.md is guidance like any other, but it shares a
+# file with the project's own rules. Only the text between the markers is ever
+# compared or replaced; everything around it is left exactly as it was.
+start_marker='<!-- project-prokron:start -->'
+end_marker='<!-- project-prokron:end -->'
+block_key='AGENTS.md#prokron'
 if [ ! -f "$target/AGENTS.md" ]; then
   cp "$source_dir/AGENTS.md" "$target/AGENTS.md"
-elif ! grep -Fq '<!-- project-prokron:start -->' "$target/AGENTS.md"; then
+  record "$(sum_of "$source_dir/AGENTS.md")" "$block_key"
+elif ! grep -Fq "$start_marker" "$target/AGENTS.md"; then
   printf '\n' >> "$target/AGENTS.md"
   cat "$source_dir/AGENTS.md" >> "$target/AGENTS.md"
+  record "$(sum_of "$source_dir/AGENTS.md")" "$block_key"
 else
-  retained=1
+  block="$target/$runtime/agents-block.tmp"
+  awk -v s="$start_marker" -v e="$end_marker" '
+    index($0, s) && !seen { on = 1; seen = 1 }
+    on { print }
+    on && index($0, e) { on = 0; closed = 1 }
+    END { if (!closed) exit 3 }
+  ' "$target/AGENTS.md" > "$block" && complete=1 || complete=0
+  if [ "$complete" -eq 1 ] && cmp -s "$source_dir/AGENTS.md" "$block"; then
+    record "$(sum_of "$block")" "$block_key"
+  else
+    was=$(previous_sum "$block_key")
+    if [ "$complete" -eq 1 ] && [ -n "$was" ] && [ "$was" = "$(sum_of "$block")" ]; then
+      awk -v s="$start_marker" -v e="$end_marker" -v src="$source_dir/AGENTS.md" '
+        index($0, s) && !done { while ((getline line < src) > 0) print line; skip = 1; done = 1; next }
+        skip { if (index($0, e)) skip = 0; next }
+        { print }
+      ' "$target/AGENTS.md" > "$target/AGENTS.md.prokron-new"
+      cat "$target/AGENTS.md.prokron-new" > "$target/AGENTS.md"
+      rm -f "$target/AGENTS.md.prokron-new"
+      record "$(sum_of "$source_dir/AGENTS.md")" "$block_key"
+      upgraded="$upgraded  AGENTS.md (Prokron block)
+"
+    else
+      stage "$source_dir/AGENTS.md" AGENTS.md
+      [ -z "$was" ] || record "$was" "$block_key"
+    fi
+  fi
+  rm -f "$block"
+fi
+printf '%s' "$recorded" > "$manifest"
+
+# In a Git repository, append-only records merge by union, so two branches
+# that each add a journal entry or an ADR do not conflict, and compiled output
+# is marked generated (ADR-041). The block is Prokron's; the rest of the file
+# is the project's and is left as it was.
+if [ -e "$target/.git" ]; then
+  attributes="$target/.gitattributes"
+  if [ -L "$attributes" ] || { [ -e "$attributes" ] && [ ! -f "$attributes" ]; }; then
+    echo "Cannot install: $attributes is not a regular file" >&2
+    exit 1
+  fi
+  block_file="$target/$runtime/gitattributes.tmp"
+  cat > "$block_file" <<'ATTRIBUTES'
+# prokron:start — maintained by the Prokron installer (ADR-041)
+.prokron/chronicle/JOURNAL.md merge=union
+.prokron/chronicle/ADR/README.md merge=union
+.prokron/compiled/** linguist-generated=true
+# prokron:end
+ATTRIBUTES
+  if [ ! -f "$attributes" ]; then
+    cp "$block_file" "$attributes"
+  elif ! grep -Fq '# prokron:start' "$attributes"; then
+    [ ! -s "$attributes" ] || [ -z "$(tail -c 1 "$attributes")" ] || printf '\n' >> "$attributes"
+    cat "$block_file" >> "$attributes"
+  else
+    awk -v src="$block_file" '
+      /^# prokron:start/ && !done { while ((getline line < src) > 0) print line; skip = 1; done = 1; next }
+      skip { if (/^# prokron:end/) skip = 0; next }
+      { print }
+    ' "$attributes" > "$attributes.prokron-new"
+    cat "$attributes.prokron-new" > "$attributes"
+    rm -f "$attributes.prokron-new"
+  fi
+  rm -f "$block_file"
 fi
 
 if [ ! -f "$target/CLAUDE.md" ]; then
@@ -252,9 +446,12 @@ elif [ "$refreshed" = failed ]; then
   printf 'reports, then run:\n'
   printf '  %s/prokron compile && %s/prokron graph && %s/prokron dashboard\n\n' "$home" "$home" "$home"
 fi
-if [ "$retained" -eq 1 ]; then
-  printf 'Existing guidance was preserved; reinstall does not upgrade it.\n'
-  printf 'Merge updates using README.md in the Prokron source (Updating an installation).\n\n'
+if [ -n "$upgraded" ]; then
+  printf 'Guidance upgraded, unedited since the last install:\n%s\n' "$upgraded"
+fi
+if [ -n "$staged" ]; then
+  printf 'Guidance kept because it was edited; the new version is beside it in %s/upgrade/:\n%s' "$home" "$staged"
+  printf 'Merge what you want, then delete %s/upgrade/.\n\n' "$home"
 fi
 if [ "$had_chronicle" -eq 1 ]; then
   printf 'Existing chronicle preserved. Resume in your agent chat:\n'

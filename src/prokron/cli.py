@@ -49,6 +49,33 @@ def _stale_compiled(root: Path) -> str | None:
     return None if recorded in (None, VERSION) else str(recorded)
 
 
+def _version_key(version: str) -> tuple[int, ...] | None:
+    parts = version.split(".")
+    return tuple(int(part) for part in parts) if all(p.isdigit() for p in parts) else None
+
+
+def _newer(version: str | None) -> bool:
+    """Whether views were written by a runtime newer than this one."""
+    if not version:
+        return False
+    theirs, ours = _version_key(version), _version_key(VERSION)
+    return bool(theirs and ours and theirs > ours)
+
+
+def _refuse_newer(root: Path, args: argparse.Namespace) -> int | None:
+    """An older runtime rewriting a newer one's views would silently drop
+    whatever the newer one knows how to show (ADR-041)."""
+    stale = _stale_compiled(root)
+    if not _newer(stale) or args.force:
+        return None
+    print(
+        f"Refusing to overwrite views written by prokron {stale}; this is {VERSION}.\n"
+        "Upgrade this installation, or pass --force to write them anyway.",
+        file=sys.stderr,
+    )
+    return 1
+
+
 def cmd_validate(root: Path, args: argparse.Namespace) -> int:
     project = _load(root)
     findings = validate.check(project)
@@ -66,6 +93,9 @@ def cmd_validate(root: Path, args: argparse.Namespace) -> int:
 
 
 def cmd_compile(root: Path, args: argparse.Namespace) -> int:
+    refused = _refuse_newer(root, args)
+    if refused is not None:
+        return refused
     project = _load(root)
     errors = validate.errors(validate.check(project))
     if errors and not args.force:
@@ -79,6 +109,9 @@ def cmd_compile(root: Path, args: argparse.Namespace) -> int:
 
 
 def cmd_graph(root: Path, args: argparse.Namespace) -> int:
+    refused = _refuse_newer(root, args)
+    if refused is not None:
+        return refused
     project = _load(root)
     report = analytics.report(project)
     compiled = root / compiler.COMPILED_DIR
@@ -90,6 +123,9 @@ def cmd_graph(root: Path, args: argparse.Namespace) -> int:
 
 
 def cmd_dashboard(root: Path, args: argparse.Namespace) -> int:
+    refused = _refuse_newer(root, args)
+    if refused is not None:
+        return refused
     project = _load(root)
     report = analytics.report(project)
     compiled = compiler.as_json(project)
@@ -111,7 +147,13 @@ def cmd_status(root: Path, args: argparse.Namespace) -> int:
 
     print(f"{project.name} — phase {project.current_phase or 'none'}")
     stale = _stale_compiled(root)
-    if stale:
+    if _newer(stale):
+        print(
+            f"\n  Compiled views were written by prokron {stale}, which is newer "
+            f"than this {VERSION}.\n  Upgrade this installation before compiling; "
+            "an older runtime would rewrite them.\n"
+        )
+    elif stale:
         print(
             f"\n  Compiled views were written by prokron {stale}; this is "
             f"{VERSION}.\n  Run `prokron compile && prokron graph && prokron "
@@ -138,6 +180,17 @@ def cmd_status(root: Path, args: argparse.Namespace) -> int:
         f"  validation   {metrics['validationCoverage']['done']} / "
         f"{metrics['validationCoverage']['total']} reviewed or verified"
     )
+    # Done and checked are different claims; keep the gap on the same screen.
+    unreviewed = sum(
+        1
+        for task in project.tasks
+        if task.done and task.validation not in ("AI_REVIEWED", "HUMAN_VERIFIED")
+    )
+    if unreviewed:
+        print(
+            f"               {unreviewed} done task{'' if unreviewed == 1 else 's'} "
+            "not reviewed or verified"
+        )
     print(
         f"  gates        {metrics['gateReadiness']['done']} / "
         f"{metrics['gateReadiness']['total']} green"
@@ -254,7 +307,9 @@ def build_parser() -> argparse.ArgumentParser:
     build = subparsers.add_parser(
         "compile", help=f"write {compiler.COMPILED_DIR}/project.json"
     )
-    build.add_argument("--force", action="store_true", help="compile despite errors")
+    build.add_argument(
+        "--force", action="store_true", help="compile despite errors or newer views"
+    )
     build.set_defaults(handler=cmd_compile)
 
     state = subparsers.add_parser("status", help="print current project state")
@@ -262,10 +317,12 @@ def build_parser() -> argparse.ArgumentParser:
     state.set_defaults(handler=cmd_status)
 
     graph = subparsers.add_parser("graph", help="write Mermaid views")
+    graph.add_argument("--force", action="store_true", help="overwrite views from a newer runtime")
     graph.set_defaults(handler=cmd_graph)
 
     board = subparsers.add_parser("dashboard", help="write the static dashboard")
     board.add_argument("--open", action="store_true", help="open it in a browser")
+    board.add_argument("--force", action="store_true", help="overwrite views from a newer runtime")
     board.set_defaults(handler=cmd_dashboard)
 
     why = subparsers.add_parser("explain", help="explain one task")

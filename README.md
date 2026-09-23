@@ -388,11 +388,10 @@ Delete that directory and `prokron compile` rebuilds it byte for byte. Nothing
 in it is authority, and nothing in it decides a question the authored files
 answer.
 
-Prokron's own records are a live example: its
-[task graph](.prokron/compiled/TASK_GRAPH.md),
-[contracts](.prokron/chronicle/ACCEPTANCE.md),
-[decisions](.prokron/chronicle/ADR/), and
-[chronicle guide](.prokron/chronicle/README.md).
+Prokron is built with Prokron; the dashboard images above come from its own
+chronicle. That chronicle is kept by the maintainers and not published, so a
+clone carries the tool and the [chronicle template](templates/chronicle/) but
+not the project's working records.
 
 The [specification](docs/SPEC.md) defines the record format, the working
 lifecycle, and the invariants. The [product thesis](docs/PRODUCT-THESIS.md) goes
@@ -402,7 +401,7 @@ into why the model is shaped this way.
 
 **Implemented and tested.** The compiler and its eight commands, acceptance
 contracts with evidence, phases, gates, computed obstacles, the critical path,
-the dashboard, and the context packet. 119 unit tests plus an installer
+the dashboard, and the context packet. 153 unit tests plus an installer
 regression suite, and deleting the compiled directory reproduces every generated
 file byte for byte:
 
@@ -470,11 +469,10 @@ For OpenCode setup, see its [providers](https://opencode.ai/docs/providers),
 
 ## Releases
 
-`VERSION` holds the current release and [`CHANGELOG.md`](CHANGELOG.md) summarises
+The current release is v0.5.0. `VERSION` holds it and [`CHANGELOG.md`](CHANGELOG.md) summarises
 what changed. Every release from v0.4.6 is archived and citable:
 [`10.5281/zenodo.22897871`](https://doi.org/10.5281/zenodo.22897871) always resolves to the latest one, and
-[`CITATION.cff`](CITATION.cff) is what GitHub's *Cite this repository* reads. The full history lives in the chronicle itself:
-[decisions](.prokron/chronicle/ADR/) and [journal](.prokron/chronicle/JOURNAL.md).
+[`CITATION.cff`](CITATION.cff) is what GitHub's *Cite this repository* reads.
 
 ### Upgrading from an earlier layout
 
@@ -495,17 +493,18 @@ originals are archived untouched beside the new ones.
 
 ### Updating an installation
 
-Reinstalling adds missing files; it **does not upgrade existing guidance**, and
-it prints a reminder when guidance is retained. From a current checkout, review
-and merge changes to:
+Run the same install command again. It installs the latest release and
+never touches a chronicle record. For guidance — the workflows in
+`.prokron/commands/`, the Claude Code and OpenCode commands, the skill,
+`.prokron/chronicle/README.md`, and the Prokron block in `AGENTS.md`:
 
-- `.prokron/commands/`, `.claude/commands/`, and `.opencode/commands/`;
-- `.agents/skills/prokron/SKILL.md`;
-- `templates/chronicle/README.md`, installed as `.prokron/chronicle/README.md`;
-- the Prokron block in `AGENTS.md`, preserving surrounding project rules.
+- anything unedited since the last install is replaced with the new version;
+- anything you edited is kept exactly, and the new version is written beside
+  it under `.prokron/upgrade/`. Merge what you want, then delete that folder.
 
-Keep customizations and every chronicle record. Never copy empty templates over
-project history.
+The installer lists every file it replaced or staged. It will not install an
+older runtime over a newer one unless you pass `--allow-downgrade`, and
+`--ref <tag>` installs a specific release.
 
 ## Documentation
 
@@ -516,7 +515,7 @@ project history.
 | [`docs/PRODUCT-THESIS.md`](docs/PRODUCT-THESIS.md) | Why shared project state, and how the model is built. |
 | [`CONTRIBUTING.md`](CONTRIBUTING.md) | How a change is accepted here: a task, a contract, evidence. |
 | [`SECURITY.md`](SECURITY.md) | What is in scope, and how to report privately. |
-| [`.prokron/chronicle/README.md`](.prokron/chronicle/README.md) | The read order and working rules an agent follows. |
+| [`templates/chronicle/README.md`](templates/chronicle/README.md) | The read order and working rules an agent follows, installed as `.prokron/chronicle/README.md`. |
 | [`CHANGELOG.md`](CHANGELOG.md) | What changed in each release. |
 
 ## Help improve it

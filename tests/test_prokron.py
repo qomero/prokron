@@ -13,7 +13,7 @@ import shutil
 import sys
 import tempfile
 import unittest
-from contextlib import redirect_stdout
+from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
@@ -941,7 +941,120 @@ class TestCli(FixtureCase):
         (self.root / layout.AUTHORITY_DIR / "TASKS.md").write_text("# Tasks\n\n## broken\n")
         self.assertEqual(cli.main(["-C", str(self.root), "status"]), 1)
 
+    def test_status_counts_done_work_nobody_reviewed(self) -> None:
+        """`60 / 60 done` reads as finished; how much of it anyone checked is a
+        separate number, and it has to be on the same screen (ADR-041)."""
+        out = self.run_cli("status")[1]
+        self.assertIn("1 done task not reviewed or verified", out)
+        self.rewrite("TASKS.md", "- Validation: SYNTHETIC", "- Validation: AI_REVIEWED")
+        self.assertNotIn("not reviewed or verified", self.run_cli("status")[1])
 
+
+class TestNewerCompiledViews(FixtureCase):
+    """Two people on two releases share one chronicle. The older runtime must
+    not quietly rewrite what the newer one wrote (ADR-041)."""
+
+    def setUp(self) -> None:
+        super().setUp()
+        with redirect_stdout(io.StringIO()):
+            cli.main(["-C", str(self.root), "dashboard"])
+        self.compiled = self.root / layout.COMPILED_DIR
+
+    def stamp(self, version: str) -> None:
+        target = self.compiled / "project.json"
+        target.write_text(re.sub(
+            r'"generatorVersion": "[^"]*"', f'"generatorVersion": "{version}"', target.read_text()
+        ))
+
+    def snapshot(self) -> dict[str, bytes]:
+        return {p.name: p.read_bytes() for p in sorted(self.compiled.iterdir())}
+
+    def run_cli(self, *argv: str) -> tuple[int, str]:
+        buffer = io.StringIO()
+        with redirect_stdout(buffer), redirect_stderr(buffer):
+            code = cli.main(["-C", str(self.root), *argv])
+        return code, buffer.getvalue()
+
+    def test_writers_refuse_views_from_a_newer_runtime(self) -> None:
+        self.stamp("999.0.0")
+        before = self.snapshot()
+        for command in ("compile", "graph", "dashboard"):
+            with self.subTest(command=command):
+                code, out = self.run_cli(command)
+                self.assertEqual(code, 1)
+                self.assertIn("999.0.0", out)
+                self.assertEqual(self.snapshot(), before)
+
+    def test_force_overrides_the_refusal(self) -> None:
+        self.stamp("999.0.0")
+        for command in ("compile", "graph", "dashboard"):
+            with self.subTest(command=command):
+                self.assertEqual(self.run_cli(command, "--force")[0], 0)
+                self.stamp("999.0.0")
+
+    def test_status_advises_upgrading_not_recompiling(self) -> None:
+        self.stamp("999.0.0")
+        out = self.run_cli("status")[1]
+        self.assertIn("newer", out)
+        self.assertIn("Upgrade", out)
+        self.assertNotIn("to refresh them", out)
+
+    def test_views_from_an_older_runtime_are_still_refreshed(self) -> None:
+        self.stamp("0.0.1")
+        self.assertIn("to refresh them", self.run_cli("status")[1])
+        self.assertEqual(self.run_cli("compile")[0], 0)
+        self.assertNotIn("0.0.1", (self.compiled / "project.json").read_text())
+
+
+class TestStaleReferences(FixtureCase):
+    """A handoff that sends the next agent to a moved file is wrong in a way
+    no structural check saw (continuity pilot, ADR-041)."""
+
+    def handoff(self, text: str) -> list[str]:
+        (self.root / layout.AUTHORITY_DIR / "HANDOFF.md").write_text(f"# Handoff\n\n{text}\n")
+        self.project = compiler.load(self.root)
+        return [f.message for f in validate.check(self.project) if f.code == "stale-reference"]
+
+    def test_a_missing_path_is_reported(self) -> None:
+        found = self.handoff("Continue in `docs/moved/PLAN.md`.")
+        self.assertEqual(len(found), 1)
+        self.assertIn("docs/moved/PLAN.md", found[0])
+
+    def test_intent_is_checked_too(self) -> None:
+        (self.root / layout.AUTHORITY_DIR / "INTENT.md").write_text("# Intent\n\nSee `src/gone.py`.\n")
+        self.project = compiler.load(self.root)
+        self.assertIn("stale-reference", self.codes())
+
+    def test_real_paths_and_other_text_are_not_reported(self) -> None:
+        found = self.handoff(
+            "Read `.prokron/chronicle/TASKS.md` and `ADR/ADR-001.md`, then branch"
+            " `feature/work`, run `prokron compile`, see `../other-repo/notes.md`,"
+            " `/etc/hosts.conf`, `https://example.com/a.md`, and `src/*.py`."
+        )
+        self.assertEqual(found, [])
+
+    def test_it_is_a_warning(self) -> None:
+        self.handoff("Continue in `docs/moved/PLAN.md`.")
+        self.assertEqual(validate.errors(validate.check(self.project)), [])
+
+
+class TestMergeGuidance(unittest.TestCase):
+    ROOT = Path(__file__).resolve().parents[1]
+
+    def test_resume_and_checkpoint_say_how_to_settle_a_merge(self) -> None:
+        for name in ("prokron-resume.md", "prokron-checkpoint.md"):
+            text = " ".join((self.ROOT / ".prokron/commands" / name).read_text().split())
+            with self.subTest(workflow=name):
+                self.assertIn("After merging branches", text)
+                self.assertIn("`.prokron/prokron compile`", text)
+                self.assertIn("resolve `INTENT.md` and `HANDOFF.md` by hand", text)
+                self.assertIn("whose work is current", text)
+
+
+@unittest.skipUnless(
+    (Path(__file__).resolve().parents[1] / layout.AUTHORITY_DIR / "TASKS.md").is_file(),
+    "this repository's chronicle is kept locally and not published (ADR-042)",
+)
 class TestThisRepository(unittest.TestCase):
     """Prokron's own chronicle is the acceptance evidence for Phase 2 closure.
 

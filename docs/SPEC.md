@@ -105,7 +105,10 @@ adapters into the current repository. It takes no arguments: `existing` is the
 default mode and `new` remains available, as does an optional target directory.
 It preserves an existing chronicle and project instructions, and prints the
 matching command to start in the agent chat. The bootstrap is installation
-tooling, not a project runtime.
+tooling, not a project runtime. Downloading, it installs the latest published
+release and runs that release's own installer; `--ref <tag|branch>` selects
+another. It refuses to replace a newer installed runtime with an older one
+unless given `--allow-downgrade` (ADR-040).
 
 The installer also writes a launcher named `prokron` into a directory already
 on the reader's `PATH`, so the command is `prokron` rather than a path
@@ -117,8 +120,12 @@ skips it. `.prokron/prokron` remains valid and is what the installed agent
 instructions use, because an agent may run with a different `PATH`.
 
 Repeated initialization preserves populated records and resumes. Reinstallation
-restores missing files, preserves existing guidance, and points to the manual
-merge instructions for upgrades; it never resets project history.
+restores missing files and never resets project history. It records a checksum
+of every guidance file it writes in `.prokron/runtime/GUIDANCE`; on the next
+install, guidance that still matches is replaced with the new version, and
+guidance that was edited is kept byte for byte with the new version staged
+under `.prokron/upgrade/` for review (ADR-040). The Prokron block in
+`AGENTS.md` is treated the same way, and text around it is never touched.
 
 ## 4. Working lifecycle
 

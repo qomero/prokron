@@ -1,71 +1,46 @@
 # Contributing to Prokron
 
-Prokron tracks its own development with Prokron. Contributing here means using
-the thing you are changing, which is the fastest way to find out whether it
-works.
-
-## Before anything else
-
-Run it:
-
-```sh
-git clone https://github.com/qomero/prokron.git
-cd prokron
-.prokron/prokron status
-.prokron/prokron dashboard && open .prokron/compiled/dashboard.html
-```
-
-That is the whole project's state, computed from the Markdown in
-`.prokron/chronicle/`. If something there is wrong or unclear, that is already
-worth an issue.
+Prokron tracks its own development with Prokron. The maintainers keep that
+chronicle locally; it is not published (ADR-042), so a clone has the tool, its
+templates and its tests, but not `.prokron/chronicle/`.
 
 ## The shape of a change
 
-Every change follows the same four steps, and they are the same steps the
-installed workflow asks of an agent.
+Every change follows the same four steps the installed workflow asks of an
+agent. Because the chronicle is not in the repository, a contributor writes
+them into the pull request, and a maintainer records them.
 
-**1. A task exists before the work does.** Add it to
-`.prokron/chronicle/TASKS.md` with a phase — or `P-NONE` for repository chores —
-its dependencies, and a reference to its contract.
+**1. Say what the task is.** One sentence on what changes and why.
 
-**2. A contract says what done means.** Add it to
-`.prokron/chronicle/ACCEPTANCE.md` before you start. Each criterion is written
-as Given / When / Then, carries one evidence class (`TEST`, `MUTATION`,
-`INSPECTION`, `RUNTIME`, `MANUAL`), and starts at `NOT_RUN`.
+**2. A contract says what done means.** List the acceptance criteria before
+you start. Each is written as Given / When / Then and carries one evidence
+class (`TEST`, `MUTATION`, `INSPECTION`, `RUNTIME`, `MANUAL`). If a criterion
+turns out to be wrong, say so and propose the change. Do not quietly reword it
+to match what you built — that is the single failure this project exists to
+prevent.
 
-The contract freezes when the task becomes `WIP`. If a criterion turns out to
-be wrong, raise an Acceptance Change Request in the same file. Do not quietly
-reword it to match what you built — that is the single failure this project
-exists to prevent.
+**3. A decision that is material is stated.** Name the choice, the options you
+rejected, and why.
 
-**3. A decision that is material gets an ADR.** Append it to
-`.prokron/chronicle/ADR/`, numbered in sequence, and link the tasks it affects.
-Changing your mind later means a new ADR that supersedes the old one. Never
-edit an accepted ADR to change what it says.
-
-**4. Evidence, then `DONE`.** Record what you actually ran and what it showed,
-against the criterion it satisfies. `DONE` means every mandatory criterion has
-evidence — not that the code looks finished.
+**4. Evidence, then done.** Record what you actually ran and what it showed,
+against the criterion it satisfies. Done means every criterion has evidence —
+not that the code looks finished.
 
 Then:
 
 ```sh
-.prokron/prokron validate
-.prokron/prokron compile && .prokron/prokron graph && .prokron/prokron dashboard
 python3 -m unittest discover -s tests
 sh tests/install.sh
 ```
 
-Commit the regenerated `.prokron/compiled/` with your change. CI deletes that
-directory, rebuilds it, and fails if the result differs from what you committed,
-so a stale or hand-edited file is caught before review.
+To see the tool on a real chronicle, install it into a scratch repository with
+`sh install.sh new /path/to/scratch` and work there.
 
 ## What CI checks
 
 | Job | What it proves |
 |---|---|
 | tests | The unit and installer suites pass on Linux and macOS, across supported Python versions |
-| invariants | The chronicle validates, and compiled output regenerates byte for byte |
 | no network, no dependencies | The runtime imports nothing outside the standard library |
 
 The supported Python floor is whatever the matrix proves, not what this file
@@ -78,8 +53,8 @@ claims.
   runtime.
 - **Deterministic.** The same authored documents produce the same output every
   time. No model provider, no network, no wall-clock in a computed value.
-- **Authority is `.prokron/chronicle/`.** `.prokron/compiled/` is generated and
-  disposable. Never hand-edit it, and never let a generated view decide a
+- **Authority is `.prokron/chronicle/`** in every installed project.
+  `.prokron/compiled/` is generated and disposable. Never hand-edit it, and never let a generated view decide a
   question an authored document answers.
 - **Do not invent facts.** A duration only when someone recorded one, a date
   only when someone set one, `UNKNOWN` the rest of the time.
