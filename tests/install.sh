@@ -12,7 +12,7 @@ printf '# Keep agent rules\n' > "$fixture/AGENTS.md"
 printf '# Keep Claude rules\n' > "$fixture/CLAUDE.md"
 "$root/install.sh" existing "$fixture" --no-link > "$fixture/output"
 
-for file in README PHASES TASKS ACCEPTANCE INTENT HANDOFF JOURNAL TRACE; do
+for file in README PHASES TASKS ACCEPTANCE INTENT HANDOFF JOURNAL TRACE TECH_DEBT; do
   test -f "$fixture/.prokron/chronicle/$file.md"
 done
 test -f "$fixture/.prokron/chronicle/ADR/README.md"
@@ -79,6 +79,11 @@ grep -Fq 'Origin: RECONSTRUCTED' "$fixture/.prokron/chronicle/ADR/README.md"
 grep -Fq '.prokron/commands/prokron-work.md' "$fixture/.claude/commands/prokron-work.md"
 grep -Fq '# Keep agent rules' "$fixture/AGENTS.md"
 grep -Fq '# Keep Claude rules' "$fixture/CLAUDE.md"
+# Both entry files make the index the first project-context read (ADR-047).
+grep -Fq '1. Read `.prokron/chronicle/INDEX.md`.' "$fixture/AGENTS.md"
+grep -Fq 'Read `.prokron/chronicle/INDEX.md` before anything else' "$fixture/CLAUDE.md"
+grep -Fxq '@AGENTS.md' "$fixture/CLAUDE.md"
+test "$(grep -Fc '<!-- project-prokron-claude:start -->' "$fixture/CLAUDE.md")" -eq 1
 grep -Fq 'do not wait for a Prokron command' "$fixture/AGENTS.md"
 grep -Fq 'context, token, time, session, rate, or quota limit' "$fixture/AGENTS.md"
 grep -Fq 'Record every new work request as a task before implementation' \
@@ -138,6 +143,8 @@ make_source() {
   done
   awk -v tag="$2" '/<!-- project-prokron:end -->/ { print "NEW BLOCK " tag } { print }' \
     "$1/AGENTS.md" > "$1/AGENTS.tmp" && mv "$1/AGENTS.tmp" "$1/AGENTS.md"
+  awk -v tag="$2" '/<!-- project-prokron-claude:end -->/ { print "NEW CLAUDE " tag } { print }' \
+    "$1/templates/claude/CLAUDE.md" > "$1/CLAUDE.tmp" && mv "$1/CLAUDE.tmp" "$1/templates/claude/CLAUDE.md"
 }
 outside_block() {
   awk '/<!-- project-prokron:start -->/ { on = 1 } !on { print } /<!-- project-prokron:end -->/ { on = 0 }' "$1"
@@ -172,6 +179,8 @@ done
 cmp "$fixture/source-two/.agents/skills/prokron/SKILL.md" "$guide/.agents/skills/prokron/SKILL.md"
 cmp "$fixture/source-two/templates/chronicle/README.md" "$guide/.prokron/chronicle/README.md"
 grep -Fq 'NEW BLOCK two' "$guide/AGENTS.md"
+grep -Fq 'NEW CLAUDE two' "$guide/CLAUDE.md"
+grep -Fq 'CLAUDE.md (Prokron block)' "$guide/output"
 test "$(grep -Fc '<!-- project-prokron:start -->' "$guide/AGENTS.md")" -eq 1
 grep -Fq 'Guidance upgraded' "$guide/output"
 grep -Fq '.claude/commands/prokron-init.md' "$guide/output"

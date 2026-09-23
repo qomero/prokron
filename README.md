@@ -117,6 +117,8 @@ Each record answers one question a project keeps being asked.
 | What happened recently? | **Journal** — progress, what was left mid-air, and why | `JOURNAL.md` |
 | Is this product work or support work? | **Domain** — execution advances the project; operations maintains its environment and never counts as progress | `TASKS.md` |
 | What ran, failed, or changed along the way? | **Trace** — tool calls, mini-actions, mutations, failures, retries | `TRACE.md` |
+| What are we knowingly leaving behind? | **Technical debt** — cost, trigger, exit condition, and the decision that created it | `TECH_DEBT.md` |
+| Where should an agent start? | **Index** — generated: what matters now and where each record lives | `INDEX.md` |
 | What does the next participant need? | **Handoff** — the baton, overwritten each checkpoint | `HANDOFF.md` |
 | Why do we believe any of this? | **Evidence**, recorded against the criterion it satisfies | `ACCEPTANCE.md` |
 
@@ -337,6 +339,8 @@ T-PILOT-01 — Run the continuity pilot
 | `prokron explain <task>` | Why one task exists, its criteria, blockers, and evidence. |
 | `prokron context <task>` | The minimal packet an agent needs to start that task. |
 | `prokron domains` | How each task's execution/operations domain was decided, and which need one. |
+| `prokron retrieve "<question or id>"` | Only the chronicle records a question needs, routed by `INDEX.md`, each with its source. |
+| `prokron codegraph status` | Optional: whether CodeGraph is available to add code structure after the records. |
 | `prokron validate` | Broken dependencies, dangling references, authority conflicts. |
 | `prokron compile` | Rebuilds `.prokron/compiled/` from the authored documents. |
 | `prokron graph` | The six Mermaid views of the same state. |
@@ -394,6 +398,8 @@ authoritative.
 | `HANDOFF.md` | The baton: what the next person or agent needs right now. |
 | `JOURNAL.md` | The diary: progress, validation, what was left mid-air, and why. |
 | `TRACE.md` | The operations trace: tool calls, commands, mini-actions, changes, failures, retries. |
+| `TECH_DEBT.md` | The liabilities: known compromises, what they cost, their trigger, and what would retire them. |
+| `INDEX.md` | Generated, never edited: the map an agent reads first, pointing to the records that matter now. |
 
 `.prokron/compiled/` holds the generated views: a state snapshot, the task
 graph, a `project.json` for other tools, Mermaid diagrams, and the dashboard.
@@ -412,9 +418,9 @@ into why the model is shaped this way.
 
 ## What is verified, and what is not
 
-**Implemented and tested.** The compiler and its nine commands, acceptance
+**Implemented and tested.** The compiler and its eleven commands, acceptance
 contracts with evidence, phases, gates, computed obstacles, the critical path,
-the dashboard, the execution/operations split, and the context packet. 186 unit tests plus an installer
+the dashboard, the execution/operations split, technical debt, the index and retrieval, optional CodeGraph, and the context packet. 215 unit tests plus an installer
 regression suite, and deleting the compiled directory reproduces every generated
 file byte for byte:
 

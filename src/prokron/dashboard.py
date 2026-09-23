@@ -1286,6 +1286,33 @@ def render(project: Project, report: Report, compiled: dict) -> str:
         + "</li>"
         for g in compiled["gates"]
     ) or '<li class="note">No gates recorded.</li>'
+    def debt_item(debt: dict) -> str:
+        lineage = " · ".join(filter(None, [
+            f'introduced by {esc(", ".join(debt["introducedBy"]))}' if debt["introducedBy"] else "",
+            "repaid by " + " ".join(ref(t) for t in debt["linkedTasks"]) if debt["linkedTasks"] else "",
+        ]))
+        return (
+            f'<li id="debt-{esc(debt["id"])}"><code>{esc(debt["id"])}</code> {_pill(debt["status"])} '
+            + (f'{_pill("trigger " + debt["triggerState"].lower().replace("_", " "), "FAIL" if debt["triggerState"] == "REACHED" else "WIP" if debt["triggerState"] == "APPROACHING" else "")} ')
+            + f'<strong>{esc(debt["title"])}</strong>'
+            + (f'<div class="evmeta">{esc(debt["debt"])}</div>' if debt["debt"] else "")
+            + (f'<div class="evmeta">trigger: {esc(debt["trigger"])}</div>' if debt["trigger"] else "")
+            + (f'<div class="evmeta">exit: {esc(debt["exitCondition"])}</div>' if debt["exitCondition"] else "")
+            + (f'<div class="evmeta">{lineage}</div>' if lineage else "")
+            + "</li>"
+        )
+
+    debts = compiled["debt"]
+    open_debt = [d for d in debts if d["status"] not in ("RESOLVED", "INVALIDATED")]
+    closed_debt = [d for d in debts if d["status"] in ("RESOLVED", "INVALIDATED")]
+    debt_section = (
+        '<div class="box"><ul class="plain">' + "".join(debt_item(d) for d in open_debt) + "</ul></div>"
+        if open_debt else '<p class="note">No open technical debt recorded.</p>'
+    ) + (
+        f'<details class="group"><summary>Resolved or invalidated<span class="count">{len(closed_debt)}</span></summary>'
+        '<ul class="plain" style="padding:0 16px 10px">' + "".join(debt_item(d) for d in closed_debt) + "</ul></details>"
+        if closed_debt else ""
+    )
     total_tasks = metrics["domainBreakdown"]["execution"]
     validation_rows = "".join(
         f"<tr><td>{_pill(state)}</td><td class=\"num\">{count}</td>"
@@ -1452,6 +1479,8 @@ def render(project: Project, report: Report, compiled: dict) -> str:
   <div class="tablewrap"><table><thead><tr><th>Strength</th><th>Tasks</th><th>Share</th><th></th></tr></thead>
   <tbody>{validation_rows}</tbody></table></div>
   <p class="note">Execution tasks only. Validation strength is separate from completion: a task can be DONE and still UNTESTED.</p>
+  <h2>Technical debt</h2>
+  {debt_section}
 """)
     decisions = panel("decisions", f"""
   <h2>Decisions</h2>

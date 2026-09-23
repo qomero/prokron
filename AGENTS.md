@@ -3,10 +3,28 @@
 # Prokron
 
 Everything Prokron owns is inside `.prokron/`. `.prokron/chronicle/` is this
-repository's project chronicle: read `.prokron/chronicle/README.md` before
-substantial work and follow its read order. `.prokron/compiled/` is compiled
-output: read it for convenience, never edit it, and never treat it as
+repository's project chronicle, its canonical memory. `.prokron/compiled/` is
+compiled output: read it for convenience, never edit it, and never treat it as
 authority.
+
+## Project context: read the index first
+
+Before reading broad repository context or the rest of `.prokron/chronicle/`:
+
+1. Read `.prokron/chronicle/INDEX.md`. It is generated from the chronicle and
+   says what matters now and where each record lives. If it is missing, run
+   `.prokron/prokron compile`.
+2. Use it to identify the task, phase, acceptance criteria, decisions,
+   technical debt, handoff, and operations that the question or task needs.
+3. Read only those records. `.prokron/prokron retrieve "<question or task>"`
+   returns exactly them, each labelled with its source.
+4. Do not load the whole chronicle by default.
+5. Explore the code only after the project context is resolved. Where
+   CodeGraph is installed, `.prokron/prokron retrieve <task> --code` adds code
+   structure after the records, never before them.
+
+`INDEX.md` is a routing layer, not authority: when it disagrees with a record,
+the record wins. `.prokron/chronicle/README.md` explains how the records work.
 
 The repository ships a deterministic tool. Use it rather than re-deriving state
 by reading files:
@@ -15,13 +33,15 @@ by reading files:
 .prokron/prokron status          # phase, progress, ready, blocked, gates, next
 .prokron/prokron explain T-123   # one task: deps, criteria, blockers, evidence
 .prokron/prokron context T-123   # the minimal packet needed to start that task
+.prokron/prokron retrieve "why is P1 blocked?"   # only the records a question needs
 .prokron/prokron validate        # check authority before and after editing it
 .prokron/prokron compile         # refresh compiled/ after changing chronicle/
 .prokron/prokron dashboard       # a browsable page of the same state
 ```
 
 Run `validate` after editing authority and `compile` before finishing. The tool
-never edits `.prokron/chronicle/`; it only reads it.
+never edits a record in `.prokron/chronicle/`; the only file it writes there is
+the generated `INDEX.md`.
 
 Recognize these workflows:
 

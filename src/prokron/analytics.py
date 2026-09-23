@@ -586,6 +586,7 @@ def explain(project: Project, task_id: str) -> dict[str, object]:
         "blockers": [o.as_json() for o in result.obstacles if o.subject == task.id],
         "externalBlockers": result.external_blockers.get(task.id, []),
         "events": events_for(project, task.id),
+        "debt": [d.id for d in project.debts_for(task.id)],
         "evidence": task.evidence,
         "decisions": task.decisions,
         "schedule": task.schedule.as_json(),
@@ -627,6 +628,7 @@ def context(project: Project, task_id: str, role: str = "builder") -> dict[str, 
             "title": task.title,
             "domain": task.domain,
             "domainSource": task.domain_source,
+            "implementation": {"files": task.files, "symbols": task.symbols},
             "status": task.status,
             "validation": task.validation,
             "dependencies": [
@@ -662,6 +664,12 @@ def context(project: Project, task_id: str, role: str = "builder") -> dict[str, 
             for o in report_now.external_blockers.get(task_id, [])
         ],
         "events": [e.as_json() for e in project.events if e.id in set(events_for(project, task_id))],
+        # Debt this task introduced or repays, and debt its decisions created.
+        "debt": [
+            d.as_json() for d in project.debts
+            if d in project.debts_for(task_id)
+            or any(adr in d.introduced_by for adr in task.decisions)
+        ],
         "handoff": _relevant(project.handoff, task_id),
     }
     if task.done:

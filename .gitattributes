@@ -2,4 +2,5 @@
 .prokron/chronicle/JOURNAL.md merge=union
 .prokron/chronicle/ADR/README.md merge=union
 .prokron/compiled/** linguist-generated=true
+.prokron/chronicle/INDEX.md linguist-generated=true
 # prokron:end

@@ -4,6 +4,29 @@ Prokron records its own history in `.prokron/chronicle/JOURNAL.md` and its
 decisions in `.prokron/chronicle/ADR/`. This file is the short version, for
 people arriving from a release page.
 
+## Unreleased
+
+### Added
+
+- **`TECH_DEBT.md`**: known technical debt with lifecycle (`OPEN`,
+  `ACCEPTED`, `SCHEDULED`, `RESOLVED`, `INVALIDATED`), trigger and trigger
+  state, interest, exit condition, evidence, and lineage from the decision
+  that created it to the task that repays it. Validated, compiled, shown under
+  Governance, and carried into task context. ADR-046.
+- **`INDEX.md`**, generated into the chronicle by `compile`: a compact,
+  deterministic map of what matters now with `file#anchor` pointers. The one
+  generated file in the chronicle; never read as authority, and `validate`
+  warns when it is stale. ADR-047.
+- **Agent boot protocol**: AGENTS.md and a managed CLAUDE.md block tell
+  agents to read `INDEX.md` first, then only the records it points to, then
+  code. The chronicle read order starts with it.
+- **`prokron retrieve`**: the records a question or id needs, routed by the
+  index, each labelled with its source, with nothing written. ADR-048.
+- **Optional CodeGraph**: `prokron codegraph status|setup|doctor|uninit`,
+  `prokron retrieve <task> --code`, and optional `Files:`/`Symbols:` task
+  anchors. Never required, never part of project state, and never allowed to
+  change agent configuration without consent. ADR-049.
+
 ## 0.7.0 — 2026-09-23
 
 ### Changed

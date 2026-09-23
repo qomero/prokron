@@ -20,6 +20,7 @@ from .model import (
     Schedule,
     Source,
     Task,
+    TechDebt,
     TraceEvent,
 )
 
@@ -114,6 +115,8 @@ def parse_tasks(path: Path) -> list[Task]:
                 schedule=schedule,
                 source=Source(name, task_id),
                 declared_domain=(fields.get("Domain") or "").strip().lower() or None,
+                files=_list(fields.get("Files")),
+                symbols=_list(fields.get("Symbols")),
             )
         )
     return tasks
@@ -358,6 +361,42 @@ def parse_trace(path: Path) -> list[TraceEvent]:
             )
         )
     return events
+
+
+def parse_debt(path: Path) -> list[TechDebt]:
+    """Technical debt from TECH_DEBT.md. Optional: no file, no debt."""
+    if not path.is_file():
+        return []
+    name = path.name
+    debts: list[TechDebt] = []
+    for heading, body in _sections(path.read_text(), "##"):
+        match = re.match(r"(TD-[A-Za-z0-9.\-]+): (.+)", heading)
+        if not match:
+            raise ParseError(name, heading, "debt heading must read '## TD-<id>: <title>'")
+        debt_id = match.group(1)
+        fields = _fields(body)
+        if "Status" not in fields:
+            raise ParseError(name, debt_id, "missing required field 'Status'")
+        debts.append(
+            TechDebt(
+                id=debt_id,
+                title=match.group(2).strip(),
+                status=fields["Status"].strip().upper(),
+                introduced_by=_list(fields.get("Introduced by")),
+                areas=_list(fields.get("Areas")),
+                debt=_named(fields.get("Debt")),
+                reason=_named(fields.get("Reason")),
+                interest=_named(fields.get("Interest")),
+                trigger=_named(fields.get("Trigger")),
+                trigger_state=(_named(fields.get("Trigger state")) or "NOT_REACHED").upper(),
+                exit_condition=_named(fields.get("Exit condition")),
+                evidence=_named(fields.get("Evidence")),
+                linked_tasks=_list(fields.get("Linked tasks")),
+                resolution=_named(fields.get("Resolution")),
+                source=Source(name, debt_id),
+            )
+        )
+    return debts
 
 
 def read_text(path: Path) -> str:

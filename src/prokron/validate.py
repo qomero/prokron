@@ -13,8 +13,10 @@ from pathlib import Path
 from .layout import AUTHORITY_DIR
 from .model import (
     CRITERION_STATES,
+    DEBT_STATUSES,
     DECISION_ORIGINS,
     DOMAINS,
+    TRIGGER_STATES,
     EVENT_OUTCOMES,
     EVENT_TYPES,
     EVIDENCE_CLASSES,
@@ -171,6 +173,55 @@ def trace_findings(project: Project) -> list[Finding]:
             findings.append(Finding(
                 "warning", "possible-secret", "event text looks like it contains a credential; remove it", where,
             ))
+    return findings
+
+
+def debt_findings(project: Project) -> list[Finding]:
+    """Technical debt lifecycle and lineage (ADR-046)."""
+    findings: list[Finding] = []
+    task_ids = {t.id for t in project.tasks}
+    decision_ids = {d.id for d in project.decisions}
+    seen: set[str] = set()
+    for debt in project.debts:
+        where = f"{debt.source.file}#{debt.id}"
+
+        def error(code: str, message: str) -> None:
+            findings.append(Finding("error", code, message, where))
+
+        def warn(code: str, message: str) -> None:
+            findings.append(Finding("warning", code, message, where))
+
+        if debt.id in seen:
+            error("duplicate-debt", f"debt {debt.id} is defined more than once")
+        seen.add(debt.id)
+        if debt.status not in DEBT_STATUSES:
+            error("invalid-debt-status", f"'{debt.status}' is not a debt status")
+        if debt.trigger_state not in TRIGGER_STATES:
+            error("invalid-trigger-state", f"'{debt.trigger_state}' is not a trigger state")
+        if not debt.debt:
+            error("debt-without-description", "debt states no Debt")
+        if not debt.exit_condition:
+            error("debt-without-exit", "debt states no Exit condition, so it can never be resolved")
+        if not debt.trigger and debt.status not in ("OPEN", "RESOLVED", "INVALIDATED"):
+            warn("debt-without-trigger", "carried debt states no Trigger for when it stops being acceptable")
+        if debt.status == "SCHEDULED" and not debt.linked_tasks:
+            error("scheduled-debt-without-task", "SCHEDULED debt links no repayment task")
+        if debt.closed and not debt.resolution:
+            error("closed-debt-without-resolution", f"{debt.status} debt records no Resolution")
+        for reference in debt.introduced_by:
+            if reference.startswith("ADR-") and reference not in decision_ids:
+                error("unknown-debt-reference", f"introduced by {reference}, which has no ADR file")
+            elif reference.startswith("T-") and reference not in task_ids:
+                error("unknown-debt-reference", f"introduced by {reference}, which is not a task")
+        for task_id in debt.linked_tasks:
+            if task_id not in task_ids:
+                error("unknown-debt-reference", f"links {task_id}, which is not a task")
+        if debt.status == "RESOLVED":
+            open_tasks = [t for t in debt.linked_tasks if project.task(t) and not project.task(t).done]
+            if open_tasks:
+                warn("resolved-debt-open-task", f"RESOLVED while {', '.join(open_tasks)} is still open")
+        if debt.trigger_state == "REACHED" and debt.status in ("OPEN", "ACCEPTED"):
+            warn("debt-trigger-reached", "trigger reached but no repayment is scheduled")
     return findings
 
 
@@ -370,6 +421,7 @@ def check(project: Project) -> list[Finding]:
 
     findings.extend(domain_findings(project))
     findings.extend(trace_findings(project))
+    findings.extend(debt_findings(project))
     findings.extend(stale_references(project))
     return findings
 

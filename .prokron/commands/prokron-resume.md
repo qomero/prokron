@@ -1,7 +1,9 @@
 # /prokron-resume
 
 Recover the project from the chronicle alone. Start with
-`.prokron/prokron status`, then read `.prokron/compiled/STATE.md`,
+`.prokron/chronicle/INDEX.md` (run `.prokron/prokron compile` if it is
+missing) and `.prokron/prokron status`, then read only what the index points
+to among `.prokron/compiled/STATE.md`,
 `.prokron/chronicle/PHASES.md`, `.prokron/compiled/TASK_GRAPH.md`, the active
 or selected task, its contract in `ACCEPTANCE.md`, its governing ADRs,
 `INTENT.md`, `HANDOFF.md`, and only the recent journal entries needed for

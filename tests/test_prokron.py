@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import io
 import json
+import os
 import re
 import shutil
 import sys
@@ -15,12 +16,13 @@ import tempfile
 import unittest
 from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
+from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from prokron import (  # noqa: E402
-    analytics, cli, compile as compiler, dashboard, layout, mermaid, migrate,
-    validate, views,
+    analytics, cli, compile as compiler, dashboard, index, layout, mermaid, migrate,
+    retrieve, validate, views,
 )
 from prokron.parse import ParseError  # noqa: E402
 
@@ -559,10 +561,15 @@ class TestCompile(FixtureCase):
         self.assertEqual(before, after)
 
     def test_compiler_writes_nothing_outside_the_compiled_directory(self) -> None:
+        """Authored records are never touched. The single generated file the
+        chronicle holds is INDEX.md (ADR-047), and it is never read back."""
         authority = self.root / layout.AUTHORITY_DIR
         before = {p: p.read_bytes() for p in authority.rglob("*") if p.is_file()}
         compiler.write(self.root, self.project)
         after = {p: p.read_bytes() for p in authority.rglob("*") if p.is_file()}
+        index_path = authority / "INDEX.md"
+        self.assertEqual(set(after) - set(before), {index_path})
+        after.pop(index_path)
         self.assertEqual(before, after)
 
     def test_locate_walks_up_from_a_subdirectory(self) -> None:
@@ -913,7 +920,8 @@ class DomainCase(unittest.TestCase):
     EXIT = "T-1"
 
     def build(self, tasks: list[str], contracts: dict[str, str], trace: str | None = None,
-              gate: str | None = None, exit_authority: str | None = None):
+              gate: str | None = None, exit_authority: str | None = None, debt: str | None = None,
+              adrs: dict[str, str] | None = None):
         self.dir = Path(tempfile.mkdtemp(prefix="prokron-domain-"))
         self.addCleanup(shutil.rmtree, self.dir, True)
         authority = self.dir / layout.AUTHORITY_DIR
@@ -933,6 +941,11 @@ class DomainCase(unittest.TestCase):
         (authority / "HANDOFF.md").write_text("# Handoff\n\nNone.\n")
         if trace is not None:
             (authority / "TRACE.md").write_text("# Trace\n\n" + trace)
+        if debt is not None:
+            (authority / "TECH_DEBT.md").write_text("# Technical debt\n\n" + debt)
+        for adr_id, title in (adrs or {}).items():
+            (authority / "ADR" / f"{adr_id}.md").write_text(
+                f"# {adr_id}: {title}\n- Date: 2026-01-01\n- Status: ACCEPTED\n- Decision: {title}.\n")
         self.project = compiler.load(self.dir)
         self.report = analytics.report(self.project)
         self.compiled = compiler.as_json(self.project)
@@ -1210,6 +1223,432 @@ class TestDomainsReport(DomainCase):
             cli.main(["-C", str(self.dir), "status"])
         self.assertIn("Blocker   T-O1 · project operations → T-1 (phase exit)", buffer.getvalue())
         self.assertIn("operations   1 open", buffer.getvalue())
+
+
+DEBT = """# Technical debt
+
+## TD-1: Schema mirrors the UI
+- Status: SCHEDULED
+- Introduced by: T-ONE, ADR-001
+- Areas: schema
+- Debt: The schema mirrors the form.
+- Reason: Kept for the migration.
+- Interest: Each intake path needs mapping.
+- Trigger: Before chat becomes the default intake.
+- Trigger state: REACHED
+- Exit condition: The schema is independent of the UI.
+- Evidence: src/schema.ts
+- Linked tasks: T-TWO
+- Resolution:
+"""
+
+
+class TestTechnicalDebt(FixtureCase):
+    """Debt is a liability with a lineage, not work (ADR-046)."""
+
+    def write(self, text: str = DEBT) -> None:
+        (self.root / layout.AUTHORITY_DIR / "TECH_DEBT.md").write_text(text)
+        self.project = compiler.load(self.root)
+
+    def test_a_record_parses_with_its_lineage(self) -> None:
+        self.write()
+        debt = self.project.debts[0]
+        self.assertEqual((debt.id, debt.status, debt.trigger_state), ("TD-1", "SCHEDULED", "REACHED"))
+        self.assertEqual(debt.introduced_by, ["T-ONE", "ADR-001"])
+        self.assertEqual(debt.linked_tasks, ["T-TWO"])
+        self.assertEqual(debt.exit_condition, "The schema is independent of the UI.")
+        self.assertEqual(validate.errors(validate.check(self.project)), [])
+        self.assertNotIn("domain", debt.as_json())
+
+    def test_no_file_means_no_debt(self) -> None:
+        self.assertEqual(self.project.debts, [])
+
+    def test_lifecycle_errors(self) -> None:
+        cases = {
+            "invalid-debt-status": DEBT.replace("Status: SCHEDULED", "Status: MAYBE"),
+            "invalid-trigger-state": DEBT.replace("Trigger state: REACHED", "Trigger state: SOON"),
+            "debt-without-description": DEBT.replace("- Debt: The schema mirrors the form.\n", ""),
+            "debt-without-exit": DEBT.replace("- Exit condition: The schema is independent of the UI.\n", ""),
+            "scheduled-debt-without-task": DEBT.replace("Linked tasks: T-TWO", "Linked tasks: none"),
+            "closed-debt-without-resolution": DEBT.replace("Status: SCHEDULED", "Status: RESOLVED"),
+            "unknown-debt-reference": DEBT.replace("T-ONE, ADR-001", "T-GHOST, ADR-404"),
+            "duplicate-debt": DEBT + DEBT.split("# Technical debt\n", 1)[1],
+        }
+        for code, text in cases.items():
+            with self.subTest(code=code):
+                self.write(text)
+                self.assertIn(code, [f.code for f in validate.errors(validate.check(self.project))])
+
+    def test_lifecycle_warnings(self) -> None:
+        self.write(DEBT.replace("Status: SCHEDULED", "Status: RESOLVED")
+                   .replace("- Resolution:", "- Resolution: Verified by the schema split."))
+        self.assertIn("resolved-debt-open-task", self.codes())
+        self.write(DEBT.replace("Status: SCHEDULED", "Status: ACCEPTED"))
+        self.assertIn("debt-trigger-reached", self.codes())
+
+    def test_finishing_a_linked_task_does_not_resolve_the_debt(self) -> None:
+        self.write()
+        self.rewrite("TASKS.md", "## T-TWO: Build on it\n- Status: TODO", "## T-TWO: Build on it\n- Status: DONE")
+        self.assertEqual(self.project.debts[0].status, "SCHEDULED")
+
+    def test_lineage_reaches_task_context_and_compiled_state(self) -> None:
+        self.write()
+        packet = analytics.context(self.project, "T-TWO")
+        self.assertEqual([d["id"] for d in packet["debt"]], ["TD-1"])
+        # T-THREE is governed by ADR-001, which introduced the debt.
+        self.assertEqual([d["id"] for d in analytics.context(self.project, "T-THREE")["debt"]], ["TD-1"])
+        compiled = compiler.as_json(self.project)
+        self.assertEqual(compiled["debt"][0]["linkedTasks"], ["T-TWO"])
+        self.assertEqual({t["id"]: t["debt"] for t in compiled["tasks"]}["T-ONE"], ["TD-1"])
+        html = dashboard.render(self.project, analytics.report(self.project), compiled)
+        governance = html.split('id="panel-governance"', 1)[1].split('<section class="panel"', 1)[0]
+        self.assertIn('id="debt-TD-1"', governance)
+
+
+def _debt(debt_id, state="NOT_REACHED", status="ACCEPTED", by="T-1", linked="none"):
+    return (f"## {debt_id}: Debt {debt_id}\n- Status: {status}\n- Introduced by: {by}\n"
+            f"- Debt: A compromise.\n- Reason: Speed.\n- Interest: Mapping cost.\n"
+            f"- Trigger: Before release.\n- Trigger state: {state}\n- Exit condition: It is gone.\n"
+            f"- Linked tasks: {linked}\n\n")
+
+
+class TestIndex(DomainCase):
+    """INDEX.md is a compiled routing layer, never authority (ADR-047)."""
+
+    def compile(self) -> str:
+        compiler.write(self.dir, self.project)
+        return (self.dir / layout.AUTHORITY_DIR / "INDEX.md").read_text()
+
+    def markers(self, text: str) -> dict[str, str]:
+        current = text.split("## Current", 1)[1].split("\n## ", 1)[0]
+        return dict(re.findall(r"(?m)^- ([a-z_]+): (.*)$", current))
+
+    def standard(self) -> None:
+        self.build([
+            _domain_task("T-0", "DONE"),
+            _domain_task("T-1", "WIP", deps=["T-0"]),
+            _domain_task("T-2", deps=["T-1", "T-O1"]),
+            _domain_task("T-O1", "WIP", phase="P-NONE", domain="operations"),
+            _domain_task("T-OLD", "DONE", phase="P-NONE", domain="execution", title="Ancient history"),
+        ], {"T-0": "PASS", "T-1": "NOT_RUN", "T-2": "NOT_RUN", "T-O1": "NOT_RUN", "T-OLD": "PASS"},
+            exit_authority="T-2",
+            debt=_debt("TD-1", "REACHED", by="T-1, ADR-001") + _debt("TD-9", "NOT_REACHED", by="T-OLD"),
+            adrs={"ADR-001": "Keep SQLite", "ADR-002": "Unrelated choice"})
+
+    def test_a_it_is_deterministic_and_routes_to_what_matters_now(self) -> None:
+        self.standard()
+        first = self.compile()
+        self.assertEqual(first, self.compile())
+        m = self.markers(first)
+        self.assertEqual(m["phase"], "P1")
+        self.assertEqual(m["execution_task"], "T-1")
+        self.assertEqual(m["next_gate"], "T-2")
+        self.assertEqual(m["operations_affecting_execution"], "T-O1")
+        self.assertEqual(m["debt_attention"], "TD-1")
+        self.assertIn("TASKS.md#T-1", first)
+        self.assertIn("ACCEPTANCE.md#AC-T-2", first)
+        # Old, finished, unrelated records are not routed to.
+        self.assertNotIn("T-OLD", first)
+        self.assertNotIn("TD-9", first.split("## Technical debt", 1)[1].split("\n## ", 1)[0].split("\n", 2)[2])
+        self.assertNotIn("ADR-002", first)
+        self.assertNotIn("Generated: 20", first)
+
+    def test_b_it_stays_compact_on_a_large_project(self) -> None:
+        tasks = [_domain_task(f"T-{i}", "DONE") for i in range(1, 301)]
+        tasks += [_domain_task(f"T-W{i}", "WIP", deps=[f"T-{i}"]) for i in range(1, 21)]
+        tasks += [_domain_task(f"T-N{i}", deps=[f"T-W{i}"]) for i in range(1, 21)]
+        states = {f"T-{i}": "PASS" for i in range(1, 301)}
+        states.update({f"T-W{i}": "NOT_RUN" for i in range(1, 21)})
+        states.update({f"T-N{i}": "NOT_RUN" for i in range(1, 21)})
+        debt = "".join(_debt(f"TD-{i}", "REACHED" if i % 3 == 0 else "NOT_REACHED", by=f"T-{i}") for i in range(1, 121))
+        adrs = {f"ADR-{i:03d}": f"Decision {i}" for i in range(1, 151)}
+        self.build(tasks, states, exit_authority="T-N1", debt=debt, adrs=adrs)
+        text = self.compile()
+        size = index.tokens(text)
+        self.assertLess(size, index.PREFERRED_TOKENS, f"{size} tokens")
+        self.assertLessEqual(text.count("→ TASKS.md#T-"), 12)
+        self.assertLessEqual(text.count("→ TECH_DEBT.md#"), 5)
+        self.assertIn("more needing attention", text)
+        self.assertNotIn("Given work, When checked", text)
+        self.assertEqual([f.code for f in index.findings(self.project, self.report, self.dir)], [])
+
+    def test_c_a_reached_trigger_is_surfaced_with_its_source(self) -> None:
+        self.standard()
+        text = self.compile()
+        self.assertIn("- TD-1 · ACCEPTED · trigger reached — Debt TD-1 → TECH_DEBT.md#TD-1", text)
+        self.assertIn("ADR-001 — Keep SQLite → ADR/ADR-001.md", text)
+
+    def test_editing_a_task_changes_the_index_and_editing_the_index_changes_nothing(self) -> None:
+        self.standard()
+        first = self.compile()
+        path = self.dir / layout.AUTHORITY_DIR / "INDEX.md"
+        path.write_text(first.replace("- execution_task: T-1", "- execution_task: T-99"))
+        edited = compiler.load(self.dir)
+        self.assertEqual(analytics.report(edited).in_flight, ["T-1"])
+        self.assertEqual(
+            [f.code for f in index.findings(edited, analytics.report(edited), self.dir)], ["index-stale"])
+        tasks = self.dir / layout.AUTHORITY_DIR / "TASKS.md"
+        tasks.write_text(tasks.read_text().replace("## T-1: Work T-1\n- Status: WIP", "## T-1: Work T-1\n- Status: DONE"))
+        self.project = compiler.load(self.dir)
+        second = self.compile()
+        self.assertNotEqual(first, second)
+        self.assertNotIn("- execution_task: T-99", second)
+
+    def test_it_is_neither_the_handoff_nor_the_readme(self) -> None:
+        self.standard()
+        (self.dir / layout.AUTHORITY_DIR / "HANDOFF.md").write_text(
+            "# Handoff\n\n## Position\n- long history\n\n## Next action\nFinish T-1 before starting T-2.\n")
+        self.project = compiler.load(self.dir)
+        text = self.compile()
+        self.assertIn("Finish T-1 before starting T-2.", text)
+        self.assertNotIn("long history", text)
+        self.assertEqual((self.dir / layout.AUTHORITY_DIR / "HANDOFF.md").read_text().count("## Next action"), 1)
+        self.assertNotIn("## Read order", text)
+
+    def test_a_missing_index_is_reported(self) -> None:
+        self.standard()
+        self.assertEqual([f.code for f in index.findings(self.project, self.report, self.dir)], ["index-missing"])
+
+
+class TestRetrieval(DomainCase):
+    """Retrieval routes through the index to the minimum canonical context (ADR-048)."""
+
+    GATE = "## Gate A — Held\n\nHeld.\n\nBlocks: P1 exit\nVerified by: `AC-T-1`\nStatus: RED\n"
+
+    def standard(self) -> None:
+        tasks = [
+            _domain_task("T-0", "DONE"),
+            _domain_task("T-1", "WIP", deps=["T-0"]),
+            _domain_task("T-2", deps=["T-1", "T-O1"]),
+            _domain_task("T-O1", phase="P-NONE", domain="operations"),
+            _domain_task("T-EXIT", deps=["T-2"]),
+        ] + [_domain_task(f"T-X{i}", "DONE", phase="P-NONE", domain="execution") for i in range(1, 41)]
+        states = {"T-0": "PASS", "T-1": "NOT_RUN", "T-2": "NOT_RUN", "T-O1": "NOT_RUN", "T-EXIT": "NOT_RUN"}
+        states.update({f"T-X{i}": "PASS" for i in range(1, 41)})
+        text = "".join(tasks)
+        text = text.replace("## T-1: Work T-1\n", "## T-1: Work T-1\n", 1)
+        self.build(tasks, states, gate=self.GATE, exit_authority="T-EXIT",
+                   debt=_debt("TD-1", "REACHED", by="T-2") + _debt("TD-9", by="T-X3"),
+                   adrs={"ADR-001": "Relevant", "ADR-002": "Unrelated"},
+                   trace="## EV-1: Build fixtures\n- Type: command\n- Task: T-O1\n- Outcome: failure\n- Affects: T-2\n\n"
+                         "## EV-2: Unrelated note\n- Type: note\n- Task: T-X5\n")
+        tasks_md = self.dir / layout.AUTHORITY_DIR / "TASKS.md"
+        tasks_md.write_text(tasks_md.read_text().replace(
+            "## T-1: Work T-1\n- Status: WIP\n- Phase: P1\n",
+            "## T-1: Work T-1\n- Status: WIP\n- Phase: P1\n- Governed by: ADR-001\n"))
+        self.project = compiler.load(self.dir)
+        self.report = analytics.report(self.project)
+        compiler.write(self.dir, self.project)
+
+    def sources(self, query: str) -> list[str]:
+        return [i.source for i in retrieve.retrieve(self.project, self.report, self.dir, query).items]
+
+    def test_f_why_is_p1_blocked(self) -> None:
+        self.standard()
+        got = set(self.sources("Why is P1 blocked?"))
+        for expected in ("PHASES.md#P1", "PHASES.md#Gate A", "TASKS.md#T-1", "ACCEPTANCE.md#AC-T-1",
+                         "TASKS.md#T-EXIT", "ACCEPTANCE.md#AC-T-EXIT", "TASKS.md#T-2",
+                         "TASKS.md#T-O1", "TECH_DEBT.md#TD-1", "TRACE.md#EV-1"):
+            self.assertIn(expected, got)
+        for unrelated in ("TASKS.md#T-X3", "TASKS.md#T-0", "TECH_DEBT.md#TD-9", "ADR/ADR-002.md", "TRACE.md#EV-2",
+                          "JOURNAL.md", "HANDOFF.md"):
+            self.assertNotIn(unrelated, got)
+
+    def test_g_a_task_pack_holds_only_its_neighbourhood(self) -> None:
+        self.standard()
+        got = self.sources("T-2")
+        self.assertEqual(got, [
+            "TASKS.md#T-2", "ACCEPTANCE.md#AC-T-2", "TECH_DEBT.md#TD-1",
+            "TASKS.md#T-1", "ACCEPTANCE.md#AC-T-1", "TASKS.md#T-O1", "ACCEPTANCE.md#AC-T-O1",
+            "TRACE.md#EV-1",
+        ])
+
+    def test_implicit_references_route_through_the_index(self) -> None:
+        self.standard()
+        pack = retrieve.retrieve(self.project, self.report, self.dir, "why is this task blocked?")
+        self.assertEqual(pack.routed[0], ("T-1", "INDEX execution_task"))
+        self.assertIn("ADR/ADR-001.md", [i.source for i in pack.items])
+        debt_pack = retrieve.retrieve(self.project, self.report, self.dir, "what debt needs attention?")
+        self.assertEqual([i.source for i in debt_pack.items], ["TECH_DEBT.md#TD-1"])
+        nothing = retrieve.retrieve(self.project, self.report, self.dir, "hello")
+        self.assertEqual([i.source for i in nothing.items], ["INDEX.md"])
+
+    def test_retrieval_writes_nothing_and_is_deterministic(self) -> None:
+        self.standard()
+        authority = self.dir / layout.AUTHORITY_DIR
+        before = {p: p.read_bytes() for p in authority.rglob("*") if p.is_file()}
+        first = retrieve.retrieve(self.project, self.report, self.dir, "Why is P1 blocked?").render()
+        second = retrieve.retrieve(compiler.load(self.dir), self.report, self.dir, "Why is P1 blocked?").render()
+        self.assertEqual(first, second)
+        self.assertEqual(before, {p: p.read_bytes() for p in authority.rglob("*") if p.is_file()})
+
+    def test_the_pack_is_attributed_and_much_smaller_than_the_chronicle(self) -> None:
+        self.standard()
+        pack = retrieve.retrieve(self.project, self.report, self.dir, "T-2")
+        rendered = pack.render()
+        for item in pack.items:
+            self.assertIn(f"— {item.source}", rendered)
+        self.assertLess(pack.loaded_bytes * 4, pack.chronicle_bytes)
+        self.assertIn(f"{pack.loaded_bytes:,} of {pack.chronicle_bytes:,} bytes", rendered)
+
+    def test_a_stale_index_is_rebuilt_in_memory_not_trusted(self) -> None:
+        self.standard()
+        path = self.dir / layout.AUTHORITY_DIR / "INDEX.md"
+        path.write_text(path.read_text().replace("- execution_task: T-1", "- execution_task: T-X9"))
+        pack = retrieve.retrieve(self.project, self.report, self.dir, "why is this task blocked?")
+        self.assertEqual(pack.routed[0][0], "T-1")
+        self.assertIn("rebuilt in memory", pack.index_note)
+
+    def test_the_cli(self) -> None:
+        self.standard()
+        buffer = io.StringIO()
+        with redirect_stdout(buffer):
+            self.assertEqual(cli.main(["-C", str(self.dir), "retrieve", "why", "is", "P1", "blocked?", "--json"]), 0)
+        self.assertEqual(json.loads(buffer.getvalue())["routed"][0], {"entity": "P1", "why": "named"})
+
+
+FAKE_CODEGRAPH = """#!{python}
+import json, os, sys
+log = os.environ["FAKE_CG_LOG"]
+with open(log, "a") as handle:
+    handle.write(" ".join(sys.argv[1:]) + "\\n")
+if os.environ.get("FAKE_CG_FAIL"):
+    sys.stderr.write("index is locked\\n")
+    sys.exit(2)
+args = sys.argv[1:]
+if args[:2] == ["status", "--json"]:
+    print(json.dumps({{"initialized": True, "version": "9.9", "fileCount": 12, "nodeCount": 99,
+                      "index": {{"state": "complete", "reindexRecommended": False}},
+                      "pendingChanges": {{"added": 0, "modified": 0, "removed": 0}}}}))
+elif args[:1] == ["explore"]:
+    print("FAKE EXPLORE for " + args[1])
+else:
+    print("ok " + " ".join(args))
+"""
+
+
+class TestCodeGraphIsolation(DomainCase):
+    """CodeGraph is optional, comes after project routing, and never changes
+    project semantics (ADR-049)."""
+
+    def setUp(self) -> None:
+        self.bin = Path(tempfile.mkdtemp(prefix="prokron-bin-"))
+        self.addCleanup(shutil.rmtree, self.bin, True)
+        self.log = self.bin / "calls.log"
+        self.log.write_text("")
+
+    def path(self, with_codegraph: bool, fail: bool = False) -> dict[str, str]:
+        if with_codegraph:
+            fake = self.bin / "codegraph"
+            fake.write_text(FAKE_CODEGRAPH.format(python=sys.executable))
+            fake.chmod(0o755)
+        env = {"PATH": f"{self.bin}{os.pathsep}/usr/bin{os.pathsep}/bin", "FAKE_CG_LOG": str(self.log)}
+        if fail:
+            env["FAKE_CG_FAIL"] = "1"
+        return env
+
+    def standard(self) -> None:
+        self.build([
+            _domain_task("T-0", "DONE"), _domain_task("T-1", "WIP", deps=["T-0"]), _domain_task("T-2", deps=["T-1"]),
+        ], {"T-0": "PASS", "T-1": "NOT_RUN", "T-2": "NOT_RUN"}, exit_authority="T-2",
+            debt=_debt("TD-1", "REACHED", by="T-1"))
+        tasks_md = self.dir / layout.AUTHORITY_DIR / "TASKS.md"
+        tasks_md.write_text(tasks_md.read_text().replace(
+            "## T-1: Work T-1\n- Status: WIP\n", "## T-1: Work T-1\n- Status: WIP\n- Files: src/stt/provider.ts\n- Symbols: STTProvider\n"))
+        self.project = compiler.load(self.dir)
+        self.report = analytics.report(self.project)
+        compiler.write(self.dir, self.project)
+
+    def snapshot(self) -> dict:
+        return {p: p.read_bytes() for p in (self.dir / ".prokron").rglob("*") if p.is_file()}
+
+    def run_cli(self, *argv: str) -> tuple[int, str]:
+        buffer = io.StringIO()
+        with redirect_stdout(buffer), redirect_stderr(buffer):
+            code = cli.main(["-C", str(self.dir), *argv])
+        return code, buffer.getvalue()
+
+    def test_anchors_are_optional_task_fields(self) -> None:
+        self.standard()
+        self.assertEqual((self.project.task("T-1").files, self.project.task("T-1").symbols),
+                         (["src/stt/provider.ts"], ["STTProvider"]))
+        self.assertEqual(self.project.task("T-2").files, [])
+
+    def test_a_without_codegraph_everything_works(self) -> None:
+        self.standard()
+        with mock.patch.dict(os.environ, self.path(False)):
+            code, out = self.run_cli("codegraph", "status")
+            self.assertEqual(code, 0)
+            self.assertIn("UNAVAILABLE", out)
+            code, out = self.run_cli("retrieve", "T-1", "--code")
+            self.assertEqual(code, 0)
+            self.assertIn("CodeGraph not used", out)
+            self.assertIn("src/stt/provider.ts", out)
+            self.assertEqual(self.run_cli("compile")[0], 0)
+
+    def test_b_with_codegraph_project_context_is_identical_and_comes_first(self) -> None:
+        self.standard()
+        plain = retrieve.retrieve(self.project, self.report, self.dir, "T-1").render()
+        before = self.snapshot()
+        with mock.patch.dict(os.environ, self.path(True)):
+            code, out = self.run_cli("retrieve", "T-1", "--code")
+        self.assertEqual(code, 0)
+        self.assertTrue(out.startswith(plain), "project context must be unchanged and first")
+        self.assertIn("from CodeGraph, after the project context", out[len(plain):])
+        self.assertIn("FAKE EXPLORE for STTProvider src/stt/provider.ts", out)
+        self.assertIn("explore STTProvider src/stt/provider.ts -p", self.log.read_text())
+        self.assertEqual(before, self.snapshot())
+
+    def test_c_a_failing_codegraph_degrades_to_the_fallback(self) -> None:
+        self.standard()
+        before = self.snapshot()
+        with mock.patch.dict(os.environ, self.path(True, fail=True)):
+            code, out = self.run_cli("retrieve", "T-1", "--code")
+            self.assertEqual(code, 0)
+            self.assertIn("CodeGraph exited 2: index is locked", out)
+            self.assertIn("Continue with repository tools", out)
+            self.assertIn("FAILING", self.run_cli("codegraph", "status")[1])
+            self.assertEqual(self.run_cli("compile")[0], 0)
+        after = self.snapshot()
+        self.assertEqual({k: v for k, v in before.items() if "compiled" not in str(k)},
+                         {k: v for k, v in after.items() if "compiled" not in str(k)})
+
+    def test_d_codegraph_never_changes_project_semantics(self) -> None:
+        self.standard()
+        results = []
+        for env in (self.path(False), self.path(True), self.path(True, fail=True)):
+            with mock.patch.dict(os.environ, env):
+                project = compiler.load(self.dir)
+                report = analytics.report(project)
+                results.append((json.dumps(compiler.as_json(project), sort_keys=True),
+                                index.render(project, report, self.dir),
+                                retrieve.retrieve(project, report, self.dir, "why is P1 blocked?").render()))
+        self.assertEqual(results[0], results[1])
+        self.assertEqual(results[0], results[2])
+        self.assertNotIn("status", self.log.read_text())  # compile, index and retrieval never call it
+
+    def test_setup_changes_nothing_without_consent(self) -> None:
+        self.standard()
+        with mock.patch.dict(os.environ, self.path(True)), \
+                mock.patch("sys.stdin", io.StringIO("")):
+            # The fake reports an initialized index; make it look uninitialized.
+            fake = self.bin / "codegraph"
+            fake.write_text(fake.read_text().replace('"initialized": True', '"initialized": False'))
+            code, out = self.run_cli("codegraph", "setup")
+            self.assertEqual(code, 1)
+            self.assertIn("Nothing changed", out)
+            self.assertNotIn("init", self.log.read_text().replace("status --json", ""))
+            code, out = self.run_cli("codegraph", "setup", "--yes", "--wire-agents")
+            self.assertIn("init -y", self.log.read_text())
+            self.assertNotIn("install", self.log.read_text())
+            self.assertIn("Agent configuration left unchanged", out)
+
+    def test_the_index_is_the_same_on_every_machine(self) -> None:
+        self.standard()
+        text = (self.dir / layout.AUTHORITY_DIR / "INDEX.md").read_text()
+        self.assertIn("## Implementation intelligence", text)
+        self.assertIn("- suggested: `prokron retrieve T-1 --code`", text)
+        self.assertNotIn("AVAILABLE", text)
 
 
 class TestViews(FixtureCase):
@@ -2018,6 +2457,40 @@ class TestBaselineWorkflow(unittest.TestCase):
     def test_initialization_does_not_run_it(self) -> None:
         text = " ".join((self.ROOT / ".prokron/commands/prokron-init.md").read_text().split())
         self.assertIn("initialization never runs it", text)
+
+
+class TestBootProtocol(unittest.TestCase):
+    """A new agent reads the index before anything else (ADR-047)."""
+
+    ROOT = Path(__file__).resolve().parents[1]
+
+    def text(self, name: str) -> str:
+        return " ".join((self.ROOT / name).read_text().split())
+
+    def test_d_agents_md_reads_the_index_first(self) -> None:
+        text = self.text("AGENTS.md")
+        index_step = text.index("1. Read `.prokron/chronicle/INDEX.md`.")
+        self.assertLess(index_step, text.index("3. Read only those records."))
+        self.assertLess(index_step, text.index("5. Explore the code only after the project context is resolved."))
+        self.assertIn("Do not load the whole chronicle by default.", text)
+        # The rest of the Prokron guidance is still there.
+        for kept in ("## Completion", "## Reviewer", "## Disagreement", "## Checkpoint"):
+            self.assertIn(kept, text)
+
+    def test_e_claude_md_reads_the_index_first(self) -> None:
+        text = self.text("CLAUDE.md")
+        self.assertTrue(text.startswith("@AGENTS.md"))
+        self.assertIn("Read `.prokron/chronicle/INDEX.md` before anything else", text)
+        self.assertLess(text.index("INDEX.md"), text.index("Explore code only once"))
+        self.assertEqual(self.text("templates/claude/CLAUDE.md"),
+                         text.split("@AGENTS.md", 1)[1].strip())
+
+    def test_the_chronicle_read_order_starts_with_the_index(self) -> None:
+        text = (self.ROOT / "templates/chronicle/README.md").read_text()
+        order = text.split("## Read order", 1)[1]
+        self.assertTrue(order.strip().startswith("1. `INDEX.md` first"))
+        self.assertIn("`INDEX.md` is generated by `prokron compile` and is not authority", text)
+        self.assertIn("INDEX.md", self.text(".prokron/commands/prokron-resume.md"))
 
 
 class TestNoNetworkOrDependencies(unittest.TestCase):

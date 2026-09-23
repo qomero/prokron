@@ -11,7 +11,7 @@ import json
 import sys
 from pathlib import Path
 
-from . import analytics, compile as compiler, dashboard, layout, mermaid, migrate, validate
+from . import analytics, compile as compiler, dashboard, index, layout, mermaid, migrate, retrieve, validate
 from .model import Project
 from .parse import ParseError
 
@@ -78,7 +78,7 @@ def _refuse_newer(root: Path, args: argparse.Namespace) -> int | None:
 
 def cmd_validate(root: Path, args: argparse.Namespace) -> int:
     project = _load(root)
-    findings = validate.check(project)
+    findings = validate.check(project) + index.findings(project, analytics.report(project), root)
     errors = validate.errors(findings)
     warnings = [f for f in findings if f.severity == "warning"]
     if errors:
@@ -277,6 +277,94 @@ def cmd_context(root: Path, args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_retrieve(root: Path, args: argparse.Namespace) -> int:
+    project = _load(root)
+    pack = retrieve.retrieve(project, analytics.report(project), root, " ".join(args.query))
+    if args.code:
+        pack.implementation = retrieve.implementation(project, pack, root)
+    if args.json:
+        print(json.dumps(pack.as_json(), indent=2))
+    else:
+        print(pack.render(), end="")
+    return 0
+
+
+def _confirm(question: str) -> bool:
+    """Ask on a terminal; anything but an explicit yes, or no terminal, is no."""
+    if not sys.stdin.isatty():
+        return False
+    try:
+        return input(f"{question} [y/N] ").strip().lower() in ("y", "yes")
+    except EOFError:
+        return False
+
+
+def cmd_codegraph(root: Path, args: argparse.Namespace) -> int:
+    """Implementation intelligence is project operations: tooling around the
+    work. Nothing here reads or changes project state (ADR-049)."""
+    from . import codegraph
+
+    state = codegraph.status(root)
+    if args.action == "status":
+        if args.json:
+            print(json.dumps(state, indent=2))
+            return 0
+        print("Project operations · implementation intelligence")
+        print(f"  CodeGraph      {'AVAILABLE' if state['available'] else 'UNAVAILABLE'}"
+              + (f" {state.get('version')}" if state.get("version") else ""))
+        print(f"  Project index  {state['health']}"
+              + (f" · {state.get('files')} files, {state.get('symbols')} symbols" if state.get("files") else ""))
+        if state["health"] == "UNAVAILABLE":
+            print("\n" + codegraph.INSTALL_HINT)
+        elif state["health"] == "NOT_INITIALIZED":
+            print("\n  Run `prokron codegraph setup` to build the project-local index.")
+        elif state["health"] in ("STALE", "FAILING"):
+            print(f"\n  {state.get('detail') or 'The index is behind the code; run `codegraph sync`.'}")
+        return 0
+    if args.action == "doctor":
+        print("CodeGraph doctor")
+        print(f"  on PATH:        {codegraph.binary() or 'no'}")
+        print(f"  index:          {state['health']}")
+        print(f"  .codegraph/:    {'present' if (root / '.codegraph').is_dir() else 'absent'}")
+        print("  Prokron state:  independent — compile, gates, the critical path and debt never read CodeGraph")
+        if state.get("detail"):
+            print(f"  detail:         {state['detail']}")
+        return 0 if state["health"] in ("HEALTHY", "STALE", "INDEXING") else 1
+    if not state["available"]:
+        print(codegraph.INSTALL_HINT, file=sys.stderr)
+        return 1
+    if args.action == "uninit":
+        if not (args.yes or _confirm(f"Delete the CodeGraph index in {root}/.codegraph?")):
+            print("Nothing changed.")
+            return 1
+        ok, output = codegraph.uninit(root)
+        print(output.strip())
+        return 0 if ok else 1
+    # setup
+    changed = False
+    if state["health"] == "NOT_INITIALIZED":
+        if not (args.yes or _confirm(f"Build a CodeGraph index in {root}/.codegraph?")):
+            print("Nothing changed.")
+            return 1
+        ok, output = codegraph.init(root)
+        print(output.strip())
+        if not ok:
+            return 1
+        changed = True
+    else:
+        print(f"Project index already {state['health']}.")
+    if args.wire_agents:
+        # This edits configuration outside the repository, so a flag alone is
+        # not consent: it is asked every time, and never assumed.
+        if _confirm("Wire CodeGraph into your coding agents? This modifies user-level agent/MCP configuration."):
+            ok, output = codegraph.install_agents()
+            print(output.strip())
+            return 0 if ok else 1
+        print("Agent configuration left unchanged.")
+        return 0 if changed else 1
+    return 0
+
+
 def domain_report(project: Project) -> dict[str, object]:
     """How every task's domain was decided, and what operational history
     exists. Reads only; classifying a task is an edit to TASKS.md."""
@@ -440,6 +528,29 @@ def build_parser() -> argparse.ArgumentParser:
     )
     domains.add_argument("--json", action="store_true")
     domains.set_defaults(handler=cmd_domains)
+
+    fetch = subparsers.add_parser(
+        "retrieve", help="the chronicle records a question or task needs, routed by INDEX.md"
+    )
+    fetch.add_argument("query", nargs="+", help="a question, or a task, phase, gate, ADR, or debt id")
+    fetch.add_argument("--json", action="store_true")
+    fetch.add_argument(
+        "--code", action="store_true",
+        help="after the project context, add code structure from CodeGraph if installed",
+    )
+    fetch.set_defaults(handler=cmd_retrieve)
+
+    graph_tool = subparsers.add_parser(
+        "codegraph", help="optional CodeGraph integration: status, setup, doctor, uninit"
+    )
+    graph_tool.add_argument("action", choices=("status", "setup", "doctor", "uninit"))
+    graph_tool.add_argument("--yes", action="store_true", help="skip the index confirmation")
+    graph_tool.add_argument(
+        "--wire-agents", action="store_true",
+        help="also run `codegraph install`, which changes user-level agent configuration",
+    )
+    graph_tool.add_argument("--json", action="store_true")
+    graph_tool.set_defaults(handler=cmd_codegraph)
 
     packet = subparsers.add_parser("context", help="emit an agent context packet")
     packet.add_argument("task")

@@ -119,6 +119,34 @@ Lists tasks as explicit or inferred execution, explicit operations, or
 ambiguous, names the ambiguous ones, and says whether `TRACE.md` holds any
 tool calls, mini-actions, failures, retries, or mutations. It reads only.
 
+### Starting from the index
+
+```sh
+cat .prokron/chronicle/INDEX.md                  # what matters now, and where it lives
+prokron retrieve "why is P1 blocked?"            # only the records that question needs
+prokron retrieve T-095                           # one task's neighbourhood
+prokron retrieve T-095 --code                    # then code structure, if CodeGraph is installed
+```
+
+`INDEX.md` is written by `compile`. Never edit it: edits are overwritten and
+never read; `validate` says when it is stale. `retrieve` resolves the ids a
+question names — or, for "this task", "the phase", "blocked", "debt", the ones
+the index marks as current — and prints each record it needs with its source,
+and how little of the chronicle that was.
+
+### CodeGraph (optional)
+
+```sh
+prokron codegraph status     # available? index healthy?
+prokron codegraph setup      # asks, then builds the project-local .codegraph/ index
+prokron codegraph setup --wire-agents   # also offers `codegraph install`, which edits user-level agent config
+prokron codegraph doctor
+prokron codegraph uninit
+```
+
+Prokron works the same without it. Give a task `- Files:` and `- Symbols:`
+lines to seed its code query.
+
 ### Checking and rebuilding
 
 ```sh
@@ -258,6 +286,8 @@ actually needs.
 | `status` says views were written by another version | Same | `prokron compile && prokron graph && prokron dashboard` |
 | `Refusing to overwrite views written by prokron …` | A newer release compiled them; this installation is older | Reinstall to upgrade; `--force` only if you mean to downgrade them |
 | The installer lists files under `.prokron/upgrade/` | You had edited that guidance, so the new version was staged beside it | Merge what you want, then delete `.prokron/upgrade/` |
+| `index-stale` or `index-missing` warning | The records changed, or `INDEX.md` was edited by hand | `prokron compile` |
+| `debt-trigger-reached` warning | A debt's trigger is reached and no repayment is scheduled | Schedule a task and link it, or record why the debt is still acceptable |
 | `ambiguous-domain` warning | A phase-independent task has no `Domain:` | Add `- Domain: execution` or `- Domain: operations`; `prokron domains` lists them |
 | A maintenance task disappeared from the Overview | It is declared `operations`, so it no longer competes with product work | Find it under Operations; it appears on the Overview only if execution waits on it |
 | `stale-reference` warning | `HANDOFF.md` or `INTENT.md` names a file that moved or was deleted | Update the path in the handoff |

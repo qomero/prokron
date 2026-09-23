@@ -42,6 +42,8 @@ one compiled `compiled/` directory. Only the first is authoritative.
 | `HANDOFF.md` | Current implementation continuity, overwritten each checkpoint |
 | `JOURNAL.md` | Append-only session diary and handoff history |
 | `TRACE.md` | Append-only operational events: tool calls, commands, mini-actions, mutations, failures, retries, validation runs |
+| `TECH_DEBT.md` | Known technical debt: what each compromise costs, its trigger, its exit condition, and its lineage |
+| `INDEX.md` | **Generated.** The routing layer an agent reads first: what matters now and where each record lives |
 
 | File in `.prokron/compiled/` | Role |
 |---|---|
@@ -105,7 +107,23 @@ A few consequences are deliberate:
 - Tool calls and mini-actions may be essential evidence even when they do not
   count toward progress.
 
-### 2.2 Operational trace
+### 2.2 Technical debt
+
+`TECH_DEBT.md` records `## TD-<id>` liabilities the project knowingly carries
+(ADR-046): `Status` (`OPEN`, `ACCEPTED`, `SCHEDULED`, `RESOLVED`,
+`INVALIDATED`), `Introduced by` (tasks and ADRs), `Areas`, `Debt`, `Reason`,
+`Interest`, `Trigger`, `Trigger state` (`NOT_REACHED`, `APPROACHING`,
+`REACHED`), `Exit condition`, `Evidence`, `Linked tasks`, and `Resolution`.
+
+A debt is not a task. It may exist with no repayment work at all; when its
+trigger is reached, the work that repays it is an ordinary task, execution or
+operations, and the debt links to it. The record itself has no domain.
+`SCHEDULED` needs a linked task. `RESOLVED` and `INVALIDATED` need a recorded
+resolution, and finishing a linked task never resolves a debt on its own:
+verifying the exit condition does. The lineage — decision, debt, trigger,
+task, resolution — is carried into compiled state and every task's context.
+
+### 2.3 Operational trace
 
 `TRACE.md` holds structured operational events, `## EV-<id>: <summary>`, with a
 required `Type` (`tool-call`, `command`, `action`, `mutation`, `failure`,
@@ -121,6 +139,44 @@ gate, or a regression. Events summarize; they never carry secrets, tokens,
 credentials, hidden instructions, or private reasoning, and validation warns
 when an event looks like it does. A project has operational history only from
 when it starts writing `TRACE.md`; nothing is reconstructed from the journal.
+
+### 2.4 The index and retrieval
+
+`INDEX.md` is compiled into the chronicle by `prokron compile` (ADR-047). It is
+the one generated file there: never authored, never parsed as authority, and
+when it disagrees with a record the record wins. It is compact — a few
+thousand tokens at most, with a warning past 5,000 — and names the current
+phase, execution work, next gate, main blocker, operations affecting
+execution, debt needing attention, the decisions that matter now, the handoff,
+and recent changes, as `key: value` markers and `file#anchor` pointers rather
+than record bodies. It carries no timestamp, so identical records give an
+identical index. `validate` warns when it is missing, stale, or hand-edited.
+
+`prokron retrieve "<question or id>"` routes through the index (ADR-048). It
+resolves the entities a question names, and for "this task", "the phase",
+"blocked", or "debt" the entities the index marks as current; expands each
+into its neighbourhood (a task's contract, decisions, debt, blocking chain,
+operations blockers and failed events; a phase's gates, exit authority and
+blockers); and returns only those canonical sections, verbatim, each labelled
+with its source, with a count of how much of the chronicle it did not load. It
+writes nothing and consults no model.
+
+An agent's order is fixed: `INDEX.md`, then the records it points to, then
+code. Where CodeGraph is installed, `prokron retrieve <task> --code` adds code
+structure — symbols, callers, callees — after the project context, seeded by a
+task's optional `Files:` and `Symbols:` anchors (ADR-049). CodeGraph is
+optional implementation intelligence: nothing Prokron computes reads it, and
+its absence or failure degrades to a note naming the files to inspect.
+`prokron codegraph status|setup|doctor|uninit` manage it; setup asks before
+building the index and never changes agent configuration without an explicit
+flag and a confirmation.
+
+```text
+INDEX.md        routing layer (generated)
+chronicle/      canonical project memory: WHAT, WHY, STATE, NEXT, DEBT
+CodeGraph       optional implementation intelligence: WHERE, DEPENDS-ON, BLAST RADIUS
+the agent       HOW
+```
 
 ## 3. Entry modes
 
@@ -271,6 +327,9 @@ The portable workflows are:
 - `/prokron-resume`
 - `/prokron-baseline` (existing repositories, on request)
 
+`prokron retrieve` and `prokron codegraph` are commands of the tool, not
+workflows; the workflows use them.
+
 Claude Code and OpenCode expose these as project slash commands. Codex exposes
 the same workflows through `$prokron <mode>`. Every installation provides
 `AGENTS.md` and the portable Markdown files in `.prokron/commands/`, which any
@@ -295,6 +354,14 @@ provider credentials and model selection remain in the agent host.
   progress: operations tasks, tool calls, mini-actions, failures, retries, and
   mutations stay reviewable because they can explain defects, regressions,
   blocked execution, or incorrect outcomes.
+- The chronicle is the canonical project memory.
+- `INDEX.md` is a generated routing layer, not a source of truth.
+- New agents read `INDEX.md` before broad chronicle or repository exploration.
+- Retrieval uses the index to select the minimum relevant canonical context.
+- `TECH_DEBT.md` records known liabilities separately from tasks.
+- CodeGraph is consulted only after the project context is resolved.
+- Prokron remains fully usable without CodeGraph.
+- CodeGraph may enrich implementation understanding but never owns project state.
 - Changing a task's domain is a recorded change to `TASKS.md`, explained in
   the journal or, when it changes what counts as progress, an ADR.
 

@@ -10,7 +10,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from . import analytics, domain, views
+from . import analytics, domain, index, views
 from . import layout
 from .layout import AUTHORITY_DIR, COMPILED_DIR
 from .model import Project
@@ -21,6 +21,7 @@ from .parse import (
     parse_phases,
     parse_project_name,
     parse_tasks,
+    parse_debt,
     parse_trace,
     read_text,
 )
@@ -60,6 +61,7 @@ def load(root: Path) -> Project:
         intent=read_text(authority / "INTENT.md"),
         handoff=read_text(authority / "HANDOFF.md"),
         events=parse_trace(authority / "TRACE.md"),
+        debts=parse_debt(authority / "TECH_DEBT.md"),
     )
     domain.resolve(project)
     # A phase whose work is finished but whose exit has not been accepted is
@@ -120,6 +122,8 @@ def as_json(project: Project) -> dict[str, object]:
                 "blocked": task.id in report.blocked,
                 "externalBlockers": report.external_blockers.get(task.id, []),
                 "events": analytics.events_for(project, task.id),
+                "debt": [debt.id for debt in project.debts_for(task.id)],
+                "implementation": {"files": task.files, "symbols": task.symbols},
                 "source": task.source.as_json(),
             }
             for task in project.tasks
@@ -208,6 +212,7 @@ def as_json(project: Project) -> dict[str, object]:
             for decision in project.decisions
         ],
         "obstacles": [obstacle.as_json() for obstacle in report.obstacles],
+        "debt": [debt.as_json() for debt in project.debts],
         "criticalPath": report.critical_path,
         "schedule": {
             "scheduled": report.scheduled,
@@ -244,19 +249,26 @@ def as_json(project: Project) -> dict[str, object]:
                 "INTENT.md",
                 "HANDOFF.md",
                 "TRACE.md",
+                "TECH_DEBT.md",
             ],
         },
     }
 
 
 def write(root: Path, project: Project) -> Path:
-    """Write project.json and the Markdown views. Nothing else touches them."""
+    """Write project.json, the Markdown views, and the chronicle's INDEX.md.
+
+    INDEX.md is the one generated file inside the chronicle (ADR-047). It is
+    written here and nowhere else, and nothing ever reads it as authority.
+    """
     compiled = root / COMPILED_DIR
     compiled.mkdir(parents=True, exist_ok=True)
     target = compiled / "project.json"
     target.write_text(json.dumps(as_json(project), indent=2, sort_keys=False) + "\n")
-    for name, text in views.render_all(project, analytics.report(project)).items():
+    report = analytics.report(project)
+    for name, text in views.render_all(project, report).items():
         (compiled / name).write_text(text)
+    (root / AUTHORITY_DIR / index.FILE).write_text(index.render(project, report, root))
     return target
 
 

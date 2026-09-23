@@ -1,5 +1,3 @@
-@AGENTS.md
-
 <!-- project-prokron-claude:start -->
 ## Prokron project context (Claude Code)
 

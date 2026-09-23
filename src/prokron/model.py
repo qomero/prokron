@@ -31,6 +31,11 @@ EVENT_TYPES = (
     "tool-call", "command", "action", "mutation", "failure", "retry", "validation", "note",
 )
 EVENT_OUTCOMES = ("success", "failure", "partial", "unknown")
+# Technical debt is a liability, not work (ADR-046). It has no domain; the
+# task that repays it has one.
+DEBT_STATUSES = ("OPEN", "ACCEPTED", "SCHEDULED", "RESOLVED", "INVALIDATED")
+DEBT_CLOSED = ("RESOLVED", "INVALIDATED")
+TRIGGER_STATES = ("NOT_REACHED", "APPROACHING", "REACHED")
 
 OBSTACLE_TYPES = (
     "DEPENDENCY_BLOCKER",
@@ -117,6 +122,10 @@ class Task:
     declared_domain: str | None = None
     domain: str = "execution"
     domain_source: str = "unresolved"
+    # Optional implementation anchors (ADR-049): where the code for this task
+    # lives, to seed a code-structure query. Never required, never derived.
+    files: list[str] = field(default_factory=list)
+    symbols: list[str] = field(default_factory=list)
 
     @property
     def done(self) -> bool:
@@ -217,6 +226,49 @@ class TraceEvent:
 
 
 @dataclass
+class TechDebt:
+    """A known compromise: what it is, why it exists, what it costs, and what
+    would retire it."""
+
+    id: str
+    title: str
+    status: str
+    introduced_by: list[str]
+    areas: list[str]
+    debt: str | None
+    reason: str | None
+    interest: str | None
+    trigger: str | None
+    trigger_state: str
+    exit_condition: str | None
+    evidence: str | None
+    linked_tasks: list[str]
+    resolution: str | None
+    source: Source
+
+    @property
+    def closed(self) -> bool:
+        return self.status in DEBT_CLOSED
+
+    @property
+    def needs_attention(self) -> bool:
+        """Open to act on: a trigger reached or approaching, or not yet decided."""
+        return not self.closed and (
+            self.trigger_state in ("REACHED", "APPROACHING") or self.status == "OPEN"
+        )
+
+    def as_json(self) -> dict[str, object]:
+        return {
+            "id": self.id, "title": self.title, "status": self.status,
+            "introducedBy": self.introduced_by, "areas": self.areas, "debt": self.debt,
+            "reason": self.reason, "interest": self.interest, "trigger": self.trigger,
+            "triggerState": self.trigger_state, "exitCondition": self.exit_condition,
+            "evidence": self.evidence, "linkedTasks": self.linked_tasks,
+            "resolution": self.resolution, "source": self.source.as_json(),
+        }
+
+
+@dataclass
 class Obstacle:
     type: str
     subject: str
@@ -264,6 +316,11 @@ class Project:
     intent: str = ""
     handoff: str = ""
     events: list[TraceEvent] = field(default_factory=list)
+    debts: list[TechDebt] = field(default_factory=list)
+
+    def debts_for(self, record_id: str) -> list[TechDebt]:
+        """Debt a task or decision introduced, or a task repays."""
+        return [d for d in self.debts if record_id in d.introduced_by or record_id in d.linked_tasks]
 
     @property
     def execution_tasks(self) -> list[Task]:

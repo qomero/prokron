@@ -247,7 +247,7 @@ done
 had_chronicle=0
 [ ! -d "$target/$chronicle" ] || had_chronicle=1
 # Records are the project's own: a template is only ever a starting point.
-for file in PHASES TASKS ACCEPTANCE INTENT HANDOFF JOURNAL TRACE; do
+for file in PHASES TASKS ACCEPTANCE INTENT HANDOFF JOURNAL TRACE TECH_DEBT; do
   copy_new "$source_dir/templates/chronicle/$file.md" "$target/$chronicle/$file.md"
 done
 copy_new "$source_dir/templates/chronicle/ADR/README.md" "$target/$chronicle/ADR/README.md"
@@ -267,8 +267,8 @@ install_guidance "$source_dir/.agents/skills/prokron/SKILL.md" \
 # The runtime is code, not a record: replace it on every install so a repository
 # never runs a stale compiler against a current chronicle.
 mkdir -p "$target/$runtime/prokron"
-for module in __init__ layout model parse domain validate analytics views compile migrate \
-  mermaid dashboard cli; do
+for module in __init__ layout model parse domain validate analytics views index compile migrate \
+  mermaid dashboard retrieve codegraph cli; do
   cp "$source_dir/src/prokron/$module.py" "$target/$runtime/prokron/$module.py"
 done
 cp "$source_dir/VERSION" "$target/$runtime/VERSION"
@@ -332,48 +332,65 @@ if [ -d "$target/$home/compiled" ] && grep -q '^## T-' "$target/$chronicle/TASKS
   fi
 fi
 
-# The Prokron block in AGENTS.md is guidance like any other, but it shares a
-# file with the project's own rules. Only the text between the markers is ever
-# compared or replaced; everything around it is left exactly as it was.
-start_marker='<!-- project-prokron:start -->'
-end_marker='<!-- project-prokron:end -->'
-block_key='AGENTS.md#prokron'
-if [ ! -f "$target/AGENTS.md" ]; then
-  cp "$source_dir/AGENTS.md" "$target/AGENTS.md"
-  record "$(sum_of "$source_dir/AGENTS.md")" "$block_key"
-elif ! grep -Fq "$start_marker" "$target/AGENTS.md"; then
-  printf '\n' >> "$target/AGENTS.md"
-  cat "$source_dir/AGENTS.md" >> "$target/AGENTS.md"
-  record "$(sum_of "$source_dir/AGENTS.md")" "$block_key"
-else
-  block="$target/$runtime/agents-block.tmp"
-  awk -v s="$start_marker" -v e="$end_marker" '
-    index($0, s) && !seen { on = 1; seen = 1 }
-    on { print }
-    on && index($0, e) { on = 0; closed = 1 }
-    END { if (!closed) exit 3 }
-  ' "$target/AGENTS.md" > "$block" && complete=1 || complete=0
-  if [ "$complete" -eq 1 ] && cmp -s "$source_dir/AGENTS.md" "$block"; then
-    record "$(sum_of "$block")" "$block_key"
+# A Prokron block shares a file with the project's own rules: AGENTS.md for
+# every agent, CLAUDE.md for Claude Code. Only the text between the markers is
+# ever compared or replaced; everything around it is left exactly as it was.
+install_block() {
+  # $1 file (relative), $2 source block, $3 start marker, $4 end marker,
+  # $5 manifest key, $6 label for the output.
+  file="$target/$1"
+  if [ ! -f "$file" ]; then
+    cp "$2" "$file"
+    record "$(sum_of "$2")" "$5"
+  elif ! grep -Fq "$3" "$file"; then
+    printf '\n' >> "$file"
+    cat "$2" >> "$file"
+    record "$(sum_of "$2")" "$5"
   else
-    was=$(previous_sum "$block_key")
-    if [ "$complete" -eq 1 ] && [ -n "$was" ] && [ "$was" = "$(sum_of "$block")" ]; then
-      awk -v s="$start_marker" -v e="$end_marker" -v src="$source_dir/AGENTS.md" '
-        index($0, s) && !done { while ((getline line < src) > 0) print line; skip = 1; done = 1; next }
-        skip { if (index($0, e)) skip = 0; next }
-        { print }
-      ' "$target/AGENTS.md" > "$target/AGENTS.md.prokron-new"
-      cat "$target/AGENTS.md.prokron-new" > "$target/AGENTS.md"
-      rm -f "$target/AGENTS.md.prokron-new"
-      record "$(sum_of "$source_dir/AGENTS.md")" "$block_key"
-      upgraded="$upgraded  AGENTS.md (Prokron block)
-"
+    block="$target/$runtime/block.tmp"
+    awk -v s="$3" -v e="$4" '
+      index($0, s) && !seen { on = 1; seen = 1 }
+      on { print }
+      on && index($0, e) { on = 0; closed = 1 }
+      END { if (!closed) exit 3 }
+    ' "$file" > "$block" && complete=1 || complete=0
+    if [ "$complete" -eq 1 ] && cmp -s "$2" "$block"; then
+      record "$(sum_of "$block")" "$5"
     else
-      stage "$source_dir/AGENTS.md" AGENTS.md
-      [ -z "$was" ] || record "$was" "$block_key"
+      was=$(previous_sum "$5")
+      if [ "$complete" -eq 1 ] && [ -n "$was" ] && [ "$was" = "$(sum_of "$block")" ]; then
+        awk -v s="$3" -v e="$4" -v src="$2" '
+          index($0, s) && !done { while ((getline line < src) > 0) print line; skip = 1; done = 1; next }
+          skip { if (index($0, e)) skip = 0; next }
+          { print }
+        ' "$file" > "$file.prokron-new"
+        cat "$file.prokron-new" > "$file"
+        rm -f "$file.prokron-new"
+        record "$(sum_of "$2")" "$5"
+        upgraded="$upgraded  $6
+"
+      else
+        stage "$2" "$1"
+        [ -z "$was" ] || record "$was" "$5"
+      fi
     fi
+    rm -f "$block"
   fi
-  rm -f "$block"
+}
+install_block AGENTS.md "$source_dir/AGENTS.md" '<!-- project-prokron:start -->' \
+  '<!-- project-prokron:end -->' 'AGENTS.md#prokron' 'AGENTS.md (Prokron block)'
+
+# Claude Code reads CLAUDE.md, which imports AGENTS.md and carries the
+# Claude-specific entry order (ADR-047).
+if [ ! -f "$target/CLAUDE.md" ]; then
+  printf '@AGENTS.md\n' > "$target/CLAUDE.md"
+elif ! grep -Fxq '@AGENTS.md' "$target/CLAUDE.md"; then
+  printf '\n@AGENTS.md\n' >> "$target/CLAUDE.md"
+fi
+if [ -f "$source_dir/templates/claude/CLAUDE.md" ]; then
+  install_block CLAUDE.md "$source_dir/templates/claude/CLAUDE.md" \
+    '<!-- project-prokron-claude:start -->' '<!-- project-prokron-claude:end -->' \
+    'CLAUDE.md#prokron' 'CLAUDE.md (Prokron block)'
 fi
 printf '%s' "$recorded" > "$manifest"
 
@@ -393,6 +410,7 @@ if [ -e "$target/.git" ]; then
 .prokron/chronicle/JOURNAL.md merge=union
 .prokron/chronicle/ADR/README.md merge=union
 .prokron/compiled/** linguist-generated=true
+.prokron/chronicle/INDEX.md linguist-generated=true
 # prokron:end
 ATTRIBUTES
   if [ ! -f "$attributes" ]; then
@@ -412,11 +430,6 @@ ATTRIBUTES
   rm -f "$block_file"
 fi
 
-if [ ! -f "$target/CLAUDE.md" ]; then
-  printf '@AGENTS.md\n' > "$target/CLAUDE.md"
-elif ! grep -Fxq '@AGENTS.md' "$target/CLAUDE.md"; then
-  printf '\n@AGENTS.md\n' >> "$target/CLAUDE.md"
-fi
 
 printf 'Prokron installed in %s\n' "$target"
 if [ -n "$linked" ]; then
