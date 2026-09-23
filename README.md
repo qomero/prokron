@@ -45,10 +45,10 @@ those documents into project state, and that state is then projected two ways.
 A person opens a page:
 
 <p align="center">
-  <img src="docs/assets/dashboard-state.png" alt="The Prokron dashboard showing progress metrics for task completion, acceptance, validation coverage, gate readiness and critical path, followed by three phases with status badges and five gates marked green." width="900">
+  <img src="docs/assets/dashboard-state.png" alt="The dashboard's Overview tab for an illustrative expense-tracking project: a focus strip naming current phase P2, the task in flight, the main blocker and the next gate with one gate green and one red; a line showing an operations task holding up a product task; execution progress metrics; and three phase cards with the current phase highlighted." width="900">
 </p>
 
-<p align="center"><em><code>prokron dashboard</code>, generated from this repository's own chronicle.<br>
+<p align="center"><em><code>prokron dashboard</code> on Ledgerly, an illustrative project — the expense tool from the story below.<br>
 Every figure is computed from the Markdown files in <code>.prokron/chronicle/</code>. No model, no service, no network.</em></p>
 
 An agent asks for a packet, and gets the same state as structured text:
@@ -124,11 +124,18 @@ Nothing here is a status report someone wrote by hand. It is computed from the
 authored documents, so it cannot drift away from them.
 
 <p align="center">
-  <img src="docs/assets/dashboard-next.png" alt="Dashboard sections showing nothing in flight, nothing ready, no obstacles, no open work, and the task graph below." width="900">
+  <img src="docs/assets/dashboard-next.png" alt="The Execution tab: one task in flight, nothing ready, obstacles grouped into acceptance, gate, phase and dependency blockers with the transitively blocked ones collapsed, execution failures linked to their operational events, and the critical path as a vertical chain with an operations task marked as an external blocker." width="900">
 </p>
 
 <p align="center"><em>What is in flight, what is ready, what blocks the project, and what lies on the critical path.<br>
-Prokron reporting on itself with every phase closed: nothing in flight, no obstacles, no open work — and it says that plainly rather than inventing something to show.</em></p>
+Obstacles are grouped by kind, and an operations task that holds up the path is named as an external blocker rather than joining it.</em></p>
+
+<p align="center">
+  <img src="docs/assets/dashboard-operations.png" alt="The Operations tab: summary counts of active and blocked operations, events, failures, retries and mutations; an open operations task that blocks execution, expanded to show its tool call and its failed, unresolved command; and a list of failures and warnings, each linked to the task it came from and the work it affects." width="900">
+</p>
+
+<p align="center"><em>Operations has its own tab: the support work around the project, the tool calls and commands behind it, what failed, and what was retried.<br>
+None of it counts as progress. All of it stays reviewable, because it can explain why execution is stuck.</em></p>
 
 ## Done is a contract, not an opinion
 
@@ -146,11 +153,11 @@ Completion and confidence stay separate. A task can be `DONE` and still be
 manual evidence.
 
 <p align="center">
-  <img src="docs/assets/dashboard-contract.png" alt="A task drill-down showing T-PILOT-01 with status DONE and validation HUMAN_VERIFIED, its dependency, and its seven acceptance criteria each marked PASS with an evidence class." width="900">
+  <img src="docs/assets/dashboard-contract.png" alt="A task drill-down for T-203, Detect duplicate transactions, in progress: its dependency, the tasks it blocks, three acceptance criteria marked PASS, FAIL and NOT_RUN with their evidence classes, its acceptance obstacle, its domain, and the three operational events recorded against it." width="640">
 </p>
 
 <p align="center"><em>Click any task for its contract, its criteria, and the evidence behind each one.<br>
-This is the continuity pilot: seven criteria, three participants across two disposable projects, and the one validation state only a named human may record.</em></p>
+One criterion passes, one fails, one has not run — and the test runs and the fix recorded against the task sit beside them.</em></p>
 
 That last part matters more than it looks. When two people — or two agents —
 disagree about whether something is finished, the contract makes the
@@ -176,11 +183,11 @@ strongly each finished task is actually backed, which is a different question
 from whether it is done.
 
 <p align="center">
-  <img src="docs/assets/dashboard-views.png" alt="The phases view showing P0 complete, P1 exit pending and P2 complete as a flowchart, above a schedule note stating that no task carries real schedule metadata and no duration is inferred, and a validation table counting tasks by strength." width="900">
+  <img src="docs/assets/dashboard-views.png" alt="The Graph tab's task graph: tasks grouped by phase P1, P2 and P3 and coloured by status, with a separate dashed group of project operations tasks, one of which feeds a product task, and the six view selectors above." width="900">
 </p>
 
 <p align="center"><em>Six views of the same state: task graph, critical path, phases, gates, dependency ordering, and calendar Gantt.<br>
-Below them, the schedule line says plainly that this project records no dates — rather than drawing a plausible one.</em></p>
+Product work is grouped by phase; operations sits apart in dashed nodes, joined only where execution waits on it.</em></p>
 
 ## Get started
 
