@@ -414,10 +414,10 @@ class TestReconstructedDecisions(FixtureCase):
         html = dashboard.render(
             self.project, analytics.report(self.project), compiler.as_json(self.project)
         )
-        section = html.split(">Decisions<", 1)[1].split("<h2>", 1)[0]
+        section = html.split('id="panel-decisions"', 1)[1].split('<section class="panel"', 1)[0]
         rows = {
             re.search(r"<code>(ADR-\d+)</code>", row).group(1): row
-            for row in section.split("<li")[1:]
+            for row in section.split('<details class="adr"')[1:]
         }
         self.assertIn("RECONSTRUCTED", rows["ADR-002"])
         self.assertIn("db/schema.sql", rows["ADR-002"])
@@ -674,8 +674,15 @@ class TestDashboard(FixtureCase):
             self.assertIn(f">{heading}<", self.html)
 
     def test_is_read_only(self) -> None:
-        for control in ("<form", "<input", "<textarea", "method=\"post\""):
+        """Search fields filter what is already on the page. Unnamed and in no
+        form, they cannot submit anything anywhere (ADR-044)."""
+        for control in ("<form", "<textarea", "method=\"post\"", "contenteditable"):
             self.assertNotIn(control, self.html)
+        inputs = re.findall(r"<input[^>]*>", self.html)
+        self.assertTrue(inputs)
+        for tag in inputs:
+            self.assertIn('type="search"', tag)
+            self.assertNotIn(" name=", tag)
 
     def test_task_drill_down_data_is_present(self) -> None:
         self.assertIn('data-task="T-THREE"', self.html)
@@ -729,6 +736,168 @@ class TestDashboard(FixtureCase):
         self.assertIn('onerror="window.mermaidFailed=true"', self.html)
         self.assertIn("canvas.classList.add('plain')", self.html)
         self.assertIn('id="offline-note"', self.html)
+
+
+class TestDashboardTabs(FixtureCase):
+    """The page is six views of one compiled project (ADR-044)."""
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.report = analytics.report(self.project)
+        self.compiled = compiler.as_json(self.project)
+        self.html = dashboard.render(self.project, self.report, self.compiled)
+
+    def panel(self, name: str) -> str:
+        body = self.html.split(f'id="panel-{name}"', 1)[1]
+        return re.split(r'<section class="panel"|<footer>', body, maxsplit=1)[0]
+
+    def test_six_top_level_tabs_in_order_with_overview_first(self) -> None:
+        tabs = re.findall(r'role="tab" id="tab-(\w+)"[^>]*aria-selected="(\w+)"[^>]*>([^<]+)<', self.html)
+        self.assertEqual(
+            [(name, label) for name, _, label in tabs],
+            [("overview", "Overview"), ("execution", "Execution"), ("graph", "Graph"),
+             ("governance", "Governance"), ("decisions", "Decisions"), ("tasks", "All Tasks")],
+        )
+        self.assertEqual([selected for _, selected, _ in tabs], ["true"] + ["false"] * 5)
+        for name, _, _ in tabs:
+            self.assertIn(f'id="panel-{name}" role="tabpanel" aria-labelledby="tab-{name}"', self.html)
+        self.assertIn("root.setAttribute('data-tab', known.indexOf(tab) >= 0 ? tab : 'overview')", self.html)
+        self.assertIn("history.replaceState(null, '', '#' + name)", self.html)
+
+    def test_only_the_selected_panel_is_displayed(self) -> None:
+        self.assertIn("html.js .panel { display: none; }", self.html)
+        for name in ("overview", "execution", "graph", "governance", "decisions", "tasks"):
+            self.assertIn(f'html.js[data-tab="{name}"] #panel-{name}', self.html)
+
+    def test_sections_live_under_their_tabs(self) -> None:
+        placement = {
+            "overview": ("Progress", "Phases"),
+            "execution": ("In flight", "Ready", "Obstacles", "Critical path"),
+            "graph": ("Views", "Schedule"),
+            "governance": ("Gates", "Validation"),
+            "decisions": ("Decisions",),
+            "tasks": ("All tasks",),
+        }
+        for name, headings in placement.items():
+            for heading in headings:
+                with self.subTest(tab=name, heading=heading):
+                    self.assertIn(f"<h2>{heading}</h2>", self.panel(name))
+
+    def test_the_focus_strip_reports_compiled_state(self) -> None:
+        overview = self.panel("overview")
+        strip = overview.split('<div class="focus">', 1)[1].split("<h2>", 1)[0]
+        # P1 is ACTIVE, nothing is WIP, T-TWO is ready and is the exit authority.
+        self.assertIn("<code>P1</code> · Foundation", strip)
+        self.assertIn("Nothing in flight", strip)
+        self.assertIn('Ready to start: <button type="button" class="tasklink" data-task="T-TWO">', strip)
+        self.assertIn("Exit authority for P1", strip)
+        self.assertIn("Gate A", strip)
+        blocker = dashboard._main_blocker(self.compiled)
+        self.assertIsNotNone(blocker)
+        self.assertIn(blocker["subject"], strip)
+        self.assertIn(dashboard.esc(blocker["detail"]), strip)
+
+    def test_the_main_blocker_prefers_the_work_in_hand(self) -> None:
+        compiled = {
+            "wip": ["T-B"], "criticalPath": ["T-B", "T-C"],
+            "obstacles": [
+                {"type": "PHASE_BLOCKER", "subject": "P2", "blockers": [], "detail": "phase"},
+                {"type": "DEPENDENCY_BLOCKER", "subject": "T-C", "blockers": ["T-B"], "detail": "dep"},
+                {"type": "ACCEPTANCE_BLOCKER", "subject": "T-B", "blockers": [], "detail": "acc"},
+            ],
+        }
+        self.assertEqual(dashboard._main_blocker(compiled)["detail"], "acc")
+        # With nothing in hand, type decides: a phase blocker before a dependency.
+        compiled["wip"], compiled["criticalPath"] = [], []
+        compiled["obstacles"] = compiled["obstacles"][:2]
+        self.assertEqual(dashboard._main_blocker(compiled)["detail"], "phase")
+        self.assertIsNone(dashboard._main_blocker({"wip": [], "criticalPath": [], "obstacles": []}))
+
+    def test_progress_and_phases_show_compiled_figures(self) -> None:
+        overview = self.panel("overview")
+        done = self.compiled["metrics"]["taskCompletion"]
+        self.assertIn(f'{done["done"]} <span class="note">/ {done["total"]}</span>', overview)
+        for phase in self.compiled["phases"]:
+            self.assertIn(f'{phase["progress"]["done"]} / {phase["progress"]["total"]} tasks', overview)
+        self.assertIn('class="phase current"', overview)
+
+    def test_the_critical_path_is_a_chain_in_compiled_order(self) -> None:
+        chain = self.panel("execution").split('<ol class="chain">', 1)[1].split("</ol>", 1)[0]
+        self.assertEqual(re.findall(r'data-task="([^"]+)"', chain), self.compiled["criticalPath"])
+
+    def test_dependency_blockers_waiting_on_blocked_work_are_collapsed(self) -> None:
+        execution = self.panel("execution")
+        downstream = [
+            o for o in self.compiled["obstacles"]
+            if o["type"] == "DEPENDENCY_BLOCKER"
+            and all(b in self.compiled["blocked"] for b in o["blockers"])
+        ]
+        if downstream:
+            self.assertIn('<details class="group"><summary>Waiting on work that is itself blocked', execution)
+        for obstacle in self.compiled["obstacles"]:
+            self.assertIn(dashboard.esc(obstacle["detail"]), execution)
+
+    def test_every_decision_is_listed_and_expandable(self) -> None:
+        decisions = self.panel("decisions")
+        for decision in self.compiled["decisions"]:
+            self.assertIn(f'<summary><code>{decision["id"]}</code>', decisions)
+        # One status present means no filter chips are invented.
+        self.assertNotIn('data-filter="', decisions)
+
+    def test_decision_filters_come_only_from_values_present(self) -> None:
+        (self.root / layout.AUTHORITY_DIR / "ADR" / "ADR-002.md").write_text(RECONSTRUCTED_ADR)
+        project = compiler.load(self.root)
+        html = dashboard.render(project, analytics.report(project), compiler.as_json(project))
+        chips = re.findall(r'data-filter="([^"]*)"', html)
+        self.assertEqual(chips, ["", "ACCEPTED", "PROPOSED", "reconstructed"])
+
+    def test_the_registry_holds_every_task_with_filters(self) -> None:
+        registry = self.panel("tasks")
+        rows = re.findall(r'<tr data-task="([^"]+)" tabindex="0" data-phase=', registry)
+        self.assertEqual(rows, [t["id"] for t in self.compiled["tasks"]])
+        self.assertIn('class="tablewrap tall"', registry)
+        for control in ("task-search", "task-phase", "task-status", "task-validation"):
+            self.assertIn(f'id="{control}"', registry)
+        self.assertIn(".tablewrap th { position: sticky; top: 0;", self.html)
+
+    def test_the_embedded_project_is_the_compiled_project(self) -> None:
+        start = self.html.index('id="project-data">') + len('id="project-data">')
+        embedded = json.loads(self.html[start:self.html.index("</script>", start)].replace("<\\/", "</"))
+        self.assertEqual(embedded, self.compiled)
+
+    def test_the_theme_is_explicit_persisted_and_falls_back_to_the_os(self) -> None:
+        head = self.html.split("</head>", 1)[0]
+        boot = head.index("<script>")
+        self.assertLess(boot, head.index("<style>"), "theme must be set before the stylesheet paints")
+        self.assertIn("localStorage.getItem('prokron-theme')", head)
+        self.assertIn("matchMedia('(prefers-color-scheme: dark)')", head)
+        self.assertIn('data-theme-choice="light"', self.html)
+        self.assertIn('data-theme-choice="dark"', self.html)
+        self.assertIn("localStorage.setItem(THEME_KEY, button.dataset.themeChoice)", self.html)
+        self.assertIn(':root[data-theme="dark"]', self.html)
+        self.assertIn(":root:not([data-theme])", self.html)
+
+    def test_graph_controls_survive_pointer_capture(self) -> None:
+        """Found in a real browser: the canvas captures the pointer to pan, and
+        a captured click lands on the canvas. Zoom buttons never fired and a
+        node never opened its dialog until both were handled."""
+        self.assertIn("if (event.target.closest && event.target.closest('.zoom')) return;", self.html)
+        self.assertIn("document.elementFromPoint(event.clientX, event.clientY)", self.html)
+
+    def test_a_redraw_is_measured_unscaled(self) -> None:
+        """Mermaid measured labels under the zoomed stage, so every redraw
+        drew them at the current zoom, 60% on a large project."""
+        draw = self.html.split("function draw() {", 1)[1].split("}", 1)[0]
+        self.assertIn("view.k = 1; view.x = 0; view.y = 0;", draw)
+        self.assertLess(draw.index("applyView()"), draw.index("window.mermaid.run") if "window.mermaid.run" in draw else len(draw))
+
+    def test_the_diagram_is_drawn_only_when_its_tab_is_shown(self) -> None:
+        self.assertIn("if (name === 'graph') graphShown();", self.html)
+        self.assertNotIn("traceNote.textContent = HINT;\n  draw();", self.html)
+
+    def test_the_footer_still_says_it_is_derived(self) -> None:
+        self.assertIn("This page is derived and read-only", self.html)
+        self.assertIn("it reports authority and cannot change it", self.html)
 
 
 class TestViews(FixtureCase):
