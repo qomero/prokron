@@ -34,8 +34,10 @@ one compiled `compiled/` directory. Only the first is authoritative.
 
 | File in `.prokron/chronicle/` | Role |
 |---|---|
+| `THESIS.md` | The product thesis every phase, module, and task descends from, with an optional source document |
 | `PHASES.md` | Phase outcome, entry, exit, exit authority, status, and gates; optionally the project's own name |
-| `TASKS.md` | Canonical tasks, phase, domain, dependencies, ownership, contract reference, and evidence |
+| `MODULES.md` | Modules: each a unit of work with an outcome, inside exactly one phase or `P-NONE` |
+| `TASKS.md` | Canonical tasks, module, domain, dependencies, ownership, contract reference, and evidence |
 | `ACCEPTANCE.md` | Completion contracts, evidence classes, and change requests |
 | `ADR/` | Append-only decision history and supersession lineage, one file per ADR |
 | `INTENT.md` | Zero or one task currently being attempted |
@@ -44,6 +46,12 @@ one compiled `compiled/` directory. Only the first is authoritative.
 | `TRACE.md` | Append-only operational events: tool calls, commands, mini-actions, mutations, failures, retries, validation runs |
 | `TECH_DEBT.md` | Known technical debt: what each compromise costs, its trigger, its exit condition, and its lineage |
 | `INDEX.md` | **Generated.** The routing layer an agent reads first: what matters now and where each record lives |
+
+Project management follows one fixed hierarchy: **thesis → phase → module →
+task** (ADR-035). A task never owns a phase: it names one module, and its phase
+is derived from that module. Phase-independent work belongs to a module in
+`P-NONE`. A legacy task that names `Phase:` directly still compiles, with no
+module and a conversion warning, and nothing invents a module for it (ADR-036).
 
 | File in `.prokron/compiled/` | Role |
 |---|---|
@@ -89,8 +97,8 @@ title or an identifier. `prokron domains` lists how every task was resolved.
 
 Phases, gates, the critical path, completion, acceptance and validation figures,
 work in flight, and the main blocker are all computed from execution. An
-operations task that names a phase is associated with it but never counted in
-it.
+operations task whose module sits in a phase is associated with it but never
+counted in it.
 
 **Operations can block execution without becoming execution.** When an
 execution task depends on an operations task, or a gate is verified by an

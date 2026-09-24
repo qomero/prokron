@@ -9,8 +9,9 @@ A phase answers one question:
 > What capability or maturity level must become true before the project moves
 > forward?
 
-A phase is not a container of tasks. Membership comes from the `Phase` field on
-each task in `TASKS.md`; no task is listed here.
+A phase is not a container of tasks. The hierarchy is thesis → phase → module →
+task: each module in `MODULES.md` names its phase, and each task in `TASKS.md`
+names its module. No module or task is listed here.
 
 ## Vocabulary
 
@@ -32,8 +33,8 @@ COMPLETE
 ```
 
 Work that belongs to no phase — repository chores, environment fixes,
-configuration — is marked `P-NONE` on the task and is never counted in phase
-progress.
+configuration — belongs to a module marked `P-NONE` and is never counted in
+phase progress.
 
 Closed phases stay recorded. A phase whose product direction was superseded is
 marked `COMPLETE` with a note, not deleted; its tasks and evidence are history.

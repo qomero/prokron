@@ -18,9 +18,11 @@ from .parse import (
     ParseError,
     parse_acceptance,
     parse_decisions,
+    parse_modules,
     parse_phases,
     parse_project_name,
     parse_tasks,
+    parse_thesis,
     parse_debt,
     parse_trace,
     read_text,
@@ -45,6 +47,7 @@ def locate(start: Path | None = None) -> Path:
 def load(root: Path) -> Project:
     authority = root / AUTHORITY_DIR
     phases, gates, milestones = parse_phases(authority / "PHASES.md")
+    modules = parse_modules(authority / "MODULES.md")
     # A project that names itself compiles the same in every checkout. One that
     # does not falls back to its directory, which is where the name used to
     # come from always.
@@ -52,8 +55,10 @@ def load(root: Path) -> Project:
         name=parse_project_name(authority / "PHASES.md") or root.name,
         root=str(root),
         current_phase=None,
+        thesis=parse_thesis(authority / "THESIS.md"),
         phases=phases,
-        tasks=parse_tasks(authority / "TASKS.md"),
+        modules=modules,
+        tasks=parse_tasks(authority / "TASKS.md", modules),
         contracts=parse_acceptance(authority / "ACCEPTANCE.md"),
         gates=gates,
         milestones=milestones,
@@ -87,6 +92,7 @@ def as_json(project: Project) -> dict[str, object]:
             "generatorVersion": layout.version(),
             "authority": AUTHORITY_DIR,
         },
+        "thesis": project.thesis.as_json(),
         "phases": [
             {
                 "id": phase.id,
@@ -101,10 +107,23 @@ def as_json(project: Project) -> dict[str, object]:
             }
             for phase in project.phases
         ],
+        # Phase -> module -> task, authored once and projected here (ADR-035).
+        "modules": [
+            {
+                "id": module.id,
+                "name": module.name,
+                "phase": module.phase,
+                "outcome": module.outcome,
+                "tasks": [task.id for task in project.tasks_in_module(module.id)],
+                "source": module.source.as_json(),
+            }
+            for module in project.modules
+        ],
         "tasks": [
             {
                 "id": task.id,
                 "title": task.title,
+                "module": task.module,
                 "phase": task.phase,
                 "domain": task.domain,
                 "domainSource": task.domain_source,
@@ -242,7 +261,9 @@ def as_json(project: Project) -> dict[str, object]:
         "sources": {
             "authority": AUTHORITY_DIR,
             "documents": [
+                "THESIS.md",
                 "PHASES.md",
+                "MODULES.md",
                 "TASKS.md",
                 "ACCEPTANCE.md",
                 "ADR/",

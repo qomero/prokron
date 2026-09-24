@@ -166,8 +166,10 @@ question.
 
 | Record | Question it answers | Shape |
 |---|---|---|
+| `THESIS.md` | Why does this project exist? | One thesis statement every phase, module, and task descends from |
 | `PHASES.md` | What maturity stage are we in, and what must be true to leave it? | Phases with outcome, entry, exit, exit authority; gates recorded once and referenced |
-| `TASKS.md` | What work exists, and what must happen first? | Tasks with phase, dependencies, status, validation, evidence, governing decisions |
+| `MODULES.md` | What coherent pieces of work deliver each phase? | Modules, each with an outcome, in exactly one phase or `P-NONE` |
+| `TASKS.md` | What work exists, and what must happen first? | Tasks with module (the phase comes from it), dependencies, status, validation, evidence, governing decisions |
 | `ACCEPTANCE.md` | What counts as done? | One contract per task; criteria as Given/When/Then, each with an evidence class and a state |
 | `ADR/` | Why did we choose this? | One file per decision, append-only, superseded rather than edited |
 | `INTENT.md` | What is being attempted right now? | Zero or one task, at its exact stopping point |

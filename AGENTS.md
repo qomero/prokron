@@ -16,9 +16,9 @@ Before reading broad repository context or the rest of `.prokron/chronicle/`:
    `.prokron/prokron compile`.
 2. Identify your task: the one you were given, or one the index or
    `.prokron/prokron context` names as in flight or ready. Then run
-   `.prokron/prokron context <task>` for its dependencies, blockers,
-   acceptance, invariants, decisions, evidence, implementation anchors, and the
-   exact `file#anchor` records to read. Do not start a task merely because
+   `.prokron/prokron context <task>` for its lineage (thesis → phase → module),
+   claim, dependencies, blockers, acceptance, invariants, decisions, evidence,
+   implementation anchors, and the exact `file#anchor` records to read. Do not start a task merely because
    unrelated work is visible in the repository.
 3. Read only those records. `.prokron/prokron retrieve "<question or task>"`
    returns exactly them, each labelled with its source.
@@ -62,8 +62,9 @@ Recognize these workflows:
 - `/prokron-baseline` → `.prokron/commands/prokron-baseline.md` (only when the owner asks)
 
 Maintain the chronicle automatically; do not wait for a Prokron command. Before
-starting newly requested work, create or claim its task, give it a phase from
-`PHASES.md` or mark it `P-NONE` and a `Domain:` of `execution` or `operations`,
+starting newly requested work, create or claim its task, give it one `Module:`
+from `MODULES.md` (its phase comes from the module; a module belongs to a phase
+in `PHASES.md` or to `P-NONE`) and a `Domain:` of `execution` or `operations`,
 write its acceptance contract in
 `ACCEPTANCE.md`, and set the single `INTENT.md` entry. When a material project
 choice is made, accepted, or acted on, append its ADR to `.prokron/chronicle/ADR/`

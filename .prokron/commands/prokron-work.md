@@ -3,10 +3,14 @@
 Run `.prokron/prokron status` for the current position, or read
 `.prokron/chronicle/README.md` and the compiled views if the tool is
 unavailable. Select the requested task, or one ready task if none was named.
-Use `.prokron/prokron explain <task>` rather than re-deriving its state by
-hand. If the requested work has no task yet, create it before implementation
-without waiting for a Prokron command, give it a phase and a `Domain:`
-(`execution` or `operations`), and write its acceptance contract. Read that
+Use `.prokron/prokron context <task>` rather than re-deriving its state by
+hand; its `lineage` names the task's thesis, phase, and module. If the
+requested work has no task yet, create it before implementation without
+waiting for a Prokron command, give it one `Module:` from `MODULES.md` (its
+phase comes from the module; author a module first if none fits) and a
+`Domain:` (`execution` or `operations`), and write its acceptance contract.
+Never move a task to another module or a module to another phase as a side
+effect of implementation; that is a decision. Read that
 task, its contract, and its governing ADRs, then inspect only the specification
 and code needed for the task.
 

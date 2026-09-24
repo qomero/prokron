@@ -45,6 +45,7 @@ def state(project: Project, report: Report) -> str:
     metrics = report.metrics()
     lines = [HEADER, "# State", ""]
     lines.append(f"- Project: {project.name}")
+    lines.append(f"- Product thesis: {project.thesis.statement or 'not authored'}")
     lines.append(f"- Current phase: {project.current_phase or 'none'}")
     lines.append(
         f"- Execution tasks: {metrics['taskCompletion']['done']} of "
@@ -70,6 +71,13 @@ def state(project: Project, report: Report) -> str:
         lines.append(
             f"- {phase.id} {phase.name}: {progress} execution tasks, {phase.status}{authority}"
         )
+        lines += _module_lines(project, phase.id)
+    if project.modules_in("P-NONE"):
+        lines.append("- P-NONE Phase-independent")
+        lines += _module_lines(project, "P-NONE")
+    legacy = [t.id for t in project.tasks if not t.module]
+    if legacy:
+        lines.append(f"- Legacy tasks with no module: {', '.join(legacy)}")
 
     lines += ["", "## Gates", ""]
     for gate in project.gates:
@@ -124,6 +132,13 @@ def state(project: Project, report: Report) -> str:
     return "\n".join(lines)
 
 
+def _module_lines(project: Project, phase_id: str) -> list[str]:
+    return [
+        f"  - {m.id} {m.name}: {len(project.tasks_in_module(m.id))} tasks"
+        for m in project.modules_in(phase_id)
+    ]
+
+
 def task_graph(project: Project, report: Report) -> str:
     lines = [HEADER, "# Task graph", ""]
     by_status: dict[str, list[str]] = {}
@@ -142,6 +157,7 @@ def task_graph(project: Project, report: Report) -> str:
         unlocks = report.downstream.get(task.id, [])
         eligible = "yes" if task.id in report.ready else "no"
         lines.append(f"- {task.id} [{task.status}] {task.title}")
+        lines.append(f"  - module: {task.module or 'none (legacy)'}")
         lines.append(f"  - phase: {task.phase}")
         lines.append(f"  - domain: {task.domain} ({task.domain_source})")
         lines.append(f"  - depends on: {', '.join(task.dependencies) or 'none'}")

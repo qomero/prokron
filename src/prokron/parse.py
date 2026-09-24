@@ -16,11 +16,13 @@ from .model import (
     Decision,
     Gate,
     Milestone,
+    Module,
     Phase,
     Schedule,
     Source,
     Task,
     TechDebt,
+    Thesis,
     TraceEvent,
 )
 
@@ -78,7 +80,41 @@ def _sections(text: str, level: str) -> list[tuple[str, str]]:
     return out
 
 
-def parse_tasks(path: Path) -> list[Task]:
+def parse_thesis(path: Path) -> Thesis:
+    """THESIS.md: one `Statement:` and an optional `Source:` (ADR-035)."""
+    fields = _fields(path.read_text()) if path.is_file() else {}
+    return Thesis(
+        statement=fields.get("Statement", "").strip(),
+        reference=fields.get("Source") or None,
+        source=Source(path.name, "Product thesis"),
+    )
+
+
+def parse_modules(path: Path) -> list[Module]:
+    """MODULES.md: `## M-<ID> — <name>` with `Phase:` and `Outcome:`."""
+    if not path.is_file():
+        return []
+    modules: list[Module] = []
+    for heading, body in _sections(path.read_text(), "##"):
+        match = re.match(r"(M-[A-Za-z0-9.\-]+) — (.+)", heading)
+        if not match:
+            raise ParseError(path.name, heading, "module heading must read '## <ID> — <name>'")
+        module_id = match.group(1)
+        fields = _fields(body)
+        for required in ("Phase", "Outcome"):
+            if required not in fields:
+                raise ParseError(path.name, module_id, f"missing required field '{required}'")
+        modules.append(Module(
+            id=module_id, name=match.group(2).strip(), phase=fields["Phase"],
+            outcome=fields["Outcome"], source=Source(path.name, module_id),
+        ))
+    return modules
+
+
+def parse_tasks(path: Path, modules: list[Module] | None = None) -> list[Task]:
+    """A current task names its module and takes its phase from it; a legacy
+    task names its phase directly (ADR-036). Neither form invents the other."""
+    phases = {module.id: module.phase for module in modules or []}
     name = path.name
     tasks: list[Task] = []
     for heading, body in _sections(path.read_text(), "##"):
@@ -87,9 +123,13 @@ def parse_tasks(path: Path) -> list[Task]:
             raise ParseError(name, heading, "task heading must read '## <ID>: <title>'")
         task_id, title = match.group(1), match.group(2)
         fields = _fields(body)
-        for required in ("Status", "Phase", "Validation", "Dependencies"):
+        for required in ("Status", "Validation", "Dependencies"):
             if required not in fields:
                 raise ParseError(name, task_id, f"missing required field '{required}'")
+        module_id = fields.get("Module") or None
+        legacy_phase = fields.get("Phase") or None
+        if not module_id and not legacy_phase:
+            raise ParseError(name, task_id, "missing required field 'Module'")
         schedule = Schedule()
         if "Schedule" in fields:
             for part in fields["Schedule"].split():
@@ -103,7 +143,7 @@ def parse_tasks(path: Path) -> list[Task]:
             Task(
                 id=task_id,
                 title=title,
-                phase=fields["Phase"],
+                phase=phases.get(module_id or "", legacy_phase or ""),
                 status=fields["Status"],
                 validation=fields["Validation"],
                 dependencies=_list(fields["Dependencies"]),
@@ -117,6 +157,8 @@ def parse_tasks(path: Path) -> list[Task]:
                 declared_domain=(fields.get("Domain") or "").strip().lower() or None,
                 files=_list(fields.get("Files")),
                 symbols=_list(fields.get("Symbols")),
+                module=module_id,
+                legacy_phase=legacy_phase,
             )
         )
     return tasks

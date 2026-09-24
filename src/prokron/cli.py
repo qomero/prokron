@@ -244,7 +244,11 @@ def cmd_explain(root: Path, args: argparse.Namespace) -> int:
         print(json.dumps(detail, indent=2))
         return 0
     print(f"{detail['id']} — {detail['title']}")
-    print(f"  phase {detail['phase']} · {detail['status']} · {detail['validation']}")
+    print(f"  thesis {detail['lineage']['thesis'] or 'not authored'}")
+    print(
+        f"  phase {detail['phase']} · module {detail['module'] or 'none (legacy)'} · "
+        f"{detail['status']} · {detail['validation']}"
+    )
     if detail["dependencies"]:
         print("\n  Dependencies")
         for dependency in detail["dependencies"]:

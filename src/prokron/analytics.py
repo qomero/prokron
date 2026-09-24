@@ -563,7 +563,9 @@ def explain(project: Project, task_id: str) -> dict[str, object]:
     return {
         "id": task.id,
         "title": task.title,
+        "lineage": lineage(project, task),
         "phase": task.phase,
+        "module": task.module,
         "domain": task.domain,
         "domainSource": task.domain_source,
         "status": task.status,
@@ -606,6 +608,19 @@ def _relevant(narrative: str, task_id: str) -> str | None:
     return narrative if narrative and task_id in narrative else None
 
 
+def lineage(project: Project, task) -> dict[str, object]:
+    """Thesis -> phase -> module for one task, as authored (ADR-035)."""
+    module = project.module(task.module or "")
+    return {
+        "thesis": project.thesis.statement or None,
+        "phase": task.phase or None,
+        "module": (
+            {"id": module.id, "name": module.name, "outcome": module.outcome}
+            if module else None
+        ),
+    }
+
+
 def _pointer(source) -> str:
     """A `file#anchor` pointer into the chronicle, as INDEX.md writes them."""
     if source.file.endswith(f"/{source.anchor}.md"):
@@ -631,6 +646,7 @@ def orientation(project: Project) -> dict[str, object]:
     return {
         "packetFor": None,
         "project": project.name,
+        "thesis": project.thesis.as_json(),
         "phase": (
             {"id": current.id, "status": current.status,
              "progress": str(result.phase_progress[current.id]),
@@ -660,7 +676,9 @@ def _problems(project: Project, task) -> list[str]:
     known = {d.id for d in project.decisions}
     problems += [f"decision {d} has no record" for d in task.decisions
                  if d.startswith("ADR-") and d not in known]
-    if task.phase != "P-NONE" and project.phase(task.phase) is None:
+    if task.module and project.module(task.module) is None:
+        problems.append(f"module {task.module} is not in MODULES.md")
+    elif task.phase != "P-NONE" and project.phase(task.phase) is None:
         problems.append(f"phase {task.phase} is not in PHASES.md")
     contract = project.contracts.get(task.contract or "")
     if not task.contract:
@@ -691,9 +709,11 @@ def context(project: Project, task_id: str | None, role: str = "builder") -> dic
         or any(adr in d.introduced_by for adr in task.decisions)
     ]
     # The records to open, in reading order, when the packet is not enough.
+    module = project.module(task.module or "")
     authority = [
         _pointer(task.source),
         *([_pointer(contract.source)] if contract else []),
+        *([_pointer(module.source)] if module else []),
         *([_pointer(phase.source)] if phase else []),
         *[_pointer(d.source) for d in decisions],
         *[_pointer(d.source) for d in debts],
@@ -701,6 +721,7 @@ def context(project: Project, task_id: str | None, role: str = "builder") -> dic
     packet: dict[str, object] = {
         "role": role,
         "packetFor": task_id,
+        "lineage": lineage(project, task),
         "intent": _relevant(project.intent, task_id),
         "phase": (
             {"id": phase.id, "outcome": phase.outcome, "status": phase.status}
@@ -710,6 +731,7 @@ def context(project: Project, task_id: str | None, role: str = "builder") -> dic
         "task": {
             "id": task.id,
             "title": task.title,
+            "module": task.module,
             "domain": task.domain,
             "domainSource": task.domain_source,
             "implementation": {"files": task.files, "symbols": task.symbols},

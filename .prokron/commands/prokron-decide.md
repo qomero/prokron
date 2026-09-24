@@ -5,5 +5,7 @@ acted on; do not wait for `/prokron-decide` to be invoked. Append an ADR as its 
 file in `.prokron/chronicle/ADR/`, numbered in sequence, with date, authority, context,
 decision, consequences, affected tasks, and any `Supersedes` links. Add it to
 `.prokron/chronicle/ADR/README.md`. Never rewrite an earlier ADR, including its original
-status. Update affected tasks, contracts, phases, and the compiled views when
-the decision changes project work.
+status. Update affected tasks, contracts, modules, phases, and the compiled views
+when the decision changes project work. A decision that moves a task to
+another module, or a module to another phase, names both in the ADR, so the
+thesis → phase → module → task lineage stays traceable.

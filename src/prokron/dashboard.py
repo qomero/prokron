@@ -139,6 +139,9 @@ html.js[data-tab="tasks"] #panel-tasks { display: block; }
 .phase.current { border-color: var(--accent); box-shadow: inset 3px 0 0 var(--accent), var(--shadow); }
 .phase header { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
 .phase .outcome { color: var(--muted); font-size: 13px; margin: 6px 0 8px; }
+.thesis p { margin: 4px 0; font-size: 15px; }
+.hierarchy .module { padding: 8px 16px 10px; border-top: 1px solid var(--line); }
+.hierarchy .module .outcome { color: var(--muted); font-size: 13px; margin: 2px 0 6px; }
 
 /* Tables */
 .tablewrap { overflow: auto; border: 1px solid var(--line); border-radius: var(--radius);
@@ -341,6 +344,7 @@ function showTask(id) {
     <h3>${esc(task.id)} — ${esc(task.title)}</h3>
     <p class="sub">${pill(task.status)} ${pill(task.validation)}
        <span class="pill">${esc(task.phase)}</span>
+       ${task.module ? `<span class="pill">${esc(task.module)}</span>` : ''}
        <span class="pill ${esc(task.domain)}">${esc(task.domain)}</span>
        ${task.owner ? `<span class="pill">${esc(task.owner)}</span>` : ''}</p>
     <dl>
@@ -1097,6 +1101,57 @@ def render(project: Project, report: Report, compiled: dict) -> str:
         for phase in compiled["phases"]
     ) or '<p class="note">No phases recorded.</p>'
 
+    # --- Product hierarchy (ADR-035) ---------------------------------------
+    # Thesis, then phase -> module -> task, exactly as compiled. The
+    # relationships come from `compiled`; the page only lays them out.
+    thesis = compiled["thesis"]
+    modules_by_phase: dict[str, list[dict]] = {}
+    for module in compiled["modules"]:
+        modules_by_phase.setdefault(module["phase"], []).append(module)
+
+    def module_block(module: dict) -> str:
+        items = "".join(f"<li>{_pill(tasks[t]['status'])} {ref(t)}</li>" for t in module["tasks"])
+        return (
+            f'<div class="module"><div><code>{esc(module["id"])}</code> <strong>{esc(module["name"])}</strong>'
+            f' <span class="note">{len(module["tasks"])} tasks</span></div>'
+            f'<div class="outcome">{esc(module["outcome"])}</div>'
+            + (f'<ul class="plain">{items}</ul>' if items else '<p class="note">No tasks yet.</p>')
+            + "</div>"
+        )
+
+    def phase_group(phase_id: str, label: str, opened: bool) -> str:
+        modules = modules_by_phase.get(phase_id, [])
+        if not modules:
+            return ""
+        return (
+            f'<details class="group hierarchy-phase" data-phase="{esc(phase_id)}"{" open" if opened else ""}>'
+            f"<summary><code>{esc(phase_id)}</code> {esc(label)}"
+            f'<span class="count">{len(modules)} modules</span></summary>'
+            + "".join(module_block(m) for m in modules)
+            + "</details>"
+        )
+
+    legacy = [t["id"] for t in compiled["tasks"] if not t["module"]]
+    hierarchy = (
+        '<div class="box thesis"><div class="k">Product thesis</div>'
+        + (f'<p>{esc(thesis["statement"])}</p>' if thesis["statement"]
+           else '<p class="note">No product thesis authored in THESIS.md.</p>')
+        + (f'<div class="note">Detail: <code>{esc(thesis["reference"])}</code></div>' if thesis["reference"] else "")
+        + "</div>"
+        + "".join(
+            phase_group(phase["id"], phase["name"], phase["id"] == current_id)
+            for phase in compiled["phases"]
+        )
+        + phase_group("P-NONE", "Phase-independent", False)
+        + (
+            '<details class="group hierarchy-phase" data-phase="legacy"><summary>Legacy tasks with no module'
+            f'<span class="count">{len(legacy)}</span></summary><ul class="plain">'
+            + "".join(f"<li>{_pill(tasks[t]['status'])} {ref(t)}</li>" for t in legacy)
+            + "</ul></details>"
+            if legacy else ""
+        )
+    )
+
     external_overview = ""
     if execution["externalBlockers"]:
         external_overview = (
@@ -1412,6 +1467,8 @@ def render(project: Project, report: Report, compiled: dict) -> str:
   <div class="grid">{cards}</div>
   <h2>Phases</h2>
   <div class="phases">{phase_cards}</div>
+  <h2>Product hierarchy</h2>
+  <div class="hierarchy">{hierarchy}</div>
 """)
     execution_panel = panel("execution", f"""
   <h2>In flight</h2>

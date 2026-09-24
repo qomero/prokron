@@ -7,7 +7,8 @@ for the active or selected task, then read only what they point to among `.prokr
 `.prokron/chronicle/PHASES.md`, `.prokron/compiled/TASK_GRAPH.md`, the active
 or selected task, its contract in `ACCEPTANCE.md`, its governing ADRs,
 `INTENT.md`, `HANDOFF.md`, and only the recent journal entries needed for
-continuity. State the current goal and exact next
+continuity. State the current goal with its lineage — the thesis, phase, and module the
+task belongs to, as `context <task>` reports them — and the exact next
 action, then continue. Read implementation code only after the chronicle points
 to the work that requires it. Treat the chronicle as current project truth and
 the product specification as intended behavior that may require reconciliation.

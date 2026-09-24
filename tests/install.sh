@@ -12,8 +12,13 @@ printf '# Keep agent rules\n' > "$fixture/AGENTS.md"
 printf '# Keep Claude rules\n' > "$fixture/CLAUDE.md"
 "$root/install.sh" existing "$fixture" --no-link > "$fixture/output"
 
-for file in README PHASES TASKS ACCEPTANCE INTENT HANDOFF JOURNAL TRACE TECH_DEBT; do
+for file in README THESIS PHASES MODULES TASKS ACCEPTANCE INTENT HANDOFF JOURNAL TRACE TECH_DEBT; do
   test -f "$fixture/.prokron/chronicle/$file.md"
+done
+# Every installed surface describes the same hierarchy (ADR-035).
+for surface in .prokron/chronicle/README.md .prokron/chronicle/PHASES.md \
+    .prokron/chronicle/MODULES.md AGENTS.md .agents/skills/prokron/SKILL.md; do
+  grep -qi 'module' "$fixture/$surface" || { echo "no module hierarchy in $surface" >&2; exit 1; }
 done
 test -f "$fixture/.prokron/chronicle/ADR/README.md"
 # Authority never lands in the compiled directory.
