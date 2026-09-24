@@ -194,15 +194,18 @@ maintains the environment the project is built in. Declare it on the task:
 ```text
 ## T-205: Upgrade Prokron and refresh the dashboard
 - Status: TODO
-- Phase: P-NONE
+- Module: M-TOOLING
 - Domain: operations
 ```
+
+A task names its module; the module in `MODULES.md` names its phase, here
+`P-NONE`. The project reads thesis → phase → module → task.
 
 Progress, phases, gates, the critical path, and the Overview describe execution
 only. An operations task that an execution task depends on shows up as that
 task's external blocker, labelled as operations, with a link to its trace.
 
-Tasks in a phase count as execution without saying so. A phase-independent task
+Tasks whose module sits in a phase count as execution without saying so. A phase-independent task
 with no `Domain:` is counted as execution and `validate` warns about it.
 `prokron domains` lists every task by how its domain was decided and names
 the ones that need a `Domain:`.

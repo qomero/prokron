@@ -25,21 +25,28 @@ question that an authored document answers.
 1. `INDEX.md` first: the generated map of what matters now and where each
    record lives. Then only the records it points to; `prokron retrieve`
    returns them with their sources.
-2. `.prokron/compiled/STATE.md` for the current position.
+2. `.prokron/compiled/STATE.md` for the current position and the product
+   thesis.
 3. `PHASES.md` for the active phase, its exit conditions, and gate status.
 4. `.prokron/compiled/TASK_GRAPH.md` for in-flight, ready, and blocked work.
-5. The selected entry in `TASKS.md`.
+5. The selected entry in `TASKS.md`, and its module in `MODULES.md`; the
+   module names the phase. `prokron context <task>` gives the lineage.
 6. Its contract in `ACCEPTANCE.md`.
 7. Its governing entries in `ADR/`.
 8. `INTENT.md` for the single task in progress.
 9. `HANDOFF.md` for current implementation continuity.
 10. Recent `JOURNAL.md` entries when further detail is needed.
-11. Read specifications or code only when the selected task requires them.
+11. Read `THESIS.md`'s source, specifications, or code only when the selected
+    task requires them.
 
 ## Authority
 
+- `THESIS.md` is the product thesis: the one statement every phase, module,
+  and task descends from.
 - `PHASES.md` is phase outcome, entry, exit, exit authority, and status.
-- `TASKS.md` is task identity, phase, domain, dependency, ownership, execution
+- `MODULES.md` is module identity, outcome, and the one phase (or `P-NONE`) each
+  module belongs to.
+- `TASKS.md` is task identity, module, domain, dependency, ownership, execution
   state, validation state, contract reference, and evidence.
 - `ACCEPTANCE.md` is the completion contract. A task is not done because someone
   says it is done; it is done when its frozen contract has sufficient evidence.
@@ -60,8 +67,9 @@ question that an authored document answers.
 ## Working rules
 
 1. Record every new work request as a task before implementation without waiting
-   for a Prokron command. Give it a phase, or mark it `P-NONE`, and a
-   `Domain:` — `execution` for work that advances the project itself,
+   for a Prokron command. Give it a `Module:` from `MODULES.md`; its phase
+   comes from that module, never from the task. If no module fits, author one
+   in a phase or `P-NONE` first. Give it a `Domain:` — `execution` for work that advances the project itself,
    `operations` for work that maintains the environment it is built in
    (tooling, upgrades, CI, housekeeping). Changing a task's domain is a
    material decision: record it in the journal, or in an ADR when it changes
@@ -106,7 +114,8 @@ before long-running work, and before ending. Do not wait until the last message.
 These modes initialize a fresh chronicle. If records already exist, preserve
 them and resume; neither mode resets history.
 
-- **New repository:** derive initial phases, tasks, and contracts from the
-  product specification with the developer. Record material decisions as ADRs.
+- **New repository:** find or elicit the product thesis first, then derive
+  phases, modules, tasks, and contracts from it and the product specification
+  with the developer, in that order. Record material decisions as ADRs.
 - **Existing repository:** start with an empty chronicle and record from the
   current session onward. Do not reconstruct historical tasks or decisions.

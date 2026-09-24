@@ -8,8 +8,9 @@ Prepare the chronicle for another person or agent:
    `.prokron/prokron compile` to refresh the views in `.prokron/compiled/`.
 3. Update `INTENT.md` with the exact stopping point and next action, or clear it
    when the task is complete.
-4. Rewrite `HANDOFF.md` with the current position, what is true now, what is not
-   done, and the next action.
+4. Rewrite `HANDOFF.md` with the current position, naming the active task with
+   its module and phase, what is true now, what is not done, and the next
+   action.
 5. Append a `JOURNAL.md` entry containing work done, validation, learning,
    unfinished work, and the exact next action, and any `TRACE.md` events
    not yet recorded for failures, retries, or mutations that matter.

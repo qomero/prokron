@@ -108,7 +108,8 @@ Each record answers one question a project keeps being asked.
 | The question | What answers it | Where it lives |
 |---|---|---|
 | What are we trying to do right now? | **Intent** — zero or one active task, at its exact stopping point | `INTENT.md` |
-| What work exists? | **Tasks** — phase, owner, status, validation, evidence | `TASKS.md` |
+| Why does the project exist? | **Thesis** — the statement every phase, module, and task descends from | `THESIS.md` |
+| What work exists? | **Tasks** — module (and through it, phase), owner, status, validation, evidence | `TASKS.md`, `MODULES.md` |
 | What has to happen first? | **Dependencies**, resolved into a graph of ready and blocked work | computed from `TASKS.md` |
 | What counts as done? | **Acceptance** — a frozen contract per task, criterion by criterion | `ACCEPTANCE.md` |
 | What phase are we in, and what must be true to leave it? | **Phases** and **gates** — outcome, entry, exit, exit authority | `PHASES.md` |
@@ -393,8 +394,10 @@ authoritative.
 |---|---|
 | **`ACCEPTANCE.md`** | The bar: what must be demonstrated before work counts as done. |
 | **`ADR/`** | The reasoning: append-only decisions and their supersession chain. |
+| `THESIS.md` | The purpose: the product thesis every phase, module, and task descends from. |
 | `PHASES.md` | The arc: maturity stages, exit conditions, exit authority, and gates. |
-| `TASKS.md` | The work: phase, domain (execution or operations), owner, dependencies, status, validation, evidence. |
+| `MODULES.md` | The decomposition: modules, each inside one phase or `P-NONE`. |
+| `TASKS.md` | The work: module, domain (execution or operations), owner, dependencies, status, validation, evidence. |
 | `INTENT.md` | The focus: zero or one active task and its exact execution point. |
 | `HANDOFF.md` | The baton: what the next person or agent needs right now. |
 | `JOURNAL.md` | The diary: progress, validation, what was left mid-air, and why. |

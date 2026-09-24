@@ -2788,6 +2788,59 @@ class TestBootProtocol(unittest.TestCase):
         self.assertIn("INDEX.md", self.text(".prokron/commands/prokron-resume.md"))
 
 
+class TestHierarchyGuidance(unittest.TestCase):
+    """Every workflow and installed surface follows thesis -> phase -> module -> task."""
+
+    ROOT = Path(__file__).resolve().parents[1]
+
+    def text(self, name: str) -> str:
+        return " ".join((self.ROOT / name).read_text().split())
+
+    def test_initialization_authors_the_thesis_first_and_in_order(self) -> None:
+        text = self.text(".prokron/commands/prokron-init.md")
+        self.assertIn("find the product thesis first", text)
+        self.assertIn("thesis → phases → modules → tasks", text)
+        self.assertLess(text.index("`THESIS.md`"), text.index("`TASKS.md`"))
+        self.assertIn("Do not inspect the repository to invent a historical chronicle", text)
+
+    def test_each_workflow_locates_and_preserves_the_lineage(self) -> None:
+        for name, phrase in (
+            ("work", "its `lineage` names the task's thesis, phase, and module"),
+            ("work", "give it one `Module:` from `MODULES.md`"),
+            ("decide", "thesis → phase → module → task lineage stays traceable"),
+            ("checkpoint", "naming the active task with its module and phase"),
+            ("resume", "the thesis, phase, and module the task belongs to"),
+        ):
+            with self.subTest(workflow=name):
+                self.assertIn(phrase, self.text(f".prokron/commands/prokron-{name}.md"))
+
+    def test_templates_and_agent_instructions_describe_one_hierarchy(self) -> None:
+        self.assertIn("- Statement:", self.text("templates/chronicle/THESIS.md"))
+        modules = self.text("templates/chronicle/MODULES.md")
+        self.assertIn("a task never names a phase itself", modules)
+        self.assertEqual(compiler.parse_modules(self.ROOT / "templates/chronicle/MODULES.md"), [])
+        readme = self.text("templates/chronicle/README.md")
+        for record in ("`THESIS.md` is the product thesis", "`MODULES.md` is module identity",
+                       "`TASKS.md` is task identity, module,", "Give it a `Module:` from `MODULES.md`"):
+            self.assertIn(record, readme)
+        self.assertIn("each module in `MODULES.md` names its phase", self.text("templates/chronicle/PHASES.md"))
+        self.assertIn("give it one `Module:` from `MODULES.md`", self.text("AGENTS.md"))
+        self.assertIn("thesis → phase → module → task", self.text(".agents/skills/prokron/SKILL.md"))
+        self.assertIn("THESIS PHASES MODULES TASKS", self.text("install.sh"))
+        # Nothing still tells an agent that a task owns its phase.
+        for name in ("AGENTS.md", ".agents/skills/prokron/SKILL.md", "templates/chronicle/README.md",
+                     ".prokron/commands/prokron-work.md"):
+            self.assertNotIn("give it a phase", self.text(name).lower(), name)
+
+    def test_the_public_documents_state_the_hierarchy(self) -> None:
+        spec = self.text("docs/SPEC.md")
+        self.assertIn("**thesis → phase → module → task**", spec)
+        self.assertIn("A task never owns a phase", spec)
+        self.assertIn("| `MODULES.md` |", self.text("docs/PRODUCT-THESIS.md"))
+        for name in ("docs/SPEC.md", "docs/PRODUCT-THESIS.md", "README.md"):
+            self.assertNotRegex(self.text(name), r"\| `TASKS.md` \|[^|]*\btasks?,? (with )?phase\b", name)
+
+
 class TestNoNetworkOrDependencies(unittest.TestCase):
     def test_runtime_imports_only_the_standard_library(self) -> None:
         import sysconfig
