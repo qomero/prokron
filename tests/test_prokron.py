@@ -64,11 +64,28 @@ Status: RED
 - `M-FIRST` — First light. Reached when T-ONE is `DONE`.
 """
 
+THESIS = """# Product thesis
+
+- Statement: A building people can live in.
+- Source: docs/THESIS.md
+"""
+
+MODULES = """# Modules
+
+## M-FOUNDATION — Foundation and walls
+- Phase: P1
+- Outcome: The structure stands.
+
+## M-UPKEEP — Upkeep
+- Phase: P-NONE
+- Outcome: The site stays usable.
+"""
+
 TASKS = """# Tasks
 
 ## T-ONE: Lay the foundation
 - Status: DONE
-- Phase: P1
+- Module: M-FOUNDATION
 - Validation: SYNTHETIC
 - Dependencies: none
 - Owner: someone
@@ -78,7 +95,7 @@ TASKS = """# Tasks
 
 ## T-TWO: Build on it
 - Status: TODO
-- Phase: P1
+- Module: M-FOUNDATION
 - Validation: UNTESTED
 - Dependencies: T-ONE
 - Owner: unassigned
@@ -88,7 +105,7 @@ TASKS = """# Tasks
 
 ## T-THREE: Finish later
 - Status: TODO
-- Phase: P1
+- Module: M-FOUNDATION
 - Validation: UNTESTED
 - Dependencies: T-TWO
 - Owner: unassigned
@@ -144,6 +161,8 @@ def build_fixture(root: Path, authority: str = layout.AUTHORITY_DIR) -> Path:
     authority = root / authority
     (authority / "ADR").mkdir(parents=True)
     (authority / "PHASES.md").write_text(PHASES)
+    (authority / "THESIS.md").write_text(THESIS)
+    (authority / "MODULES.md").write_text(MODULES)
     (authority / "TASKS.md").write_text(TASKS)
     (authority / "ACCEPTANCE.md").write_text(ACCEPTANCE)
     (authority / "ADR" / "ADR-001.md").write_text(ADR)
@@ -222,7 +241,7 @@ class TestParsing(FixtureCase):
         self.assertEqual(caught.exception.file, "TASKS.md")
 
     def test_missing_required_field_is_rejected(self) -> None:
-        self.rewrite_raw("TASKS.md", "- Phase: P1\n- Validation: SYNTHETIC\n", "")
+        self.rewrite_raw("TASKS.md", "- Module: M-FOUNDATION\n- Validation: SYNTHETIC\n", "")
         with self.assertRaises(ParseError) as caught:
             compiler.load(self.root)
         self.assertIn("missing required field", str(caught.exception))
@@ -247,8 +266,8 @@ class TestValidation(FixtureCase):
         self.assertIn("duplicate-task", self.codes())
 
     def test_unknown_phase(self) -> None:
-        self.rewrite("TASKS.md", "- Phase: P1\n- Validation: UNTESTED", "- Phase: P9\n- Validation: UNTESTED")
-        self.assertIn("unknown-phase", self.codes())
+        self.rewrite("MODULES.md", "- Phase: P1", "- Phase: P9")
+        self.assertIn("unknown-module-phase", self.codes())
 
     def test_missing_contract_reference(self) -> None:
         self.rewrite("TASKS.md", "- AC: AC-T-TWO\n", "")
@@ -297,7 +316,7 @@ class TestValidation(FixtureCase):
         self.assertIn("unknown-gate-reference", self.codes())
 
     def test_invalid_status_and_validation(self) -> None:
-        self.rewrite("TASKS.md", "- Status: TODO\n- Phase: P1\n- Validation: UNTESTED", "- Status: MAYBE\n- Phase: P1\n- Validation: VIBES")
+        self.rewrite("TASKS.md", "- Status: TODO\n- Module: M-FOUNDATION\n- Validation: UNTESTED", "- Status: MAYBE\n- Module: M-FOUNDATION\n- Validation: VIBES")
         codes = self.codes()
         self.assertIn("invalid-status", codes)
         self.assertIn("invalid-validation", codes)
@@ -453,7 +472,7 @@ class TestAnalytics(FixtureCase):
 
     def test_phase_independent_work_still_counts_as_tasks(self) -> None:
         """0 / 0 reads as "nothing here", which is not what P-NONE means."""
-        self.rewrite("TASKS.md", "- Phase: P1\n- Validation: SYNTHETIC", "- Phase: P-NONE\n- Validation: SYNTHETIC")
+        self.rewrite("TASKS.md", "- Module: M-FOUNDATION\n- Validation: SYNTHETIC", "- Module: M-UPKEEP\n- Validation: SYNTHETIC")
         metrics = analytics.report(self.project).metrics()
         self.assertEqual(metrics["taskCompletion"]["total"], 3)
         self.assertEqual(metrics["phaseIndependent"], 1)
@@ -563,7 +582,8 @@ class TestScopedContext(FixtureCase):
         self.assertEqual([d["id"] for d in packet["decisions"]], ["ADR-001"])
         self.assertEqual(packet["task"]["implementation"]["files"], ["src/build.py"])
         self.assertEqual(packet["authority"]["read"], [
-            "TASKS.md#T-TWO", "ACCEPTANCE.md#AC-T-TWO", "PHASES.md#P1", "ADR/ADR-001.md",
+            "TASKS.md#T-TWO", "ACCEPTANCE.md#AC-T-TWO", "MODULES.md#M-FOUNDATION",
+            "PHASES.md#P1", "ADR/ADR-001.md",
         ])
         for pointer in packet["authority"]["read"]:
             with self.subTest(pointer=pointer):
@@ -577,15 +597,15 @@ class TestScopedContext(FixtureCase):
             "- Dependencies: T-ONE, T-GHOST\n- Owner: unassigned\n- AC: AC-T-NOPE\n- Evidence: —\n"
             "- Governed by: ADR-001, ADR-099",
         )
-        self.rewrite("TASKS.md", "## T-TWO: Build on it\n- Status: TODO\n- Phase: P1",
-                     "## T-TWO: Build on it\n- Status: TODO\n- Phase: P9")
+        self.rewrite("TASKS.md", "## T-TWO: Build on it\n- Status: TODO\n- Module: M-FOUNDATION",
+                     "## T-TWO: Build on it\n- Status: TODO\n- Module: M-GHOST")
         packet = analytics.context(self.project, "T-TWO")
         self.assertEqual(packet["task"]["dependencies"][1],
                          {"id": "T-GHOST", "done": False, "status": "MISSING"})
         self.assertEqual(packet["problems"], [
             "dependency T-GHOST is not a known task",
             "decision ADR-099 has no record",
-            "phase P9 is not in PHASES.md",
+            "module M-GHOST is not in MODULES.md",
             "contract AC-T-NOPE is not in ACCEPTANCE.md",
         ])
         self.assertEqual(packet["acceptance"], [])
@@ -631,6 +651,88 @@ class TestScopedContext(FixtureCase):
         with redirect_stdout(buffer):
             code = cli.main(["-C", str(self.root), *argv])
         return code, buffer.getvalue()
+
+
+class TestHierarchy(FixtureCase):
+    """Thesis -> phase -> module -> task (ADR-035, ADR-036)."""
+
+    def test_typed_objects_with_provenance_and_phase_only_through_the_module(self) -> None:
+        self.assertEqual(self.project.thesis.statement, "A building people can live in.")
+        self.assertEqual(self.project.thesis.reference, "docs/THESIS.md")
+        module = self.project.module("M-FOUNDATION")
+        self.assertEqual((module.name, module.phase), ("Foundation and walls", "P1"))
+        self.assertEqual((module.source.file, module.source.anchor), ("MODULES.md", "M-FOUNDATION"))
+        task = self.project.task("T-TWO")
+        self.assertEqual((task.module, task.phase, task.legacy_phase), ("M-FOUNDATION", "P1", None))
+        # Moving the module moves its tasks; the task names no phase itself.
+        self.rewrite("MODULES.md", "- Phase: P1", "- Phase: P-NONE")
+        self.assertEqual(self.project.task("T-TWO").phase, "P-NONE")
+
+    def test_structural_errors_refuse_a_normal_compile(self) -> None:
+        cases = {
+            "duplicate-module": ("MODULES.md", "## M-UPKEEP — Upkeep", "## M-FOUNDATION — Upkeep"),
+            "unknown-module-phase": ("MODULES.md", "- Phase: P-NONE", "- Phase: P7"),
+            "unknown-module": ("TASKS.md", "- Module: M-FOUNDATION\n- Validation: SYNTHETIC",
+                               "- Module: M-NOWHERE\n- Validation: SYNTHETIC"),
+            "missing-thesis": ("THESIS.md", "- Statement: A building people can live in.", ""),
+            "duplicate-phase-authority": ("TASKS.md", "- Module: M-FOUNDATION\n- Validation: SYNTHETIC",
+                                          "- Module: M-FOUNDATION\n- Phase: P1\n- Validation: SYNTHETIC"),
+        }
+        for code, (name, old, new) in cases.items():
+            with self.subTest(code=code):
+                self.setUp()
+                self.rewrite(name, old, new)
+                errors = [f.code for f in validate.errors(validate.check(self.project))]
+                self.assertIn(code, errors)
+                buffer = io.StringIO()
+                with redirect_stdout(buffer), redirect_stderr(buffer):
+                    self.assertEqual(cli.main(["-C", str(self.root), "compile"]), 1)
+                self.assertFalse((self.root / layout.COMPILED_DIR / "project.json").exists())
+
+    def test_a_legacy_task_stays_readable_with_a_conversion_warning(self) -> None:
+        self.rewrite("TASKS.md", "- Module: M-FOUNDATION\n- Validation: SYNTHETIC",
+                     "- Phase: P1\n- Validation: SYNTHETIC")
+        task = self.project.task("T-ONE")
+        self.assertEqual((task.module, task.phase, task.legacy_phase), (None, "P1", "P1"))
+        findings = validate.check(self.project)
+        self.assertEqual(validate.errors(findings), [])
+        self.assertIn("legacy-task-phase", [f.code for f in findings])
+        buffer = io.StringIO()
+        with redirect_stdout(buffer):
+            self.assertEqual(cli.main(["-C", str(self.root), "compile"]), 0)
+
+    def test_a_fully_legacy_chronicle_without_a_thesis_still_compiles(self) -> None:
+        (self.root / layout.AUTHORITY_DIR / "THESIS.md").unlink()
+        (self.root / layout.AUTHORITY_DIR / "MODULES.md").unlink()
+        path = self.root / layout.AUTHORITY_DIR / "TASKS.md"
+        path.write_text(path.read_text().replace("- Module: M-FOUNDATION", "- Phase: P1"))
+        project = compiler.load(self.root)
+        findings = validate.check(project)
+        self.assertEqual(validate.errors(findings), [])
+        self.assertIn("missing-thesis", [f.code for f in findings if f.severity == "warning"])
+
+    def test_every_output_exposes_the_lineage_deterministically(self) -> None:
+        data = compiler.as_json(self.project)
+        self.assertEqual(data["thesis"]["statement"], "A building people can live in.")
+        self.assertEqual(
+            [(m["id"], m["phase"], m["tasks"]) for m in data["modules"]],
+            [("M-FOUNDATION", "P1", ["T-ONE", "T-TWO", "T-THREE"]), ("M-UPKEEP", "P-NONE", [])],
+        )
+        self.assertEqual({t["id"]: t["module"] for t in data["tasks"]}["T-TWO"], "M-FOUNDATION")
+        report = analytics.report(self.project)
+        state = views.state(self.project, report)
+        self.assertIn("- Product thesis: A building people can live in.", state)
+        self.assertIn("  - M-FOUNDATION Foundation and walls: 3 tasks", state)
+        self.assertIn("- P-NONE Phase-independent\n  - M-UPKEEP Upkeep: 0 tasks", state)
+        self.assertIn("- T-TWO [TODO] Build on it\n  - module: M-FOUNDATION\n  - phase: P1",
+                      views.task_graph(self.project, report))
+        expected = {"thesis": "A building people can live in.", "phase": "P1",
+                    "module": {"id": "M-FOUNDATION", "name": "Foundation and walls",
+                               "outcome": "The structure stands."}}
+        self.assertEqual(analytics.explain(self.project, "T-TWO")["lineage"], expected)
+        self.assertEqual(analytics.context(self.project, "T-TWO")["lineage"], expected)
+        self.assertEqual(json.dumps(data, sort_keys=True),
+                         json.dumps(compiler.as_json(compiler.load(self.root)), sort_keys=True))
 
 
 class TestCompile(FixtureCase):
@@ -1006,7 +1108,7 @@ class TestDashboardTabs(FixtureCase):
 
 
 def _domain_task(task_id, status="TODO", phase="P1", domain=None, deps=(), title=None, contract=True):
-    lines = [f"## {task_id}: {title or 'Work ' + task_id}", f"- Status: {status}", f"- Phase: {phase}"]
+    lines = [f"## {task_id}: {title or 'Work ' + task_id}", f"- Status: {status}", f"- Module: M-{phase}"]
     if domain:
         lines.append(f"- Domain: {domain}")
     lines += [
@@ -1043,6 +1145,11 @@ class DomainCase(unittest.TestCase):
         if gate:
             phases += f"\n---\n\n# Gates\n\n{gate}\n"
         (authority / "PHASES.md").write_text(phases)
+        (authority / "THESIS.md").write_text("# Product thesis\n\n- Statement: It ships.\n")
+        (authority / "MODULES.md").write_text(
+            "# Modules\n\n## M-P1 — Product\n- Phase: P1\n- Outcome: It ships.\n\n"
+            "## M-P-NONE — Around it\n- Phase: P-NONE\n- Outcome: It keeps shipping.\n"
+        )
         (authority / "TASKS.md").write_text("# Tasks\n\n" + "\n".join(tasks))
         (authority / "ACCEPTANCE.md").write_text(
             "# Acceptance\n" + "".join(_domain_contract(t, st) for t, st in contracts.items())
@@ -1544,8 +1651,8 @@ class TestRetrieval(DomainCase):
                          "## EV-2: Unrelated note\n- Type: note\n- Task: T-X5\n")
         tasks_md = self.dir / layout.AUTHORITY_DIR / "TASKS.md"
         tasks_md.write_text(tasks_md.read_text().replace(
-            "## T-1: Work T-1\n- Status: WIP\n- Phase: P1\n",
-            "## T-1: Work T-1\n- Status: WIP\n- Phase: P1\n- Governed by: ADR-001\n"))
+            "## T-1: Work T-1\n- Status: WIP\n- Module: M-P1\n",
+            "## T-1: Work T-1\n- Status: WIP\n- Module: M-P1\n- Governed by: ADR-001\n"))
         self.project = compiler.load(self.dir)
         self.report = analytics.report(self.project)
         compiler.write(self.dir, self.project)

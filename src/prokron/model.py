@@ -126,6 +126,10 @@ class Task:
     # lives, to seed a code-structure query. Never required, never derived.
     files: list[str] = field(default_factory=list)
     symbols: list[str] = field(default_factory=list)
+    # The authored module (ADR-035). A task's phase is derived from it. A
+    # legacy task authors `Phase:` instead and has no module (ADR-036).
+    module: str | None = None
+    legacy_phase: str | None = None
 
     @property
     def done(self) -> bool:
@@ -138,6 +142,30 @@ class Task:
     @property
     def phase_independent(self) -> bool:
         return self.phase == NO_PHASE
+
+
+@dataclass
+class Thesis:
+    """The product thesis every phase, module, and task descends from."""
+
+    statement: str
+    reference: str | None
+    source: Source
+
+    def as_json(self) -> dict[str, object]:
+        return {"statement": self.statement or None, "reference": self.reference,
+                "source": self.source.as_json()}
+
+
+@dataclass
+class Module:
+    """A unit of work inside exactly one phase, or `P-NONE` (ADR-035)."""
+
+    id: str
+    name: str
+    phase: str
+    outcome: str
+    source: Source
 
 
 @dataclass
@@ -307,7 +335,11 @@ class Project:
     name: str
     root: str
     current_phase: str | None
+    thesis: Thesis = field(
+        default_factory=lambda: Thesis("", None, Source("THESIS.md", "Product thesis"))
+    )
     phases: list[Phase] = field(default_factory=list)
+    modules: list[Module] = field(default_factory=list)
     tasks: list[Task] = field(default_factory=list)
     contracts: dict[str, Contract] = field(default_factory=dict)
     gates: list[Gate] = field(default_factory=list)
@@ -345,6 +377,23 @@ class Project:
             if phase.id == phase_id:
                 return phase
         return None
+
+    def module(self, module_id: str) -> Module | None:
+        for module in self.modules:
+            if module.id == module_id:
+                return module
+        return None
+
+    def modules_in(self, phase_id: str) -> list[Module]:
+        return [m for m in self.modules if m.phase == phase_id]
+
+    def tasks_in_module(self, module_id: str) -> list[Task]:
+        return [t for t in self.tasks if t.module == module_id]
+
+    @property
+    def uses_modules(self) -> bool:
+        """True once a chronicle has adopted the hierarchy at all."""
+        return bool(self.modules) or any(t.module for t in self.tasks)
 
     def tasks_in(self, phase_id: str) -> list[Task]:
         return [t for t in self.tasks if t.phase == phase_id]

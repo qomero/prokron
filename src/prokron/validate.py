@@ -238,9 +238,40 @@ def check(project: Project) -> list[Finding]:
     phase_ids = {phase.id for phase in project.phases} | {NO_PHASE}
     decision_ids = {decision.id for decision in project.decisions}
     task_ids = {task.id for task in project.tasks}
+    module_ids = {module.id for module in project.modules}
+
+    # The hierarchy (ADR-035): one thesis, modules in known phases, and tasks
+    # owned by modules. A chronicle that has not adopted it yet stays readable
+    # and compilable, with the conversion made visible (ADR-036).
+    thesis_at = f"{project.thesis.source.file}#{project.thesis.source.anchor}"
+    if not project.thesis.statement:
+        if project.uses_modules:
+            error("missing-thesis", "modules exist but THESIS.md has no Statement", thesis_at)
+        elif project.tasks:
+            warn("missing-thesis",
+                 "no product thesis; author THESIS.md before converting tasks to modules",
+                 thesis_at)
+    seen_modules: set[str] = set()
+    for module in project.modules:
+        where = f"{module.source.file}#{module.id}"
+        if module.id in seen_modules:
+            error("duplicate-module", f"module {module.id} is defined more than once", where)
+        seen_modules.add(module.id)
+        if module.phase not in phase_ids:
+            error("unknown-module-phase", f"module names unknown phase '{module.phase}'", where)
 
     for task in project.tasks:
         where = f"{task.source.file}#{task.id}"
+        if task.module:
+            if task.module not in module_ids:
+                error("unknown-module", f"task names unknown module '{task.module}'", where)
+            if task.legacy_phase:
+                error("duplicate-phase-authority",
+                      "task authors both Module and Phase; its phase comes from its module",
+                      where)
+        else:
+            warn("legacy-task-phase",
+                 f"task names phase {task.legacy_phase} directly; convert it to a Module", where)
         if task.id in seen:
             error("duplicate-task", f"task {task.id} is defined more than once", where)
         seen.add(task.id)
@@ -253,7 +284,7 @@ def check(project: Project) -> list[Finding]:
                 f"'{task.validation}' is not a known validation state",
                 where,
             )
-        if task.phase not in phase_ids:
+        if not task.module and task.phase not in phase_ids:
             error("unknown-phase", f"task names unknown phase '{task.phase}'", where)
 
         for dependency in task.dependencies:
