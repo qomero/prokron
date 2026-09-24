@@ -14,17 +14,25 @@ Before reading broad repository context or the rest of `.prokron/chronicle/`:
 1. Read `.prokron/chronicle/INDEX.md`. It is generated from the chronicle and
    says what matters now and where each record lives. If it is missing, run
    `.prokron/prokron compile`.
-2. Use it to identify the task, phase, acceptance criteria, decisions,
-   technical debt, handoff, and operations that the question or task needs.
+2. Identify your task: the one you were given, or one the index or
+   `.prokron/prokron context` names as in flight or ready. Then run
+   `.prokron/prokron context <task>` for its dependencies, blockers,
+   acceptance, invariants, decisions, evidence, implementation anchors, and the
+   exact `file#anchor` records to read. Do not start a task merely because
+   unrelated work is visible in the repository.
 3. Read only those records. `.prokron/prokron retrieve "<question or task>"`
    returns exactly them, each labelled with its source.
-4. Do not load the whole chronicle by default.
+4. Do not load the whole chronicle by default. Read further Markdown only to
+   resolve an ambiguity or when the packet is not enough.
 5. Explore the code only after the project context is resolved. Where
    CodeGraph is installed, `.prokron/prokron retrieve <task> --code` adds code
    structure after the records, never before them.
 
-`INDEX.md` is a routing layer, not authority: when it disagrees with a record,
-the record wins. `.prokron/chronicle/README.md` explains how the records work.
+`INDEX.md`, `.prokron/compiled/`, and `context` output are derived maps, not
+authority; never edit them. When one disagrees with a record, the record wins:
+report the inconsistency rather than reconciling it silently. A packet's
+`problems` lists references that do not resolve.
+`.prokron/chronicle/README.md` explains how the records work.
 
 The repository ships a deterministic tool. Use it rather than re-deriving state
 by reading files:
@@ -32,6 +40,7 @@ by reading files:
 ```sh
 .prokron/prokron status          # phase, progress, ready, blocked, gates, next
 .prokron/prokron explain T-123   # one task: deps, criteria, blockers, evidence
+.prokron/prokron context         # orientation: phase, in flight, ready, blocked, path
 .prokron/prokron context T-123   # the minimal packet needed to start that task
 .prokron/prokron retrieve "why is P1 blocked?"   # only the records a question needs
 .prokron/prokron validate        # check authority before and after editing it

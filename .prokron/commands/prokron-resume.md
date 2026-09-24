@@ -2,8 +2,8 @@
 
 Recover the project from the chronicle alone. Start with
 `.prokron/chronicle/INDEX.md` (run `.prokron/prokron compile` if it is
-missing) and `.prokron/prokron status`, then read only what the index points
-to among `.prokron/compiled/STATE.md`,
+missing), `.prokron/prokron status`, and `.prokron/prokron context <task>`
+for the active or selected task, then read only what they point to among `.prokron/compiled/STATE.md`,
 `.prokron/chronicle/PHASES.md`, `.prokron/compiled/TASK_GRAPH.md`, the active
 or selected task, its contract in `ACCEPTANCE.md`, its governing ADRs,
 `INTENT.md`, `HANDOFF.md`, and only the recent journal entries needed for

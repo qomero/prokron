@@ -337,7 +337,8 @@ T-PILOT-01 — Run the continuity pilot
 |---|---|
 | `prokron status` | Where the project stands, what is ready, what blocks it. |
 | `prokron explain <task>` | Why one task exists, its criteria, blockers, and evidence. |
-| `prokron context <task>` | The minimal packet an agent needs to start that task. |
+| `prokron context` | Orientation for a fresh agent: phase, work in flight, ready, blocked, the critical path, and where authority lives. |
+| `prokron context <task>` | The minimal packet an agent needs to start that task, with the exact records to read and any references that do not resolve. |
 | `prokron domains` | How each task's execution/operations domain was decided, and which need one. |
 | `prokron retrieve "<question or id>"` | Only the chronicle records a question needs, routed by `INDEX.md`, each with its source. |
 | `prokron codegraph status` | Optional: whether CodeGraph is available to add code structure after the records. |

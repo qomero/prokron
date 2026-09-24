@@ -4,6 +4,35 @@ Prokron records its own history in `.prokron/chronicle/JOURNAL.md` and its
 decisions in `.prokron/chronicle/ADR/`. This file is the short version, for
 people arriving from a release page.
 
+## Unreleased
+
+### Added
+
+- `prokron context` without a task prints an orientation packet projected from
+  the compiled report: phase, execution in flight, ready and blocked work, the
+  critical path, the main blocker, the next gate, and where authority lives
+  (ADR-050).
+- `prokron context <task>` adds `authority` (the exact `file#anchor` records to
+  read), `problems` (dependencies, decisions, phases, and contracts that do not
+  resolve), and each dependency's status.
+- `prokron context <task>` exposes `task.claim` (`active`, `holder`, `claimed`),
+  read from the existing `WIP`, `Owner:`, and `Claimed:` fields, so an agent
+  can see that another actor holds a task (ADR-051).
+
+### Scope
+
+- v1 core scope is frozen (ADR-051): Prokron knows the project; it does not run
+  the project. Later changes come from failures demonstrated while dogfooding
+  real repositories.
+
+### Changed
+
+- AGENTS.md makes `prokron context <task>` the step after `INDEX.md`, says that
+  compiled output and packets are derived maps whose disagreement with a record
+  is reported rather than reconciled, and forbids starting a task merely
+  because unrelated work is visible. The CLAUDE.md block is now a thin adapter
+  that defers to AGENTS.md.
+
 ## 0.8.0 — 2026-09-24
 
 ### Added

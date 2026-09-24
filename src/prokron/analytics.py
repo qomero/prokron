@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
+from . import layout
 from .model import Obstacle, Project, Task
 
 
@@ -605,8 +606,77 @@ def _relevant(narrative: str, task_id: str) -> str | None:
     return narrative if narrative and task_id in narrative else None
 
 
-def context(project: Project, task_id: str, role: str = "builder") -> dict[str, object]:
+def _pointer(source) -> str:
+    """A `file#anchor` pointer into the chronicle, as INDEX.md writes them."""
+    if source.file.endswith(f"/{source.anchor}.md"):
+        return source.file  # an ADR is its own file
+    return f"{source.file}#{source.anchor}"
+
+
+def orientation(project: Project) -> dict[str, object]:
+    """What a fresh agent needs before choosing a task, from the report alone.
+
+    Every task named here is one the report already names; nothing is
+    suggested that the chronicle and its deterministic rules do not say.
+    """
+    result = report(project)
+    execution = {t.id for t in project.execution_tasks}
+    current = project.phase(project.current_phase or "")
+
+    def brief(task_id: str) -> dict[str, object]:
+        task = project.task(task_id)
+        return {"id": task.id, "title": task.title, "status": task.status,
+                "authority": _pointer(task.source)}
+
+    return {
+        "packetFor": None,
+        "project": project.name,
+        "phase": (
+            {"id": current.id, "status": current.status,
+             "progress": str(result.phase_progress[current.id]),
+             "authority": _pointer(current.source)}
+            if current else None
+        ),
+        "inFlight": [brief(t) for t in result.in_flight],
+        "operationsInFlight": [brief(t) for t in result.wip if t not in execution],
+        "ready": [brief(t) for t in result.ready if t in execution],
+        "blocked": [brief(t) for t in result.blocked if t in execution],
+        "criticalPath": result.critical_path,
+        "mainBlocker": result.main_blocker,
+        "nextGate": result.next_gate,
+        "authority": {
+            "root": f"{layout.AUTHORITY_DIR}/",
+            "read": ["INDEX.md", "INTENT.md", "HANDOFF.md"],
+        },
+    }
+
+
+def _problems(project: Project, task) -> list[str]:
+    """Every reference in a task that does not resolve, so none is dropped."""
+    problems = [
+        f"dependency {d} is not a known task"
+        for d in task.dependencies if project.task(d) is None
+    ]
+    known = {d.id for d in project.decisions}
+    problems += [f"decision {d} has no record" for d in task.decisions
+                 if d.startswith("ADR-") and d not in known]
+    if task.phase != "P-NONE" and project.phase(task.phase) is None:
+        problems.append(f"phase {task.phase} is not in PHASES.md")
+    contract = project.contracts.get(task.contract or "")
+    if not task.contract:
+        problems.append("no acceptance contract is named")
+    elif contract is None:
+        problems.append(f"contract {task.contract} is not in ACCEPTANCE.md")
+    else:
+        problems += [f"inherited contract {name} is not in ACCEPTANCE.md"
+                     for name in contract.inherits if name not in project.contracts]
+    return problems
+
+
+def context(project: Project, task_id: str | None, role: str = "builder") -> dict[str, object]:
     """The minimal packet an agent needs to start work on one task."""
+    if task_id is None:
+        return orientation(project)
     task = project.task(task_id)
     if task is None:
         raise KeyError(task_id)
@@ -614,6 +684,20 @@ def context(project: Project, task_id: str, role: str = "builder") -> dict[str, 
     phase = project.phase(task.phase)
     report_now = report(project)
     blockers = [o.as_json() for o in report_now.obstacles if o.subject == task_id]
+    decisions = [d for d in project.decisions if d.id in task.decisions]
+    debts = [
+        d for d in project.debts
+        if d in project.debts_for(task_id)
+        or any(adr in d.introduced_by for adr in task.decisions)
+    ]
+    # The records to open, in reading order, when the packet is not enough.
+    authority = [
+        _pointer(task.source),
+        *([_pointer(contract.source)] if contract else []),
+        *([_pointer(phase.source)] if phase else []),
+        *[_pointer(d.source) for d in decisions],
+        *[_pointer(d.source) for d in debts],
+    ]
     packet: dict[str, object] = {
         "role": role,
         "packetFor": task_id,
@@ -637,11 +721,25 @@ def context(project: Project, task_id: str, role: str = "builder") -> dict[str, 
                     "done": bool(
                         project.task(dependency) and project.task(dependency).done
                     ),
+                    "status": (
+                        project.task(dependency).status
+                        if project.task(dependency) else "MISSING"
+                    ),
                 }
                 for dependency in task.dependencies
             ],
             "closed": task.done,
+            # The chronicle's working rule: a task is claimed by marking it
+            # WIP with its owner and claim date. Holder and date are as
+            # recorded; nothing here assigns or locks anything.
+            "claim": {
+                "active": task.status == "WIP",
+                "holder": task.owner,
+                "claimed": task.claimed,
+            },
         },
+        "authority": {"root": f"{layout.AUTHORITY_DIR}/", "read": authority},
+        "problems": _problems(project, task),
         "blockers": blockers,
         "acceptance": [
             {"id": c.id, "text": c.text, "class": c.evidence_class, "state": c.state}
@@ -652,9 +750,7 @@ def context(project: Project, task_id: str, role: str = "builder") -> dict[str, 
             for inherited in project.invariants_for(task)
         ],
         "decisions": [
-            {"id": d.id, "title": d.title, "origin": d.origin}
-            for d in project.decisions
-            if d.id in task.decisions
+            {"id": d.id, "title": d.title, "origin": d.origin} for d in decisions
         ],
         "evidence": task.evidence,
         # Operations work this task waits on, kept in its own domain.
@@ -665,11 +761,7 @@ def context(project: Project, task_id: str, role: str = "builder") -> dict[str, 
         ],
         "events": [e.as_json() for e in project.events if e.id in set(events_for(project, task_id))],
         # Debt this task introduced or repays, and debt its decisions created.
-        "debt": [
-            d.as_json() for d in project.debts
-            if d in project.debts_for(task_id)
-            or any(adr in d.introduced_by for adr in task.decisions)
-        ],
+        "debt": [d.as_json() for d in debts],
         "handoff": _relevant(project.handoff, task_id),
     }
     if task.done:
