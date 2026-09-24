@@ -14,7 +14,7 @@ doi: 10.5281/zenodo.22897871
 repository-code: https://github.com/qomero/prokron
 url: https://github.com/qomero/prokron
 license: Apache-2.0
-version: 0.8.0
+version: 1.0.0
 date-released: "2026-09-24"
 keywords:
   - project management

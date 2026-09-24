@@ -4,9 +4,36 @@ Prokron records its own history in `.prokron/chronicle/JOURNAL.md` and its
 decisions in `.prokron/chronicle/ADR/`. This file is the short version, for
 people arriving from a release page.
 
-## Unreleased
+## 1.0.0 — 2026-09-24
+
+Prokron 1.0 freezes its core scope (ADR-051): Prokron knows the project; it
+does not run the project. A fresh agent can enter a repository, find
+legitimate work, get the minimum authoritative context, see unresolved state
+and other actors' claims, and avoid conflicting work without reading the
+repository wholesale.
+
+### Upgrading from 0.8
+
+- Run the installer as usual. It adds `THESIS.md` and `MODULES.md` to the
+  chronicle and never rewrites existing records.
+- Existing tasks that name `Phase:` keep compiling. `validate` warns
+  `legacy-task-phase` for each one, and `missing-thesis` until `THESIS.md` has a
+  `Statement:` (ADR-036).
+- To convert: author the thesis, author modules in `MODULES.md` (each with one
+  `Phase:` or `P-NONE`), then replace each task's `Phase:` line with the
+  `Module:` it belongs to. Once any module exists, a missing thesis, an unknown
+  module, or a task naming both `Module:` and `Phase:` is an error.
 
 ### Added
+
+- The project hierarchy thesis → phase → module → task (ADR-035). `THESIS.md`
+  holds the product thesis; `MODULES.md` authors modules, each in one phase or
+  `P-NONE`; a task names one `Module:` and takes its phase from it. The lineage
+  appears in `project.json`, `STATE.md`, `TASK_GRAPH.md`, `explain`, `context`,
+  and a new Product hierarchy section on the dashboard Overview.
+- Init, work, decide, checkpoint, and resume follow the hierarchy, and the
+  chronicle README, templates, AGENTS.md, the skill, and the public documents
+  describe it.
 
 - `prokron context` without a task prints an orientation packet projected from
   the compiled report: phase, execution in flight, ready and blocked work, the
@@ -21,7 +48,7 @@ people arriving from a release page.
 
 ### Scope
 
-- v1 core scope is frozen (ADR-051): Prokron knows the project; it does not run
+- Core scope is frozen (ADR-051): Prokron knows the project; it does not run
   the project. Later changes come from failures demonstrated while dogfooding
   real repositories.
 
