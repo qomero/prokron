@@ -552,8 +552,10 @@ def build_parser() -> argparse.ArgumentParser:
     graph_tool.add_argument("--json", action="store_true")
     graph_tool.set_defaults(handler=cmd_codegraph)
 
-    packet = subparsers.add_parser("context", help="emit an agent context packet")
-    packet.add_argument("task")
+    packet = subparsers.add_parser(
+        "context", help="emit an agent context packet: orientation, or one task's"
+    )
+    packet.add_argument("task", nargs="?", help="omit for the project orientation packet")
     packet.add_argument("--role", choices=("builder", "reviewer"), default="builder")
     packet.set_defaults(handler=cmd_context)
 

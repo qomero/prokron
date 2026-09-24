@@ -510,7 +510,9 @@ class TestAnalytics(FixtureCase):
 
     def test_a_packet_states_dependency_readiness_and_blockers(self) -> None:
         packet = analytics.context(self.project, "T-THREE")
-        self.assertEqual(packet["task"]["dependencies"], [{"id": "T-TWO", "done": False}])
+        self.assertEqual(
+            packet["task"]["dependencies"], [{"id": "T-TWO", "done": False, "status": "TODO"}]
+        )
         self.assertEqual(packet["blockers"][0]["type"], "DEPENDENCY_BLOCKER")
 
     def test_reviewer_packet_adds_finding_classes(self) -> None:
@@ -521,6 +523,114 @@ class TestAnalytics(FixtureCase):
     def test_unknown_task_raises(self) -> None:
         with self.assertRaises(KeyError):
             analytics.explain(self.project, "T-NOPE")
+
+
+class TestScopedContext(FixtureCase):
+    """`context` is a scoped projection of compiled state (ADR-050)."""
+
+    def test_orientation_reports_the_compiled_position(self) -> None:
+        report = analytics.report(self.project)
+        packet = analytics.context(self.project, None)
+        self.assertIsNone(packet["packetFor"])
+        self.assertEqual(packet["project"], self.project.name)
+        self.assertEqual(packet["phase"]["id"], "P1")
+        self.assertEqual(packet["phase"]["authority"], "PHASES.md#P1")
+        self.assertEqual(packet["inFlight"], [])
+        self.assertEqual([t["id"] for t in packet["ready"]], ["T-TWO"])
+        self.assertEqual([t["id"] for t in packet["blocked"]], ["T-THREE"])
+        self.assertEqual(packet["ready"][0]["authority"], "TASKS.md#T-TWO")
+        self.assertEqual(packet["criticalPath"], report.critical_path)
+        self.assertEqual(packet["mainBlocker"], report.main_blocker)
+        self.assertEqual(packet["authority"]["root"], f"{layout.AUTHORITY_DIR}/")
+        self.assertNotIn("role", packet)
+
+    def test_orientation_reports_work_in_flight_and_invents_none(self) -> None:
+        self.rewrite("TASKS.md", "## T-TWO: Build on it\n- Status: TODO", "## T-TWO: Build on it\n- Status: WIP")
+        report = analytics.report(self.project)
+        packet = analytics.context(self.project, None)
+        self.assertEqual([t["id"] for t in packet["inFlight"]], ["T-TWO"])
+        self.assertEqual(packet["ready"], [])
+        named = {t["id"] for key in ("inFlight", "operationsInFlight", "ready", "blocked")
+                 for t in packet[key]} | set(packet["criticalPath"])
+        self.assertLessEqual(named, {*report.wip, *report.ready, *report.blocked, *report.critical_path})
+
+    def test_a_task_packet_names_its_relationships_and_records(self) -> None:
+        self.rewrite("TASKS.md", "- Governed by: ADR-001\n\n## T-THREE",
+                     "- Governed by: ADR-001\n- Files: src/build.py\n\n## T-THREE")
+        packet = analytics.context(self.project, "T-TWO")
+        self.assertEqual(packet["task"]["dependencies"], [{"id": "T-ONE", "done": True, "status": "DONE"}])
+        self.assertEqual(packet["acceptance"][0]["id"], "AC-T-TWO-01")
+        self.assertEqual([d["id"] for d in packet["decisions"]], ["ADR-001"])
+        self.assertEqual(packet["task"]["implementation"]["files"], ["src/build.py"])
+        self.assertEqual(packet["authority"]["read"], [
+            "TASKS.md#T-TWO", "ACCEPTANCE.md#AC-T-TWO", "PHASES.md#P1", "ADR/ADR-001.md",
+        ])
+        for pointer in packet["authority"]["read"]:
+            with self.subTest(pointer=pointer):
+                self.assertTrue((self.root / layout.AUTHORITY_DIR / pointer.split("#")[0]).is_file())
+        self.assertEqual(packet["problems"], [])
+
+    def test_broken_references_are_reported_not_dropped(self) -> None:
+        self.rewrite(
+            "TASKS.md",
+            "- Dependencies: T-ONE\n- Owner: unassigned\n- AC: AC-T-TWO\n- Evidence: —\n- Governed by: ADR-001",
+            "- Dependencies: T-ONE, T-GHOST\n- Owner: unassigned\n- AC: AC-T-NOPE\n- Evidence: —\n"
+            "- Governed by: ADR-001, ADR-099",
+        )
+        self.rewrite("TASKS.md", "## T-TWO: Build on it\n- Status: TODO\n- Phase: P1",
+                     "## T-TWO: Build on it\n- Status: TODO\n- Phase: P9")
+        packet = analytics.context(self.project, "T-TWO")
+        self.assertEqual(packet["task"]["dependencies"][1],
+                         {"id": "T-GHOST", "done": False, "status": "MISSING"})
+        self.assertEqual(packet["problems"], [
+            "dependency T-GHOST is not a known task",
+            "decision ADR-099 has no record",
+            "phase P9 is not in PHASES.md",
+            "contract AC-T-NOPE is not in ACCEPTANCE.md",
+        ])
+        self.assertEqual(packet["acceptance"], [])
+
+    def claim_t_two(self) -> None:
+        self.rewrite("TASKS.md", "## T-TWO: Build on it\n- Status: TODO", "## T-TWO: Build on it\n- Status: WIP")
+        self.rewrite("TASKS.md", "- Dependencies: T-ONE\n- Owner: unassigned",
+                     "- Dependencies: T-ONE\n- Owner: codex/primary\n- Claimed: 2026-09-20")
+
+    def test_an_active_claim_is_visible_in_task_context(self) -> None:
+        self.claim_t_two()
+        claim = analytics.context(self.project, "T-TWO")["task"]["claim"]
+        self.assertEqual(claim, {"active": True, "holder": "codex/primary", "claimed": "2026-09-20"})
+
+    def test_an_unclaimed_task_says_so(self) -> None:
+        claim = analytics.context(self.project, "T-THREE")["task"]["claim"]
+        self.assertEqual(claim, {"active": False, "holder": "unassigned", "claimed": None})
+        # A finished task keeps its recorded holder but is no longer claimed.
+        self.assertFalse(analytics.context(self.project, "T-ONE")["task"]["claim"]["active"])
+
+    def test_a_claimed_packet_is_deterministic_and_read_only(self) -> None:
+        self.claim_t_two()
+        home = self.root / layout.HOME_DIR
+        before = {p: p.read_bytes() for p in home.rglob("*") if p.is_file()}
+        first = self.run_cli("context", "T-TWO")
+        self.assertEqual(first, self.run_cli("context", "T-TWO"))
+        self.assertTrue(json.loads(first[1])["task"]["claim"]["active"])
+        self.assertEqual(before, {p: p.read_bytes() for p in home.rglob("*") if p.is_file()})
+
+    def test_context_is_deterministic_and_read_only(self) -> None:
+        home = self.root / layout.HOME_DIR
+        before = {p: p.read_bytes() for p in home.rglob("*") if p.is_file()}
+        for args in (("context",), ("context", "T-TWO"), ("context", "T-THREE", "--role", "reviewer")):
+            with self.subTest(args=args):
+                first = self.run_cli(*args)
+                self.assertEqual(first[0], 0)
+                self.assertEqual(first, self.run_cli(*args))
+                json.loads(first[1])
+        self.assertEqual(before, {p: p.read_bytes() for p in home.rglob("*") if p.is_file()})
+
+    def run_cli(self, *argv: str) -> tuple[int, str]:
+        buffer = io.StringIO()
+        with redirect_stdout(buffer):
+            code = cli.main(["-C", str(self.root), *argv])
+        return code, buffer.getvalue()
 
 
 class TestCompile(FixtureCase):
@@ -2484,6 +2594,28 @@ class TestBootProtocol(unittest.TestCase):
         self.assertLess(text.index("INDEX.md"), text.index("Explore code only once"))
         self.assertEqual(self.text("templates/claude/CLAUDE.md"),
                          text.split("@AGENTS.md", 1)[1].strip())
+
+    def test_f_agents_md_scopes_context_before_code(self) -> None:
+        """ADR-050: the task packet comes after the index and before code."""
+        text = self.text("AGENTS.md")
+        index_step = text.index("1. Read `.prokron/chronicle/INDEX.md`.")
+        packet_step = text.index("run `.prokron/prokron context <task>`")
+        self.assertLess(index_step, packet_step)
+        self.assertLess(packet_step, text.index("5. Explore the code only after"))
+        self.assertIn("Do not start a task merely because unrelated work is visible", text)
+        self.assertIn("are derived maps, not authority; never edit them", text)
+        self.assertIn("the record wins: report the inconsistency rather than reconciling it silently", text)
+        # Nothing tells an agent to read the chronicle whole.
+        self.assertNotRegex(text.lower().replace("do not load the whole chronicle", ""),
+                            r"(read|load|scan) (all|every|the (whole|entire)) (of the )?chronicle")
+
+    def test_g_claude_md_is_a_thin_adapter(self) -> None:
+        block = self.text("templates/claude/CLAUDE.md")
+        self.assertIn("Follow AGENTS.md", block)
+        self.assertIn("`.prokron/prokron context <task>`", block)
+        for protocol in ("## Completion", "## Reviewer", "## Disagreement", "Recognize these workflows"):
+            self.assertNotIn(protocol, block)
+        self.assertLess(len(block), 800)
 
     def test_the_chronicle_read_order_starts_with_the_index(self) -> None:
         text = (self.ROOT / "templates/chronicle/README.md").read_text()
