@@ -868,6 +868,62 @@ class TestRenderers(FixtureCase):
         self.assertEqual(first, second)
 
 
+class TestDashboardHierarchy(FixtureCase):
+    """The overview shows thesis -> phase -> module -> task (ADR-035)."""
+
+    def render(self) -> str:
+        return dashboard.render(self.project, analytics.report(self.project), compiler.as_json(self.project))
+
+    def section(self, html: str) -> str:
+        return html.split("<h2>Product hierarchy</h2>", 1)[1].split("</section>", 1)[0]
+
+    def test_the_hierarchy_is_laid_out_in_order_from_compiled_data(self) -> None:
+        self.rewrite("TASKS.md", "- Module: M-FOUNDATION\n- Validation: UNTESTED\n- Dependencies: T-TWO",
+                     "- Module: M-UPKEEP\n- Validation: UNTESTED\n- Dependencies: T-TWO")
+        html = self.render()
+        part = self.section(html)
+        order = [part.index(marker) for marker in (
+            "A building people can live in.", 'data-phase="P1"', "M-FOUNDATION",
+            'data-task="T-ONE"', 'data-task="T-TWO"', 'data-phase="P-NONE"', "M-UPKEEP", 'data-task="T-THREE"',
+        )]
+        self.assertEqual(order, sorted(order))
+        self.assertIn("docs/THESIS.md", part)
+        # Relationships are rendered on the server; the script never rebuilds them.
+        script = html.split('<script type="application/json" id="project-data">', 1)[1]
+        self.assertNotIn("DATA.modules", script)
+
+    def test_legacy_tasks_are_shown_without_an_invented_module(self) -> None:
+        self.rewrite("TASKS.md", "- Module: M-FOUNDATION\n- Validation: SYNTHETIC", "- Phase: P1\n- Validation: SYNTHETIC")
+        part = self.section(self.render())
+        legacy = part.split("Legacy tasks with no module", 1)[1]
+        self.assertIn('data-task="T-ONE"', legacy)
+        self.assertNotIn('data-task="T-ONE"', part.split("Legacy tasks with no module", 1)[0])
+
+    def test_authored_text_is_escaped_and_data_round_trips(self) -> None:
+        hostile = '<script>alert("x")</script> & </script>'
+        self.rewrite("THESIS.md", "A building people can live in.", hostile)
+        self.rewrite("MODULES.md", "## M-FOUNDATION — Foundation and walls", f"## M-FOUNDATION — {hostile}")
+        self.rewrite("TASKS.md", "## T-TWO: Build on it", f"## T-TWO: {hostile}")
+        html = self.render()
+        part = self.section(html)
+        self.assertNotIn("<script>alert", part)
+        self.assertIn("&lt;script&gt;alert(&quot;x&quot;)&lt;/script&gt; &amp;", part)
+        start = html.index('id="project-data">') + len('id="project-data">')
+        data = json.loads(html[start:html.index("</script>", start)])
+        self.assertEqual(data["thesis"]["statement"], hostile)
+        self.assertEqual(data["modules"][0]["name"], hostile)
+        self.assertEqual({t["id"]: t["title"] for t in data["tasks"]}["T-TWO"], hostile)
+
+    def test_tasks_still_open_and_the_page_stays_offline_and_read_only(self) -> None:
+        html = self.render()
+        part = self.section(html)
+        self.assertIn('<button type="button" class="tasklink" data-task="T-TWO">', part)
+        self.assertIn("task.module ? `<span class=\"pill\">${esc(task.module)}</span>`", html)
+        for forbidden in ("fetch(", "<form", "<textarea", "contenteditable", "http://", "XMLHttpRequest"):
+            self.assertNotIn(forbidden, part)
+        self.assertNotIn("fetch(", html)
+
+
 class TestDashboard(FixtureCase):
     def setUp(self) -> None:
         super().setUp()
